@@ -1,0 +1,244 @@
+import XCTest
+@testable import Dearly
+
+final class DearlyCoreTests: XCTestCase {
+    @MainActor
+    func testStoreStartsSignedOutWithoutSampleData() async {
+        let store = DearlyStore()
+        XCTAssertFalse(store.isOnline)
+        XCTAssertTrue(store.state.profiles.isEmpty)
+        XCTAssertTrue(store.state.journals.isEmpty)
+        XCTAssertTrue(store.state.messages.isEmpty)
+        let saved = await store.send("Requires a backend session", connectionID: UUID())
+        XCTAssertFalse(saved)
+        XCTAssertTrue(store.state.messages.isEmpty)
+    }
+
+    @MainActor
+    func testLanguageChoiceTranslatesUIAndPreservesBackendValues() {
+        let defaults = UserDefaults.standard
+        let previous = defaults.object(forKey: "dearly.language")
+        defer {
+            if let previous { defaults.set(previous, forKey: "dearly.language") }
+            else { defaults.removeObject(forKey: "dearly.language") }
+        }
+        defaults.set("en", forKey: "dearly.language")
+        XCTAssertEqual(L("Đăng nhập"), "Log in")
+        XCTAssertEqual(L("Khu vườn"), "Garden")
+        XCTAssertEqual(L(SupportStyle.listen.rawValue), "Just listen")
+        XCTAssertEqual(SupportStyle.listen.rawValue, "Chỉ cần lắng nghe")
+        XCTAssertEqual(L("Cùng Alex", "With Alex"), "With Alex")
+        defaults.set("vi", forKey: "dearly.language")
+        XCTAssertEqual(L("Đăng nhập"), "Đăng nhập")
+        XCTAssertEqual(L("Cùng Alex", "With Alex"), "Cùng Alex")
+    }
+
+    private var calendar: Calendar {
+        var value = Calendar(identifier: .gregorian)
+        value.timeZone = TimeZone(secondsFromGMT: 0)!
+        return value
+    }
+    private var day: Date { calendar.date(from: DateComponents(year: 2026, month: 10, day: 13, hour: 12))! }
+    private func later(_ count: Int) -> Date { calendar.date(byAdding: .day, value: count, to: day)! }
+
+    private func connected() throws -> AppState {
+        var state = AppState.demo(now: day)
+        let second = state.profiles[1].id
+        try state.invite(second, now: day)
+        state.currentUserID = second
+        try state.accept(state.invitations[0].id, now: day)
+        state.currentUserID = state.profiles[0].id
+        return state
+    }
+
+    private func checkBoth(_ state: inout AppState, on date: Date) throws {
+        let original = state.currentUserID
+        let members = state.activeConnection(for: original)!.members
+        for id in members { state.currentUserID = id; try state.checkIn(now: date, calendar: calendar) }
+        state.currentUserID = original
+    }
+
+    func testPrivateJournalCannotBeReadByOtherPersona() throws {
+        var state = AppState.demo(now: day)
+        let privateEntry = state.myJournals[0]
+        state.currentUserID = state.profiles[1].id
+        XCTAssertFalse(state.canRead(privateEntry))
+        XCTAssertFalse(state.feed.contains { $0.id == privateEntry.id })
+    }
+
+    func testPublishOnlyChosenExcerptAndWithdraw() throws {
+        var state = AppState.demo(now: day)
+        try state.saveJournal(title: "Private title", body: "Secret. Share this.", sharedText: "Share this.", audience: .community, anonymous: true, commentsEnabled: false, support: .listen, now: day)
+        let entry = state.journals.last!
+        XCTAssertEqual(entry.sharedText, "Share this.")
+        XCTAssertTrue(entry.anonymous)
+        try state.saveJournal(id: entry.id, title: entry.title, body: entry.body, sharedText: "", audience: .privateOnly, anonymous: false, commentsEnabled: false, support: .listen, now: day)
+        state.currentUserID = state.profiles[1].id
+        XCTAssertFalse(state.feed.contains { $0.id == entry.id })
+        XCTAssertFalse(state.canRead(state.journals.first { $0.id == entry.id }!))
+    }
+
+    func testCannotShareTextOutsideOriginalJournal() {
+        var state = AppState.demo(now: day)
+        XCTAssertThrowsError(try state.saveJournal(title: "", body: "Original", sharedText: "Different", audience: .community, anonymous: false, commentsEnabled: true, support: .listen, now: day))
+    }
+
+    func testCannotEditAnotherUsersJournal() {
+        var state = AppState.demo(now: day)
+        let other = state.journals.first { $0.authorID != state.currentUserID }!
+        XCTAssertThrowsError(try state.saveJournal(id: other.id, title: "", body: "Changed", sharedText: "", audience: .privateOnly, anonymous: false, commentsEnabled: true, support: .listen, now: day))
+    }
+
+    func testInvitationRequiresTwoSidesBeforeChat() throws {
+        var state = AppState.demo(now: day)
+        let first = state.currentUserID
+        let second = state.profiles[1].id
+        try state.invite(second, now: day)
+        let invitation = state.invitations[0]
+        XCTAssertThrowsError(try state.send("Hello", now: day))
+        XCTAssertThrowsError(try state.accept(invitation.id, now: day))
+        state.currentUserID = second
+        try state.accept(invitation.id, now: day)
+        XCTAssertNotNil(state.activeConnection(for: first))
+        try state.send("Hello", now: day)
+        XCTAssertEqual(state.messages.count, 1)
+    }
+
+    func testMinorCannotInviteAdultInEitherDirection() {
+        var state = AppState.demo(now: day)
+        let minor = state.currentUserID
+        let adult = state.profiles[3].id
+        XCTAssertFalse(state.canInvite(adult))
+        XCTAssertThrowsError(try state.invite(adult, now: day))
+        state.currentUserID = adult
+        XCTAssertFalse(state.canInvite(minor))
+        XCTAssertThrowsError(try state.invite(minor, now: day))
+    }
+
+    func testAgeEligibilityRecheckedWhenAccepting() throws {
+        var state = AppState.demo(now: day)
+        try state.invite(state.profiles[1].id, now: day)
+        let invitation = state.invitations[0]
+        state.profiles[1].age = 18
+        state.currentUserID = state.profiles[1].id
+        XCTAssertThrowsError(try state.accept(invitation.id, now: day))
+        XCTAssertTrue(state.connections.isEmpty)
+    }
+
+    func testSameDayCheckInIsIdempotentAndNeedsBothPeople() throws {
+        var state = try connected()
+        try state.checkIn(now: day, calendar: calendar)
+        try state.checkIn(now: day, calendar: calendar)
+        XCTAssertEqual(state.connections[0].totalDays, 0)
+        try checkBoth(&state, on: day)
+        try checkBoth(&state, on: day)
+        XCTAssertEqual(state.connections[0].totalDays, 1)
+        XCTAssertEqual(state.connections[0].streak(on: day, calendar: calendar), 1)
+    }
+
+    func testGapResetsStreakButPreservesRewards() throws {
+        var state = try connected()
+        for offset in 0..<7 { try checkBoth(&state, on: later(offset)) }
+        XCTAssertEqual(state.connections[0].growth, 3)
+        XCTAssertEqual(state.connections[0].streak(on: later(8), calendar: calendar), 0)
+        try checkBoth(&state, on: later(9))
+        XCTAssertEqual(state.connections[0].streak(on: later(9), calendar: calendar), 1)
+        XCTAssertEqual(state.connections[0].totalDays, 8)
+        XCTAssertEqual(state.connections[0].bestStreak, 7)
+        XCTAssertEqual(state.connections[0].growth, 3)
+    }
+
+    func testThirtyTotalDaysUnlocksExpansionWithoutLongStreak() throws {
+        var state = try connected()
+        for offset in 0..<30 { try checkBoth(&state, on: later(offset * 2)) }
+        XCTAssertEqual(state.connections[0].bestStreak, 1)
+        XCTAssertEqual(state.connections[0].totalDays, 30)
+        XCTAssertEqual(state.connections[0].growth, 5)
+    }
+
+    func testPausePreventsCheckIn() throws {
+        var state = try connected()
+        state.togglePause()
+        XCTAssertThrowsError(try state.checkIn(now: day, calendar: calendar))
+        state.togglePause()
+        try checkBoth(&state, on: day)
+        XCTAssertEqual(state.connections[0].totalDays, 1)
+    }
+
+    func testLeavingArchivesGardenAndPreventsMessages() throws {
+        var state = try connected()
+        try checkBoth(&state, on: day)
+        state.leave(now: day)
+        XCTAssertNil(state.activeConnection(for: state.currentUserID))
+        XCTAssertEqual(state.connections[0].growth, 1)
+        XCTAssertThrowsError(try state.send("Hello", now: day))
+    }
+
+    func testCompanionJournalDoesNotLeakToNewConnection() throws {
+        var state = try connected()
+        let originalAuthor = state.currentUserID
+        let oldPartner = state.profiles[1].id
+        let newPartner = state.profiles[2].id
+        try state.saveJournal(title: "", body: "For this companion", sharedText: "For this companion", audience: .companion, anonymous: false, commentsEnabled: false, support: .listen, now: day)
+        let entry = state.journals.last!
+        state.currentUserID = oldPartner
+        XCTAssertTrue(state.canRead(entry))
+        state.currentUserID = originalAuthor
+        state.leave(now: day)
+        try state.invite(newPartner, now: day)
+        state.currentUserID = newPartner
+        try state.accept(state.invitations[0].id, now: day)
+        XCTAssertFalse(state.canRead(entry))
+        state.currentUserID = oldPartner
+        XCTAssertFalse(state.canRead(entry))
+    }
+
+    func testBlockingEndsConnectionAndHidesPostsBothWays() throws {
+        var state = try connected()
+        let first = state.currentUserID
+        let second = state.profiles[1].id
+        state.block(second, now: day)
+        XCTAssertNil(state.activeConnection(for: first))
+        XCTAssertFalse(state.feed.contains { $0.authorID == second })
+        XCTAssertThrowsError(try state.invite(second, now: day))
+        state.currentUserID = second
+        XCTAssertFalse(state.canInvite(first))
+    }
+
+    func testCommentsRespectDisabledAndPrivateState() throws {
+        var state = AppState.demo(now: day)
+        try state.saveJournal(title: "", body: "Hello", sharedText: "Hello", audience: .community, anonymous: true, commentsEnabled: false, support: .listen, now: day)
+        let id = state.journals.last!.id
+        state.currentUserID = state.profiles[1].id
+        XCTAssertThrowsError(try state.comment(on: id, text: "Hi", now: day))
+        XCTAssertThrowsError(try state.comment(on: state.journals[0].id, text: "Hi", now: day))
+    }
+
+    func testPersistenceRoundTripPreservesConnectionAndJournal() throws {
+        var state = try connected()
+        try checkBoth(&state, on: day)
+        try state.send("Still here", now: day)
+        let data = try JSONEncoder().encode(state)
+        let loaded = try JSONDecoder().decode(AppState.self, from: data)
+        XCTAssertEqual(loaded.currentUserID, state.currentUserID)
+        XCTAssertEqual(loaded.connections[0].totalDays, 1)
+        XCTAssertEqual(loaded.messages[0].text, "Still here")
+        XCTAssertEqual(loaded.journals[0].body, state.journals[0].body)
+    }
+    func testBackendWireContractDecodesToNativeModels() throws {
+        let url = try XCTUnwrap(Bundle(for: DearlyCoreTests.self).url(forResource: "server-state", withExtension: "json"))
+        let envelope = try JSONDecoder().decode(StateEnvelope.self, from: Data(contentsOf: url))
+        let state = envelope.state
+        XCTAssertNotNil(state.profile(state.currentUserID))
+        let journal = try XCTUnwrap(state.feed.first)
+        XCTAssertEqual(journal.sharedText, "Public fixture.")
+        XCTAssertEqual(journal.body, "")
+        XCTAssertEqual(journal.title, "")
+        XCTAssertEqual(journal.authorID, journal.id)
+        XCTAssertEqual(state.connections.first?.totalDays, 1)
+        XCTAssertEqual(state.connections.first?.serverCurrentStreak, 1)
+        XCTAssertEqual(state.messages.first?.text, "Hello fixture")
+        XCTAssertEqual(envelope.serverNow.timeIntervalSince1970, 1791892800, accuracy: 1)
+    }
+
+}

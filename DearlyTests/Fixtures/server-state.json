@@ -1,0 +1,101 @@
+{
+  "state": {
+    "schemaVersion": 1,
+    "profiles": [
+      {
+        "id": "19BCD281-01A1-467B-8927-083AFED53A41",
+        "nickname": "fixture_writer",
+        "age": 17,
+        "ageVerified": true,
+        "symbol": "leaf.fill",
+        "bio": "",
+        "interests": [
+          "Âm nhạc",
+          "Đọc sách"
+        ],
+        "support": "Chỉ cần lắng nghe",
+        "pace": "Buổi tối"
+      },
+      {
+        "id": "CB657F17-62EC-486C-886B-B273F2F34016",
+        "nickname": "fixture_reader",
+        "age": 17,
+        "ageVerified": true,
+        "symbol": "leaf.fill",
+        "bio": "",
+        "interests": [
+          "Âm nhạc",
+          "Đọc sách"
+        ],
+        "support": "Chỉ cần lắng nghe",
+        "pace": "Buổi tối"
+      },
+      {
+        "id": "D754B4F1-DB5A-44DA-8A57-7EC9422FFDE0",
+        "nickname": "Một người bạn",
+        "age": 0,
+        "ageVerified": false,
+        "symbol": "sparkles",
+        "bio": "",
+        "interests": [],
+        "support": "Chỉ cần lắng nghe",
+        "pace": ""
+      }
+    ],
+    "currentUserID": "CB657F17-62EC-486C-886B-B273F2F34016",
+    "journals": [
+      {
+        "id": "D754B4F1-DB5A-44DA-8A57-7EC9422FFDE0",
+        "authorID": "D754B4F1-DB5A-44DA-8A57-7EC9422FFDE0",
+        "title": "",
+        "body": "",
+        "sharedText": "Public fixture.",
+        "audience": "community",
+        "connectionID": null,
+        "anonymous": true,
+        "commentsEnabled": true,
+        "support": "Chỉ cần lắng nghe",
+        "date": 813585600.0,
+        "listeners": [],
+        "canInviteAuthor": false
+      }
+    ],
+    "comments": [],
+    "invitations": [],
+    "connections": [
+      {
+        "id": "1683EECF-6325-4A4F-8F74-90930C4D6EDB",
+        "members": [
+          "CB657F17-62EC-486C-886B-B273F2F34016",
+          "19BCD281-01A1-467B-8927-083AFED53A41"
+        ],
+        "startedAt": 813585600.0,
+        "endedAt": null,
+        "paused": false,
+        "checkIns": {
+          "2026-10-13": [
+            "19BCD281-01A1-467B-8927-083AFED53A41",
+            "CB657F17-62EC-486C-886B-B273F2F34016"
+          ]
+        },
+        "bestStreak": 1,
+        "serverTotalDays": 1,
+        "serverCurrentStreak": 1
+      }
+    ],
+    "messages": [
+      {
+        "id": "230BD029-DAF7-4829-B3BA-43F66527114E",
+        "connectionID": "1683EECF-6325-4A4F-8F74-90930C4D6EDB",
+        "senderID": "19BCD281-01A1-467B-8927-083AFED53A41",
+        "text": "Hello fixture",
+        "date": 813585600.0
+      }
+    ],
+    "blocks": [],
+    "reports": [],
+    "demoDayOffset": 0,
+    "suggestedUserIDs": []
+  },
+  "serverNow": 813585600.0
+}
