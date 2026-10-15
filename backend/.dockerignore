@@ -1,5 +1,7 @@
-.venv
-__pycache__
-data
-*.sqlite3*
-.pytest_cache
+# Only the runtime files are needed in the image.
+**
+!Dockerfile
+!.dockerignore
+!requirements.txt
+!server.py
+!run.py

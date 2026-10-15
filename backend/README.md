@@ -119,22 +119,46 @@ Trust only the actual proxy IP addresses, not `*`. This lets the rate limiter us
 
 Alternatively, the launcher accepts `--cert certificate.pem --key private-key.pem` after `serve` to terminate TLS directly. Both options are required together. Keep keys and credentials out of version control.
 
-## Optional Docker setup
+## Docker
 
-Run from `backend`:
+Install Docker Engine with the Compose plugin, or Docker Desktop, before using these commands.
 
-```bash
-docker build -t dearly-api .
-docker run --rm --name dearly-api -p 127.0.0.1:8000:8000 -v dearly-data:/data dearly-api
-```
-
-The container runs as a non-root user and stores SQLite in `/data`. The named volume preserves data across container restarts. To avoid a host port conflict, change the mapping to `127.0.0.1:8001:8000`. Change the host binding if LAN access is required.
-
-Run administration commands against the container’s database with, for example:
+### Compose (from the repository root)
 
 ```bash
-docker exec dearly-api python run.py reports
+# Optional: copy .env.example to .env and edit the host binding or port.
+docker compose up -d --build
+docker compose ps
+docker compose logs -f backend
 ```
+
+This builds the local **`dearly-api:latest`** image, starts the backend at `http://127.0.0.1:8000`, and stores SQLite in a named volume. The service restarts unless explicitly stopped. The image runs as a non-root user and checks `/health` every 30 seconds; `docker compose ps` displays its health status.
+
+If port 8000 is occupied, set `DEARLY_PORT=8001` in a root `.env` file before starting. For LAN access, set `DEARLY_BIND=0.0.0.0`. Otherwise the port is accessible only on the Docker host. Update the app’s server URL to match. The container’s internal port remains 8000.
+
+```bash
+docker compose exec backend python run.py reports
+docker compose exec backend python run.py verify-age --username alice --birth-date 2009-01-01
+docker compose exec backend python run.py backup --output /data/dearly-backup.sqlite3
+docker compose cp backend:/data/dearly-backup.sqlite3 ./dearly-backup.sqlite3
+docker compose down
+```
+
+`docker compose down` preserves the database volume. **Adding `--volumes` deletes that volume and its data.** Use a new backup filename for each backup. Do not run the native backend and Compose on the same host port.
+
+### Build and run without Compose (from `backend`)
+
+```bash
+docker build -t dearly-api:latest .
+docker run -d --name dearly-api --restart unless-stopped --init -p 127.0.0.1:8000:8000 -v dearly-data:/data dearly-api:latest
+docker logs -f dearly-api
+```
+
+To avoid a host port conflict, change the mapping to `127.0.0.1:8001:8000`. Run administration commands with `docker exec dearly-api python run.py reports`. Stop the container with `docker stop dearly-api`.
+
+The build context includes only the Dockerfile, runtime Python files, and dependency manifest. Local databases, credentials, virtual environments, and tests are excluded from the image. The image does not configure public DNS or HTTPS; use a reverse proxy as described above.
+
+Docker is not installed on the current development machine, so the image build and container health check have not yet been verified here.
 
 ## Tests
 

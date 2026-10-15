@@ -1,0 +1,16 @@
+services:
+  backend:
+    image: dearly-api:latest
+    build:
+      context: ./backend
+    restart: unless-stopped
+    init: true
+    ports:
+      - "${DEARLY_BIND:-127.0.0.1}:${DEARLY_PORT:-8000}:8000"
+    volumes:
+      - dearly-data:/data
+    environment:
+      DEARLY_DB: /data/dearly.sqlite3
+
+volumes:
+  dearly-data:

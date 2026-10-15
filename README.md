@@ -52,6 +52,14 @@ For local development, build the iOS app in **Debug** and change its server addr
 
 If you change the backend port, update the app URL as well. `localhost` on an iPhone refers to the phone itself. Release builds require HTTPS with a trusted certificate.
 
+Alternatively, with Docker and Docker Compose installed, run from the repository root:
+
+```bash
+docker compose up -d --build
+```
+
+This builds `dearly-api:latest` and runs it on `127.0.0.1:8000` with persistent SQLite storage. Copy `.env.example` to `.env` to change the host binding or port. See the [Docker instructions](backend/README.md#docker) for logs, administration, backups, and stopping the service.
+
 See the [backend README](backend/README.md) for database paths, LAN troubleshooting, HTTPS hosting, administration, Docker, and tests.
 
 ## Features
