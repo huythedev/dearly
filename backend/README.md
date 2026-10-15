@@ -57,7 +57,7 @@ Administration commands must use the same database path as the running server. V
 
 ## Connect the iOS app
 
-The app’s default server is **`https://api.dearly.huythedev.com`**. This is a client default; running the local backend does not configure DNS, TLS, or deployment for that domain. Previously saved server addresses and sessions keep their existing server URL.
+The app’s default server is **`https://dearly.huythedev.com`**. This is a client default; running the local backend does not configure DNS, TLS, or deployment for that domain. Previously saved server addresses and sessions keep their existing server URL.
 
 1. Open `Dearly.xcodeproj`, select the **Dearly** scheme, and run a **Debug** build on a simulator or iPhone.
 2. On the login screen, expand **Server connection / Kết nối server** to choose your backend.
@@ -102,7 +102,7 @@ Keep SQLite on a local disk, not SMB/NFS. Do not run multiple replicas writing t
 For Internet hosting, run the backend on localhost behind an HTTPS reverse proxy. For example, a Caddy configuration for the app’s default domain is:
 
 ```caddyfile
-api.dearly.huythedev.com {
+dearly.huythedev.com {
     reverse_proxy 127.0.0.1:8000
 }
 ```

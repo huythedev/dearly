@@ -4,7 +4,7 @@ import SwiftUI
 struct ServerConnectionView: View {
     @AppStorage("dearly.language") private var language = "vi"
     @EnvironmentObject private var store: DearlyStore
-    @AppStorage("dearly.server.address") private var address = "https://api.dearly.huythedev.com"
+    @AppStorage("dearly.server.address") private var address = "https://dearly.huythedev.com"
     @State private var registering = false
     @State private var username = ""
     @State private var password = ""
@@ -84,7 +84,7 @@ struct ServerConnectionView: View {
                 }.padding(22).dearlyCard().disabled(store.isAuthenticating)
                 DisclosureGroup(isExpanded: $showingServer) {
                     VStack(alignment: .leading, spacing: 12) {
-                        TextField("https://api.dearly.huythedev.com", text: $address)
+                        TextField("https://dearly.huythedev.com", text: $address)
                             .keyboardType(.URL).textInputAutocapitalization(.never).autocorrectionDisabled()
                             .padding(14).background(.white.opacity(0.8), in: RoundedRectangle(cornerRadius: 14))
                         Text(L("Simulator: localhost. iPhone: địa chỉ IP của máy chạy server, cùng Wi-Fi. HTTP chỉ dùng trong bản Debug."))

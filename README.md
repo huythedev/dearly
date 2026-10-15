@@ -8,7 +8,7 @@ A quiet place to write, find someone willing to listen, and grow a little garden
 
 1. Open `Dearly.xcodeproj` in Xcode with an iOS 17 or newer SDK.
 2. Select the **Dearly** scheme and an iPhone Simulator, then press **⌘R**. For a physical device, configure your signing team first.
-3. Log in or create an account. The default backend address is **`https://api.dearly.huythedev.com`**. A previously saved server address takes precedence.
+3. Log in or create an account. The default backend address is **`https://dearly.huythedev.com`**. A previously saved server address takes precedence.
 4. To use a different backend, expand **Server connection / Kết nối server** on the login screen and enter its base URL.
 
 The app requires a backend account. It starts at login, restores a saved session when possible, and returns to login after logout or session expiry. There is no offline demo fallback. Journal entries, messages, and account changes are saved through the backend; session tokens are stored in Keychain.
