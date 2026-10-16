@@ -69,6 +69,14 @@ select { cursor: pointer; }
 .segmented { display: flex; padding: 5px; gap: 5px; background: var(--background); border: 1px solid var(--border); border-radius: 11px; margin: 26px 0; }
 .segmented button { flex: 1; background: transparent; border: 0; color: var(--muted); padding: 9px; border-radius: 7px; font-size: 12px; }
 .segmented button.selected { background: var(--surface); color: var(--forest); box-shadow: 0 1px 5px var(--shadow); font-weight: 600; }
+/* Keep native date controls within the form on iOS, including when empty. */
+.auth-card input[type="date"] {
+  -webkit-appearance: none;
+  appearance: none;
+  display: block;
+  max-width: 100%;
+  min-height: calc(1.65em + 26px);
+}
 .auth-card form .primary { margin-top: 5px; }
 .auth-footnote { display: flex; align-items: center; gap: 9px; justify-content: center; padding-top: 24px; margin-top: 26px; border-top: 1px solid var(--border); color: var(--muted); font-size: 10px; }
 .auth-footer { display: flex; justify-content: space-between; gap: 14px; padding: 22px 0; color: var(--muted); border-top: 1px solid var(--border); font-size: 10px; }
