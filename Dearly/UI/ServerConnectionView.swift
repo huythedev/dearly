@@ -21,6 +21,7 @@ struct ServerConnectionView: View {
                 HStack {
                     DearlyBrand()
                     Spacer()
+                    AppearanceMenu()
                     LanguageMenu()
                 }
                 VStack(alignment: .leading, spacing: 12) {
@@ -72,9 +73,9 @@ struct ServerConnectionView: View {
                             Text(store.isAuthenticating ? L("Đang kết nối…") : (registering ? L("Tạo tài khoản") : L("Đăng nhập")))
                                 .font(.subheadline.weight(.semibold))
                             Spacer()
-                            if store.isAuthenticating { ProgressView().tint(.white) }
+                            if store.isAuthenticating { ProgressView().tint(DearlyTheme.onAccent) }
                             else { Image(systemName: "arrow.right") }
-                        }.padding(18).foregroundStyle(.white)
+                        }.padding(18).foregroundStyle(DearlyTheme.onAccent)
                             .background(DearlyTheme.forest, in: RoundedRectangle(cornerRadius: 18))
                     }.buttonStyle(.plain).disabled(!canSubmit).opacity(canSubmit || store.isAuthenticating ? 1 : 0.55)
                         .accessibilityIdentifier("auth.submit")
@@ -86,7 +87,7 @@ struct ServerConnectionView: View {
                     VStack(alignment: .leading, spacing: 12) {
                         TextField("https://dearly.huythedev.com", text: $address)
                             .keyboardType(.URL).textInputAutocapitalization(.never).autocorrectionDisabled()
-                            .padding(14).background(.white.opacity(0.8), in: RoundedRectangle(cornerRadius: 14))
+                            .padding(14).background(DearlyTheme.surface.opacity(0.8), in: RoundedRectangle(cornerRadius: 14))
                         Text(L("Simulator: localhost. iPhone: địa chỉ IP của máy chạy server, cùng Wi-Fi. HTTP chỉ dùng trong bản Debug."))
                             .font(.caption).foregroundStyle(DearlyTheme.muted)
                     }.padding(.top, 12)
@@ -113,7 +114,7 @@ struct ServerConnectionView: View {
         Button { withAnimation(.easeInOut(duration: 0.2)) { registering = register } } label: {
             Text(L(title)).font(.subheadline.weight(.semibold)).frame(maxWidth: .infinity).padding(.vertical, 12)
                 .foregroundStyle(registering == register ? DearlyTheme.forest : DearlyTheme.muted)
-                .background { if registering == register { Capsule().fill(.white).shadow(color: .black.opacity(0.04), radius: 4, y: 2) } }
+                .background { if registering == register { Capsule().fill(DearlyTheme.surface).shadow(color: .black.opacity(0.04), radius: 4, y: 2) } }
         }.buttonStyle(.plain).accessibilityAddTraits(registering == register ? .isSelected : [])
     }
 

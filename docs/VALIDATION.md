@@ -1,4 +1,11 @@
-# Validation — 2026-10-14
+# Validation — roles and appearance, 2026-10-16
+
+- **33 backend pytest tests passed** on Linux/Python 3.12 with the repository's pinned runtime dependencies. This includes the original 21 cases plus authorization, attempted role escalation, moderator review/hiding, live demotion and replay rejection, admin suspension/restoration, CLI bootstrap/last-admin protection, pagination, and v1→v2 migration preserving existing data.
+- The test runner reports one upstream Starlette warning about its httpx TestClient adapter; there were no test failures.
+- Swift grammar, Xcode source/resource references, light/dark asset JSON, and Info.plist checks passed. `staff-responses.json` was exported from actual API responses; an added native XCTest decodes the state role, staff reports/accounts/audit DTOs, including a CLI reviewer ID. The older state fixture verifies absence of staff fields stays compatible.
+- **Not verified for this revision:** native Swift compilation/type checking, Xcode builds/XCTest, Simulator/device rendering, Windows/macOS execution, Docker, or deployment. This environment has no Apple SDK or Simulator. Run the expanded manual checklist and native tests on a Mac.
+
+## Historical validation — 2026-10-14
 
 ## Đã thực hiện
 

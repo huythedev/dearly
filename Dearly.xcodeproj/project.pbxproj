@@ -7,6 +7,9 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		A30000000000000000000001 /* staff-responses.json in Resources */ = {isa = PBXBuildFile; fileRef = A30000000000000000000002; };
+		A20000000000000000000003 /* Dearly/UI/StaffView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000004; };
+		A20000000000000000000001 /* Dearly/Core/StaffModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000002; };
 		A10000000000000000000001 /* Localizable.xcstrings in Resources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000002; };
 		26C293A884F54331436242D3 /* DearlyTests/Fixtures/server-state.json in Resources */ = {isa = PBXBuildFile; fileRef = 51CFF3C1F0BC59F6187E7040 /* DearlyTests/Fixtures/server-state.json */; };
 		716E9590E60B3AFA6E62BF18 /* Dearly/Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 3685E330EC5277A9DD5661C6 /* Dearly/Assets.xcassets */; };
@@ -34,6 +37,9 @@
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXFileReference section */
+		A30000000000000000000002 /* staff-responses.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = "DearlyTests/Fixtures/staff-responses.json"; sourceTree = "<group>"; };
+		A20000000000000000000004 /* Dearly/UI/StaffView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Dearly/UI/StaffView.swift; sourceTree = "<group>"; };
+		A20000000000000000000002 /* Dearly/Core/StaffModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Dearly/Core/StaffModels.swift; sourceTree = "<group>"; };
 		A10000000000000000000002 /* Localizable.xcstrings */ = {isa = PBXFileReference; lastKnownFileType = text.json.xcstrings; path = Dearly/Localizable.xcstrings; sourceTree = "<group>"; };
 		3685E330EC5277A9DD5661C6 /* Dearly/Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Dearly/Assets.xcassets; sourceTree = "<group>"; };
 		4E783A9E10D2A8ABA38CD11C /* Dearly.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Dearly.app; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -95,6 +101,8 @@
 				6431BD92EEBEB86576039E48 /* Dearly/Core/APIClient.swift */,
 				5371C3D7596D92323D5A25CD /* Dearly/Core/DearlyStore.swift */,
 				B0B5C641E1A98A98255B8E27 /* Dearly/Core/Models.swift */,
+				A20000000000000000000004 /* Dearly/UI/StaffView.swift */,
+				A20000000000000000000002 /* Dearly/Core/StaffModels.swift */,
 				D9C1C47BC5E2400A410E6EFF /* Dearly/DearlyApp.swift */,
 				65FA6EEB6267DFC0C178EE59 /* Dearly/UI/CommunityView.swift */,
 				65B098B74366F2918FEEFFF2 /* Dearly/UI/CompanionView.swift */,
@@ -112,6 +120,7 @@
 			children = (
 				62B9683CB5DF1C0497D85909 /* DearlyTests/DearlyCoreTests.swift */,
 				51CFF3C1F0BC59F6187E7040 /* DearlyTests/Fixtures/server-state.json */,
+				A30000000000000000000002 /* staff-responses.json */,
 			);
 			name = DearlyTests;
 			sourceTree = "<group>";
@@ -208,6 +217,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				26C293A884F54331436242D3 /* DearlyTests/Fixtures/server-state.json in Resources */,
+				A30000000000000000000001 /* staff-responses.json in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -229,6 +239,8 @@
 				C5EA4C3E67762C047B68CB72 /* Dearly/Core/APIClient.swift in Sources */,
 				B78570EBEA90BC87BBD86DA8 /* Dearly/Core/DearlyStore.swift in Sources */,
 				D5367D01CC759B17F3DCBCFC /* Dearly/Core/Models.swift in Sources */,
+				A20000000000000000000003 /* Dearly/UI/StaffView.swift in Sources */,
+				A20000000000000000000001 /* Dearly/Core/StaffModels.swift in Sources */,
 				D93DB7C32747E042999F0F7B /* Dearly/DearlyApp.swift in Sources */,
 				A922106C61FD5B4C80398DE5 /* Dearly/UI/CommunityView.swift in Sources */,
 				F3CC81E9E2CD5130A6589DDA /* Dearly/UI/CompanionView.swift in Sources */,

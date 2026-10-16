@@ -15,6 +15,8 @@ The app requires a backend account. It starts at login, restores a saved session
 
 The interface supports **English and Vietnamese**. Use the language menu on the login screen or open your avatar → **Language / Ngôn ngữ** in settings. Your language choice is saved between launches; user-written content is not translated.
 
+**Dark mode:** use the appearance icon on the login screen or your avatar → **Appearance / Giao diện**. Choose **System** (default), **Light**, or **Dark**. The choice is saved between launches and applies to login, journals, community, chat, gardens, settings, and staff screens. The garden uses a moon and darker landscape in dark mode.
+
 ## Run a local backend
 
 No separate database installation, Docker, Redis, or Node.js is required. Run these commands from the repository root.
@@ -71,6 +73,44 @@ See the [backend README](backend/README.md) for database paths, LAN troubleshoot
 - Daily check-ins by both companions, garden pauses, streaks, total days, and saved rewards. Leaving a connection or breaking a streak preserves garden rewards.
 - Gardens drawn in SwiftUI, without downloaded artwork.
 - Foreground synchronization about every 3 seconds, ETag responses, retry backoff, and idempotent mutations. Personal journals and chat support pagination.
+- In-app report moderation and account administration with server-enforced roles and an audit log.
+
+## Roles and administration
+
+New accounts always start as **User**. Staff open their avatar → **Dearly management / Quản lý Dearly**. Access is checked by the backend on every request; changing the client UI or sending a forged role does not grant permissions.
+
+| Function | User | Moderator | Admin |
+|---|:---:|:---:|:---:|
+| Personal journals, community, companions, garden, block/report | ✓ | ✓ | ✓ |
+| Read reports and their reported public excerpts | — | ✓ | ✓ |
+| Mark reports open, reviewed, or dismissed with a note | — | ✓ | ✓ |
+| Withdraw a reported community post | — | ✓ | ✓ |
+| Search accounts; review birth dates and verify age | — | — | ✓ |
+| Suspend/restore users and moderators | — | — | ✓ |
+| Assign/remove moderator access | — | — | ✓ |
+| Read the administration audit log | — | — | ✓ |
+| Grant/revoke admin or modify an admin account | Server CLI only | Server CLI only | Server CLI only |
+
+Create the account through the app first, then grant admin on the **backend host**. Run from `backend` using the same database as the running server:
+
+```bash
+# macOS / Linux
+.venv/bin/python run.py set-role --username YOUR_USERNAME --role admin --reason "Initial administrator"
+```
+
+```powershell
+# Windows PowerShell
+.\.venv\Scripts\python.exe run.py set-role --username YOUR_USERNAME --role admin --reason "Initial administrator"
+```
+
+```bash
+# Docker Compose, from the repository root
+docker compose exec backend python run.py set-role --username YOUR_USERNAME --role admin --reason "Initial administrator"
+```
+
+For a custom database, put `--db /path/to/dearly.sqlite3` **before** `set-role`, or use the same `DEARLY_DB` environment variable as the server. The CLI can also set `--role moderator` or `--role user`. There is no default admin password or public admin-registration endpoint. Changes appear on the next sync; use **Sync now** in settings if needed. The last active admin cannot be demoted or suspended.
+
+Staff access does not allow browsing other people's private journal bodies or chat transcripts. A report about a public post retains only its published excerpt as evidence, including after the author withdraws/deletes that post; authorized staff can identify the reported account. Hiding a post preserves its author's private journal and removes community comments. Account suspension revokes sessions and ends connections while keeping garden rewards; restoring an account requires a fresh login. Staff mutations and CLI administration record the actor and reason in the audit log. See the [backend guide](backend/README.md#roles-and-the-in-app-staff-console) for migration and operational details.
 
 To try the companion flow, create two accounts on separate devices or simulators. An operator must verify each account’s birth date using the [administration CLI](backend/README.md#age-verification-and-administration) before matching becomes available.
 
@@ -80,11 +120,13 @@ To try the companion flow, create two accounts on separate devices or simulators
 |---|---|
 | `Dearly/Core/Models.swift` | Codable models, domain rules, and localization helpers |
 | `Dearly/Core/APIClient.swift` | HTTP requests, session storage, and API DTOs |
+| `Dearly/Core/StaffModels.swift` | Staff roles, reports, account summaries, and audit DTOs |
 | `Dearly/Core/DearlyStore.swift` | Backend authentication, synchronization, mutations, and UI state |
-| `Dearly/UI/` | Login/signup, journal, community, companion, garden, and settings screens |
+| `Dearly/UI/` | Login/signup, journal, community, companion, garden, settings, and staff screens |
+| `Dearly/Assets.xcassets/` | Appearance-aware light/dark colors and app icon |
 | `Dearly/Localizable.xcstrings` | English and Vietnamese interface translations |
 | `backend/server.py` | API, authentication, authorization, and SQLite transactions |
-| `backend/run.py` | Server launcher, age verification, reports, suspension, and backups |
+| `backend/run.py` | Server launcher, role grants, age verification, reports, suspension/restoration, and backups |
 | `backend/tests/` | API, privacy, concurrency, and persistence tests |
 | `DearlyTests/` | Native model, backend contract, signed-out state, and localization tests |
 | `docs/` | API reference, roadmap, manual checks, and historical validation notes |
@@ -93,9 +135,9 @@ Local databases, virtual environments, credentials, Xcode user settings, and bui
 
 ## Validation and limitations
 
-The iOS Simulator Debug build has passed. The simulator stopped responding during the native test run, so native test results and visual verification remain unconfirmed. Run **⌘U** in Xcode and follow the [manual checklist](docs/MANUAL-TESTS.md).
+An earlier iOS Simulator Debug build passed. The current roles/dark-mode changes have passed Swift syntax and Xcode project-reference checks on Linux, but this environment has no Xcode or iOS Simulator, so this revision still needs a native build, **⌘U**, and the [manual checklist](docs/MANUAL-TESTS.md).
 
-The [historical validation notes](docs/VALIDATION.md) record 21 passing backend tests on Linux and a two-account HTTP flow. Local setup and the backend health endpoint were also checked on macOS. Windows execution, Docker, public HTTPS deployment, and App Store/TestFlight distribution have not been verified in this session. No GitHub Actions workflows are currently included in this checkout.
+The backend suite passes **33 tests** on Linux, including role boundaries, migration from an existing database, report moderation, revocation, and CLI admin bootstrap. The [validation notes](docs/VALIDATION.md) include the earlier two-account HTTP flow. Windows/macOS execution of these changes, Docker, public HTTPS deployment, and App Store/TestFlight distribution have not been verified in this session. No GitHub Actions workflows are currently included in this checkout.
 
 This is a small-server pilot. Age verification and moderation require an operator; there is no automatic identity verification, message moderation, or appeals dashboard. See the [roadmap](docs/ROADMAP.md) for remaining work. Dearly is a space for companionship, not a therapy service.
 

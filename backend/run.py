@@ -7,7 +7,8 @@ import sys
 import time
 from pathlib import Path
 
-from server import Database, changed, create_app, validate_birth
+from fastapi import HTTPException
+from server import Database, changed, create_app, identifier, review_report, set_role, set_suspended, verify_age
 
 
 def main():
@@ -22,11 +23,23 @@ def main():
     serve.add_argument('--key',help='TLS private key PEM')
     verify=sub.add_parser('verify-age',help='Mark date of birth reviewed by an operator')
     verify.add_argument('--username',required=True); verify.add_argument('--birth-date',required=True)
+    verify.add_argument('--reason',default='Birth date reviewed by server operator')
     sub.add_parser('reports')
     resolve=sub.add_parser('resolve-report');resolve.add_argument('--id',required=True)
+    resolve.add_argument('--reason',default='Reviewed by server operator')
     suspend=sub.add_parser('suspend');suspend.add_argument('--username',required=True)
+    suspend.add_argument('--reason',default='Suspended by server operator')
+    restore=sub.add_parser('restore',help='Restore a suspended account (requires a new login)')
+    restore.add_argument('--username',required=True);restore.add_argument('--reason',default='Restored by server operator')
+    role=sub.add_parser('set-role',help='Grant or revoke user/moderator/admin access on an existing account')
+    role.add_argument('--username',required=True)
+    role.add_argument('--role',choices=['user','moderator','admin'],required=True)
+    role.add_argument('--reason',required=True,help='Reason recorded in the audit log')
     backup=sub.add_parser('backup');backup.add_argument('--output',required=True)
     args=parser.parse_args()
+    if hasattr(args, 'reason'):
+        args.reason=args.reason.strip()
+        if not 1 <= len(args.reason) <= 1000: parser.error('--reason must contain 1–1000 characters')
     if args.command=='serve':
         if bool(args.cert)!=bool(args.key): parser.error('--cert and --key must be used together')
         import uvicorn
@@ -48,27 +61,24 @@ def main():
             rows=db.execute('SELECT * FROM reports WHERE status=? ORDER BY created LIMIT 100',('open',)).fetchall()
             print(json.dumps([dict(r) for r in rows],ensure_ascii=False,indent=2));return
         if args.command=='resolve-report':
-            cursor=db.execute("UPDATE reports SET status='reviewed' WHERE id=?",(args.id.upper(),))
-            if cursor.rowcount==0: parser.error('Report not found.')
+            review_report(db,identifier(args.id),'reviewed',args.reason,'server-cli',time.time())
         else:
             user=db.execute('SELECT * FROM users WHERE username=?',(args.username.lower(),)).fetchone()
             if user is None: parser.error('User not found.')
             uid=user['id']
             if args.command=='verify-age':
-                birth=validate_birth(args.birth_date,time.time())
-                db.execute('UPDATE users SET birth_date=?,age_verified=1 WHERE id=?',(birth,uid))
-                # End old edges after a correction; a new invitation will re-check the new age.
-                if user['birth_date'] != birth:
-                    db.execute('UPDATE connections SET ended=? WHERE ended IS NULL AND (first_id=? OR second_id=?)',(time.time(),uid,uid))
-                    db.execute('DELETE FROM invitations WHERE sender_id=? OR recipient_id=?',(uid,uid))
-            if args.command=='suspend':
-                db.execute('UPDATE users SET suspended=1 WHERE id=?',(uid,))
-                db.execute('DELETE FROM sessions WHERE user_id=?',(uid,))
-                db.execute('DELETE FROM invitations WHERE sender_id=? OR recipient_id=?',(uid,uid))
-                db.execute('UPDATE connections SET ended=? WHERE ended IS NULL AND (first_id=? OR second_id=?)',(time.time(),uid,uid))
+                verify_age(db,user,args.birth_date,'server-cli',args.reason,time.time())
+            if args.command in ('suspend','restore'):
+                set_suspended(db,user,args.command=='suspend','server-cli',args.reason,time.time())
+            if args.command=='set-role':
+                set_role(db,user,args.role,'server-cli',args.reason,time.time())
         changed(db)
     print('Done.')
 
 
 if __name__=='__main__':
-    main()
+    try:
+        main()
+    except HTTPException as error:
+        print(error.detail,file=sys.stderr)
+        sys.exit(1)

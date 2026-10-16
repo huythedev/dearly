@@ -24,6 +24,15 @@ from pydantic import BaseModel, ConfigDict, Field
 
 SWIFT_EPOCH = 978307200  # Swift JSONEncoder default: seconds since 2001-01-01 UTC.
 SUPPORT = {'Chỉ cần lắng nghe', 'Chia sẻ trải nghiệm', 'Cùng nghĩ cách'}
+ROLE_PERMISSIONS = {
+    'user': frozenset(),
+    'moderator': frozenset({'reports.read', 'reports.review', 'reports.hide'}),
+    'admin': frozenset({'reports.read', 'reports.review', 'reports.hide', 'users.read',
+                        'users.suspend', 'users.verify_age', 'roles.manage', 'audit.read'}),
+}
+STAFF_ACTIONS = {'staff.report.review': 'reports.review', 'staff.report.hide': 'reports.hide',
+                 'staff.user.suspend': 'users.suspend', 'staff.user.verify_age': 'users.verify_age',
+                 'staff.user.role': 'roles.manage'}
 SCHEMA = '''
 CREATE TABLE IF NOT EXISTS meta (id INTEGER PRIMARY KEY CHECK(id=1), revision INTEGER NOT NULL);
 INSERT OR IGNORE INTO meta VALUES(1,0);
@@ -83,7 +92,11 @@ CREATE TABLE IF NOT EXISTS requests (
  user_id TEXT NOT NULL REFERENCES users(id), request_id TEXT NOT NULL, payload_hash TEXT NOT NULL,
  result TEXT NOT NULL, created REAL NOT NULL, PRIMARY KEY(user_id,request_id));
 CREATE INDEX IF NOT EXISTS requests_expiry ON requests(created);
-PRAGMA user_version=1;
+CREATE INDEX IF NOT EXISTS reports_queue ON reports(status,created DESC,id DESC);
+CREATE INDEX IF NOT EXISTS users_created ON users(created DESC,id DESC);
+CREATE TABLE IF NOT EXISTS audit_log (
+ id INTEGER PRIMARY KEY AUTOINCREMENT, actor_id TEXT NOT NULL, action TEXT NOT NULL,
+ target_id TEXT NOT NULL, detail TEXT NOT NULL, created REAL NOT NULL);
 '''
 
 
@@ -154,10 +167,20 @@ class Database:
         # WAL configuration must precede any explicit transaction.
         with sqlite3.connect(str(self.path), timeout=5) as db:
             version = db.execute('PRAGMA user_version').fetchone()[0]
-            if version not in (0, 1):
+            if version not in (0, 1, 2):
                 raise RuntimeError('Unsupported database schema. Back up before upgrading.')
             db.execute('PRAGMA journal_mode=WAL')
             db.executescript(SCHEMA)
+            # Re-read under the write lock: CLI and server may start together.
+            db.execute('BEGIN IMMEDIATE')
+            if db.execute('PRAGMA user_version').fetchone()[0] < 2:
+                db.execute("ALTER TABLE users ADD COLUMN role TEXT NOT NULL DEFAULT 'user' CHECK(role IN ('user','moderator','admin'))")
+                db.execute('ALTER TABLE reports ADD COLUMN journal_id TEXT REFERENCES journals(id) ON DELETE SET NULL')
+                db.execute("ALTER TABLE reports ADD COLUMN evidence TEXT NOT NULL DEFAULT ''")
+                db.execute("ALTER TABLE reports ADD COLUMN review_note TEXT NOT NULL DEFAULT ''")
+                db.execute('ALTER TABLE reports ADD COLUMN reviewer_id TEXT')
+                db.execute('ALTER TABLE reports ADD COLUMN reviewed_at REAL')
+                db.execute('PRAGMA user_version=2')
         db.close()
 
     @contextmanager
@@ -325,7 +348,8 @@ def snapshot(db, user, now, limit=60):
     blockrows=db.execute(f'SELECT * FROM blocks WHERE (blocker_id=? OR blocked_id=?) AND blocker_id IN ({marks}) AND blocked_id IN ({marks})',(uid,uid,*profile_ids,*profile_ids)).fetchall()
     return dict(schemaVersion=1,profiles=profiles,currentUserID=uid,journals=journal_data,comments=comments,invitations=invitations,
                 connections=[connection_dto(db,r,now) for r in connections],messages=[message_dto(r) for r in reversed(messages)],
-                blocks=[dict(blockerID=r['blocker_id'],blockedID=r['blocked_id']) for r in blockrows],reports=[],demoDayOffset=0,suggestedUserIDs=suggestion_ids)
+                blocks=[dict(blockerID=r['blocker_id'],blockedID=r['blocked_id']) for r in blockrows],reports=[],demoDayOffset=0,suggestedUserIDs=suggestion_ids,
+                currentUserRole=user['role'],permissions=sorted(ROLE_PERMISSIONS.get(user['role'],())))
 
 
 class Credentials(BaseModel):
@@ -386,8 +410,134 @@ class BodyLimit:
         await self.app(scope,bounded_receive,send)
 
 
+def require_permission(user, permission):
+    if permission not in ROLE_PERMISSIONS.get(user['role'], ()):
+        fail('Bạn không có quyền thực hiện thao tác này.', 403)
+
+
+def audit(db, actor, action, target, detail, now):
+    db.execute('INSERT INTO audit_log(actor_id,action,target_id,detail,created) VALUES(?,?,?,?,?)',
+               (actor, action, target, json.dumps(detail, ensure_ascii=False), now))
+
+
+def protect_last_admin(db, user):
+    if user['role'] == 'admin' and not user['suspended']:
+        count = db.execute("SELECT count(*) FROM users WHERE role='admin' AND suspended=0").fetchone()[0]
+        if count <= 1:
+            fail('Không thể gỡ hoặc khóa quản trị viên cuối cùng.', 409)
+
+
+def set_role(db, user, role, actor, reason, now):
+    if role not in ROLE_PERMISSIONS:
+        fail('Vai trò không hợp lệ.')
+    if user['role'] == role:
+        return
+    if role != 'admin':
+        protect_last_admin(db, user)
+    db.execute('UPDATE users SET role=? WHERE id=?', (role, user['id']))
+    audit(db, actor, 'user.role', user['id'], {'from': user['role'], 'to': role, 'reason': reason}, now)
+
+
+def set_suspended(db, user, suspended, actor, reason, now):
+    if bool(user['suspended']) == suspended:
+        return
+    uid = user['id']
+    if suspended:
+        protect_last_admin(db, user)
+    db.execute('UPDATE users SET suspended=? WHERE id=?', (int(suspended), uid))
+    if suspended:
+        db.execute('DELETE FROM sessions WHERE user_id=?', (uid,))
+        db.execute('DELETE FROM invitations WHERE sender_id=? OR recipient_id=?', (uid, uid))
+        db.execute('UPDATE connections SET ended=? WHERE ended IS NULL AND (first_id=? OR second_id=?)', (now, uid, uid))
+    audit(db, actor, 'user.suspend' if suspended else 'user.restore', uid, {'reason': reason}, now)
+
+
+def verify_age(db, user, birth, actor, reason, now):
+    birth = validate_birth(birth, now)
+    uid = user['id']
+    db.execute('UPDATE users SET birth_date=?,age_verified=1 WHERE id=?', (birth, uid))
+    if user['birth_date'] != birth:
+        db.execute('UPDATE connections SET ended=? WHERE ended IS NULL AND (first_id=? OR second_id=?)', (now, uid, uid))
+        db.execute('DELETE FROM invitations WHERE sender_id=? OR recipient_id=?', (uid, uid))
+    # Birth dates and credentials never enter the audit detail.
+    audit(db, actor, 'user.verify_age', uid, {'birthDateCorrected': user['birth_date'] != birth, 'reason': reason}, now)
+
+
+def review_report(db, rid, status, note, actor, now):
+    if status not in ('open', 'reviewed', 'dismissed'):
+        fail('Trạng thái báo cáo không hợp lệ.')
+    if not db.execute('SELECT 1 FROM reports WHERE id=?', (rid,)).fetchone():
+        fail('Không tìm thấy báo cáo.', 404)
+    db.execute('UPDATE reports SET status=?,review_note=?,reviewer_id=?,reviewed_at=? WHERE id=?',
+               (status, note, actor, now, rid))
+    audit(db, actor, 'report.review', rid, {'status': status, 'note': note}, now)
+
+
+def apply_staff_action(db, user, kind, p, now):
+    permission = STAFF_ACTIONS.get(kind)
+    if permission is None:
+        fail('Thao tác quản trị không hợp lệ.')
+    require_permission(user, permission)
+    allowed = {
+        'staff.report.review': {'id', 'status', 'reason'},
+        'staff.report.hide': {'id', 'reason'},
+        'staff.user.suspend': {'userID', 'suspended', 'reason'},
+        'staff.user.verify_age': {'userID', 'birthDate', 'reason'},
+        'staff.user.role': {'userID', 'role', 'reason'},
+    }[kind]
+    if set(p) - allowed:
+        fail('Trường quản trị không hợp lệ.')
+    reason = text_field(p, 'reason', 1000)
+    if kind == 'staff.report.review':
+        review_report(db, identifier(p.get('id')), p.get('status'), reason, user['id'], now)
+    elif kind == 'staff.report.hide':
+        rid = identifier(p.get('id'))
+        row = db.execute('''SELECT j.* FROM reports r JOIN journals j ON j.id=r.journal_id
+                            WHERE r.id=? AND j.author_id=r.reported_id AND j.audience='community' ''', (rid,)).fetchone()
+        if row is None:
+            fail('Bài cộng đồng đã bị xóa hoặc không còn công khai.', 409)
+        # The owner's private body survives. Only the reported public post is withdrawn.
+        db.execute("UPDATE journals SET audience='privateOnly',shared_text='',connection_id=NULL WHERE id=?", (row['id'],))
+        db.execute('DELETE FROM comments WHERE journal_id=?', (row['id'],))
+        db.execute('DELETE FROM listening WHERE journal_id=?', (row['id'],))
+        review_report(db, rid, 'reviewed', reason, user['id'], now)
+        audit(db, user['id'], 'report.hide', rid, {'journalID': row['id'], 'reason': reason}, now)
+    else:
+        target = db.execute('SELECT * FROM users WHERE id=?', (identifier(p.get('userID')),)).fetchone()
+        if target is None:
+            fail('Không tìm thấy tài khoản.', 404)
+        if target['id'] == user['id'] or target['role'] == 'admin':
+            fail('Thay đổi tài khoản quản trị viên bằng lệnh trên server.', 403)
+        if kind == 'staff.user.role':
+            if p.get('role') not in ('user', 'moderator'):
+                fail('Chỉ lệnh trên server được cấp quyền admin.', 403)
+            set_role(db, target, p['role'], user['id'], reason, now)
+        elif kind == 'staff.user.suspend':
+            if 'suspended' not in p:
+                fail('Thiếu trường suspended.')
+            set_suspended(db, target, bool_field(p, 'suspended'), user['id'], reason, now)
+        else:
+            verify_age(db, target, text_field(p, 'birthDate', 10), user['id'], reason, now)
+    return {}
+
+
+def staff_report_dto(db, row):
+    journal = db.execute("SELECT 1 FROM journals WHERE id=? AND author_id=? AND audience='community'",
+                         (row['journal_id'], row['reported_id'])).fetchone()
+    names = {r['id']: r['nickname'] for r in db.execute('SELECT id,nickname FROM users WHERE id IN (?,?)',
+                                                       (row['reporter_id'], row['reported_id']))}
+    return dict(id=row['id'], reporterID=row['reporter_id'], reportedID=row['reported_id'],
+                reporterNickname=names[row['reporter_id']], reportedNickname=names[row['reported_id']],
+                reason=row['reason'], status=row['status'], date=row['created']-SWIFT_EPOCH,
+                journalID=row['journal_id'], evidence=row['evidence'], canHide=bool(journal),
+                reviewNote=row['review_note'], reviewerID=row['reviewer_id'],
+                reviewedAt=row['reviewed_at']-SWIFT_EPOCH if row['reviewed_at'] is not None else None)
+
+
 def apply_action(db,user,kind,p,now):
     uid=user['id']
+    if kind.startswith('staff.'):
+        return apply_staff_action(db, user, kind, p, now)
     if kind=='journal.save':
         jid=identifier(p.get('id')) if p.get('id') else new_id()
         old=db.execute('SELECT * FROM journals WHERE id=?',(jid,)).fetchone()
@@ -469,15 +619,21 @@ def apply_action(db,user,kind,p,now):
                 db.execute('UPDATE connections SET total_days=total_days+1,streak=?,best_streak=max(best_streak,?),last_complete_day=? WHERE id=?',(streak,streak,key,cid))
         return {}
     if kind in ('user.block','report.create'):
+        source = None
         if p.get('journalID'):
-            target=get_journal(db,p['journalID'],uid)['author_id']
+            source=get_journal(db,p['journalID'],uid)
+            target=source['author_id']
         else: target=identifier(p.get('userID'))
         if target==uid or db.execute('SELECT 1 FROM users WHERE id=?',(target,)).fetchone() is None: fail('Người dùng không hợp lệ.')
         if kind=='user.block':
             db.execute('INSERT OR IGNORE INTO blocks VALUES(?,?)',(uid,target))
             db.execute('DELETE FROM invitations WHERE (sender_id=? AND recipient_id=?) OR (sender_id=? AND recipient_id=?)',(uid,target,target,uid))
             db.execute('UPDATE connections SET ended=? WHERE ended IS NULL AND ((first_id=? AND second_id=?) OR (first_id=? AND second_id=?))',(now,uid,target,target,uid))
-        else: db.execute('INSERT INTO reports(id,reporter_id,reported_id,reason,created) VALUES(?,?,?,?,?)',(new_id(),uid,target,text_field(p,'reason',1000),now))
+        else:
+            # Preserve only the excerpt explicitly published to the community, never a private body/chat.
+            public = source is not None and source['audience'] == 'community'
+            db.execute('INSERT INTO reports(id,reporter_id,reported_id,reason,created,journal_id,evidence) VALUES(?,?,?,?,?,?,?)',
+                       (new_id(),uid,target,text_field(p,'reason',1000),now,source['id'] if public else None,source['shared_text'] if public else ''))
         return {}
     if kind=='profile.update':
         nickname=text_field(p,'nickname',40); bio=text_field(p,'bio',500,default='',empty=True)
@@ -496,7 +652,7 @@ def create_app(path: str | Path = 'data/dearly.sqlite3', *, clock: Callable[[],f
     async def lifespan(app):
         anyio.to_thread.current_default_thread_limiter().total_tokens=16
         yield
-    app=FastAPI(title='Dearly API',version='0.2.0',docs_url='/docs',redoc_url=None,lifespan=lifespan)
+    app=FastAPI(title='Dearly API',version='0.3.0',docs_url='/docs',redoc_url=None,lifespan=lifespan)
     app.state.database=database
     app.add_middleware(BodyLimit)
 
@@ -530,7 +686,7 @@ def create_app(path: str | Path = 'data/dearly.sqlite3', *, clock: Callable[[],f
         return dict(token=token,userID=uid,expiresAt=expires-SWIFT_EPOCH)
 
     @app.get('/health')
-    def health(): return {'status':'ok','version':'0.2.0','dayBoundary':'UTC'}
+    def health(): return {'status':'ok','version':'0.3.0','dayBoundary':'UTC'}
 
     @app.post('/v1/auth/register',status_code=201)
     def register(data: Registration,request: Request):
@@ -587,6 +743,9 @@ def create_app(path: str | Path = 'data/dearly.sqlite3', *, clock: Callable[[],f
         with database.connect(write=True) as db:
             user=authenticate(db,authorization);uid=user['id'];now=clock()
             limiter.check('write:'+uid,40,1)
+            # Re-check permissions even on an idempotent retry after demotion.
+            if data.kind.startswith('staff.'):
+                require_permission(user, STAFF_ACTIONS.get(data.kind, 'unknown'))
             previous=db.execute('SELECT * FROM requests WHERE user_id=? AND request_id=?',(uid,rid)).fetchone()
             if previous:
                 if previous['payload_hash']!=fingerprint: fail('ID yêu cầu đã dùng cho nội dung khác.',409)
@@ -595,6 +754,62 @@ def create_app(path: str | Path = 'data/dearly.sqlite3', *, clock: Callable[[],f
             db.execute('INSERT INTO requests VALUES(?,?,?,?,?)',(uid,rid,fingerprint,json.dumps(result),now))
             db.execute('DELETE FROM requests WHERE created<?',(now-7*86400,))
             changed(db);return result
+
+    staff_headers = {'Cache-Control': 'no-store', 'Vary': 'Authorization'}
+
+    @app.get('/v1/staff/reports')
+    def staff_reports(status: str='open', before: str | None=None, limit: int=30,
+                      authorization: str | None=Header(default=None)):
+        if status not in ('open', 'reviewed', 'dismissed') or not 1 <= limit <= 50:
+            fail('Bộ lọc báo cáo không hợp lệ.')
+        with database.connect() as db:
+            user = authenticate(db, authorization)
+            require_permission(user, 'reports.read')
+            limiter.check('read:'+user['id'], 60, 1)
+            where = 'status=?'; args = [status]
+            if before:
+                cursor = db.execute('SELECT created,id FROM reports WHERE id=? AND status=?', (identifier(before), status)).fetchone()
+                if cursor is None: fail('Cursor không hợp lệ.')
+                where += ' AND (created,id)<(?,?)'; args.extend([cursor['created'], cursor['id']])
+            rows = db.execute(f'SELECT * FROM reports WHERE {where} ORDER BY created DESC,id DESC LIMIT ?', (*args, limit+1)).fetchall()
+            page = rows[:limit]
+            return JSONResponse(dict(items=[staff_report_dto(db, r) for r in page],
+                                     nextCursor=page[-1]['id'] if len(rows)>limit else None), headers=staff_headers)
+
+    @app.get('/v1/staff/users')
+    def staff_users(q: str='', before: str | None=None, limit: int=30,
+                    authorization: str | None=Header(default=None)):
+        if not 1 <= limit <= 50 or len(q)>80: fail('Bộ lọc tài khoản không hợp lệ.')
+        with database.connect() as db:
+            user = authenticate(db, authorization)
+            require_permission(user, 'users.read')
+            limiter.check('read:'+user['id'], 60, 1)
+            query = q.strip().replace('\\', '\\\\').replace('%', '\\%').replace('_', '\\_') + '%'
+            where = "(username LIKE ? ESCAPE '\\' OR nickname LIKE ? ESCAPE '\\')"; args = [query, query]
+            if before:
+                cursor = db.execute('SELECT created,id FROM users WHERE id=?', (identifier(before),)).fetchone()
+                if cursor is None: fail('Cursor không hợp lệ.')
+                where += ' AND (created,id)<(?,?)'; args.extend([cursor['created'], cursor['id']])
+            rows = db.execute(f'''SELECT id,username,nickname,role,suspended,age_verified,birth_date,created
+                                 FROM users WHERE {where} ORDER BY created DESC,id DESC LIMIT ?''', (*args, limit+1)).fetchall()
+            page = rows[:limit]
+            items = [dict(id=r['id'], username=r['username'], nickname=r['nickname'], role=r['role'],
+                          suspended=bool(r['suspended']), ageVerified=bool(r['age_verified']), birthDate=r['birth_date']) for r in page]
+            return JSONResponse(dict(items=items, nextCursor=page[-1]['id'] if len(rows)>limit else None), headers=staff_headers)
+
+    @app.get('/v1/staff/audit')
+    def staff_audit(before: int | None=None, limit: int=30, authorization: str | None=Header(default=None)):
+        if not 1 <= limit <= 50 or (before is not None and before < 1): fail('Cursor không hợp lệ.')
+        with database.connect() as db:
+            user = authenticate(db, authorization)
+            require_permission(user, 'audit.read')
+            limiter.check('read:'+user['id'], 60, 1)
+            rows = db.execute('''SELECT a.*,u.nickname AS actor_name FROM audit_log a LEFT JOIN users u ON u.id=a.actor_id
+                                 WHERE (? IS NULL OR a.id<?) ORDER BY a.id DESC LIMIT ?''', (before, before, limit+1)).fetchall()
+            page = rows[:limit]
+            items = [dict(id=r['id'], actorID=r['actor_id'], actorName=r['actor_name'] or 'Server CLI', action=r['action'],
+                          targetID=r['target_id'], detail=json.loads(r['detail']), date=r['created']-SWIFT_EPOCH) for r in page]
+            return JSONResponse(dict(items=items, nextCursor=page[-1]['id'] if len(rows)>limit else None), headers=staff_headers)
 
     @app.get('/v1/journals')
     def own_journals(before: str | None=None,limit: int=40,authorization: str | None=Header(default=None)):

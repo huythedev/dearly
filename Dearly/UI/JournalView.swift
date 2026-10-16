@@ -12,7 +12,7 @@ struct JournalView: View {
             VStack(alignment: .leading, spacing: 26) {
                 PageHeading(eyebrow: L("Một khoảng cho riêng bạn"), title: L("Hôm nay, bạn thế nào?"), subtitle: L("Không cần viết thật hay. Chỉ cần là bạn."))
                 VStack(alignment: .leading, spacing: 18) {
-                    HStack { Tag(text: L("GỢI Ý HÔM NAY"), icon: "sparkle", color: .white.opacity(0.55)); Spacer(); Image(systemName: "sun.max").font(.title2) }
+                    HStack { Tag(text: L("GỢI Ý HÔM NAY"), icon: "sparkle", color: DearlyTheme.surface.opacity(0.55)); Spacer(); Image(systemName: "sun.max").font(.title2) }
                     Text(L("Có điều gì bạn muốn nói,\nnhưng vẫn chưa nói được?"))
                         .font(.system(size: 25, design: .serif)).lineSpacing(5)
                     Button { composing = true } label: {

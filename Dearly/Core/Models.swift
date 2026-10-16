@@ -156,6 +156,9 @@ struct AppState: Codable {
     var reports: [LocalReport] = []
     var demoDayOffset = 0
     var suggestedUserIDs: [UUID]?
+    // Optional so an older server/fixture remains readable with no staff privileges.
+    var currentUserRole: String?
+    var permissions: [String]?
 
     static func signedOut() -> AppState {
         AppState(profiles: [], currentUserID: UUID(), journals: [])

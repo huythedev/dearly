@@ -37,7 +37,7 @@ struct GardenView: View {
             VStack(spacing: 0) {
                 ZStack(alignment: .topLeading) {
                     GardenIllustration(stage: connection.growth).frame(height: 280)
-                    Tag(text: connection.paused ? L("ĐANG NGHỈ") : "\(store.me.nickname) & \(otherName(connection))", icon: "leaf", color: .white.opacity(0.85)).padding(17)
+                    Tag(text: connection.paused ? L("ĐANG NGHỈ") : "\(store.me.nickname) & \(otherName(connection))", icon: "leaf", color: DearlyTheme.surface.opacity(0.85)).padding(17)
                 }.clipShape(RoundedRectangle(cornerRadius: 27))
                 HStack {
                     metric("\(connection.streak(on: store.now, calendar: store.calendar))", label: L("ngày liên tiếp"))
@@ -108,6 +108,8 @@ struct GardenView: View {
 /// Resolution-independent illustration; all growth states are drawn locally, no assets or network.
 @MainActor
 struct GardenIllustration: View {
+    @Environment(\.colorScheme) private var colorScheme
+    private var night: Bool { colorScheme == .dark }
     @AppStorage("dearly.language") private var language = "vi"
     var stage: Int
     var body: some View {
@@ -122,18 +124,24 @@ struct GardenIllustration: View {
                 var path = Path(); path.addLines(points)
                 context.stroke(path, with: .color(color), style: StrokeStyle(lineWidth: width, lineCap: .round, lineJoin: .round))
             }
-            // A soft sun, distant hills, and an oval island of earth.
-            ellipse(267, 43, 38, 38, Color(red: 0.97, green: 0.84, blue: 0.60))
-            ellipse(32, 83, 38, 13, .white.opacity(0.65))
-            ellipse(48, 73, 32, 23, .white.opacity(0.65))
-            ellipse(65, 84, 24, 12, .white.opacity(0.65))
-            ellipse(245, 119, 44, 12, .white.opacity(0.5))
-            ellipse(-50, 177, 290, 160, Color(red: 0.81, green: 0.87, blue: 0.75))
-            ellipse(160, 161, 270, 180, Color(red: 0.76, green: 0.84, blue: 0.70))
+            // A sun or moon above the garden, following the selected appearance.
+            ellipse(267, 43, 38, 38, night ? Color(red: 0.84, green: 0.89, blue: 0.74) : Color(red: 0.97, green: 0.84, blue: 0.60))
+            if night {
+                ellipse(280, 38, 29, 29, Color(red: 0.10, green: 0.17, blue: 0.17))
+                for point in [CGPoint(x: 52, y: 45), CGPoint(x: 132, y: 34), CGPoint(x: 220, y: 80)] {
+                    ellipse(point.x, point.y, 3, 3, .white.opacity(0.7))
+                }
+            }
+            ellipse(32, 83, 38, 13, .white.opacity(night ? 0.10 : 0.65))
+            ellipse(48, 73, 32, 23, .white.opacity(night ? 0.10 : 0.65))
+            ellipse(65, 84, 24, 12, .white.opacity(night ? 0.10 : 0.65))
+            ellipse(245, 119, 44, 12, .white.opacity(night ? 0.08 : 0.5))
+            ellipse(-50, 177, 290, 160, (night ? Color(red: 0.15, green: 0.26, blue: 0.21) : Color(red: 0.81, green: 0.87, blue: 0.75)))
+            ellipse(160, 161, 270, 180, (night ? Color(red: 0.19, green: 0.31, blue: 0.24) : Color(red: 0.76, green: 0.84, blue: 0.70)))
             ellipse(52, 216, 265, 45, .black.opacity(0.05))
             ellipse(47, 182, 268, 62, Color(red: 0.69, green: 0.52, blue: 0.37))
-            ellipse(47, 172, 268, 61, Color(red: 0.84, green: 0.71, blue: 0.52))
-            ellipse(55, 167, 252, 56, Color(red: 0.59, green: 0.71, blue: 0.46))
+            ellipse(47, 172, 268, 61, (night ? Color(red: 0.43, green: 0.36, blue: 0.25) : Color(red: 0.84, green: 0.71, blue: 0.52)))
+            ellipse(55, 167, 252, 56, (night ? Color(red: 0.32, green: 0.47, blue: 0.30) : Color(red: 0.59, green: 0.71, blue: 0.46)))
             for i in 0..<12 {
                 let x = Double(75 + i * 18)
                 let y = Double(193 + (i % 3) * 6)
@@ -198,7 +206,7 @@ struct GardenIllustration: View {
                 ellipse(point.x, point.y, 3, 3, .white.opacity(0.9))
             }
         }
-        .background(LinearGradient(colors: [Color(red: 0.92, green: 0.94, blue: 0.85), Color(red: 0.86, green: 0.91, blue: 0.78)], startPoint: .top, endPoint: .bottom))
+        .background(LinearGradient(colors: night ? [Color(red: 0.08, green: 0.14, blue: 0.16), Color(red: 0.14, green: 0.24, blue: 0.20)] : [Color(red: 0.92, green: 0.94, blue: 0.85), Color(red: 0.86, green: 0.91, blue: 0.78)], startPoint: .top, endPoint: .bottom))
         .accessibilityLabel([L("Mảnh đất chờ gieo hạt"), L("Hạt giống đầu tiên"), L("Mầm cây xanh"), L("Hoa đầu mùa"), L("Vườn hoa có đèn"), L("Khu vườn mở rộng")][min(max(stage, 0), 5)])
     }
 }

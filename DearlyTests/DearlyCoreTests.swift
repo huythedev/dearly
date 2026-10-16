@@ -229,6 +229,8 @@ final class DearlyCoreTests: XCTestCase {
         let url = try XCTUnwrap(Bundle(for: DearlyCoreTests.self).url(forResource: "server-state", withExtension: "json"))
         let envelope = try JSONDecoder().decode(StateEnvelope.self, from: Data(contentsOf: url))
         let state = envelope.state
+        XCTAssertNil(state.currentUserRole) // Legacy server: no inferred staff access.
+        XCTAssertNil(state.permissions)
         XCTAssertNotNil(state.profile(state.currentUserID))
         let journal = try XCTUnwrap(state.feed.first)
         XCTAssertEqual(journal.sharedText, "Public fixture.")
@@ -239,6 +241,28 @@ final class DearlyCoreTests: XCTestCase {
         XCTAssertEqual(state.connections.first?.serverCurrentStreak, 1)
         XCTAssertEqual(state.messages.first?.text, "Hello fixture")
         XCTAssertEqual(envelope.serverNow.timeIntervalSince1970, 1791892800, accuracy: 1)
+    }
+
+    func testStaffAPIResponsesDecodeWithoutPrivateContent() throws {
+        struct Fixture: Decodable {
+            var envelope: StateEnvelope
+            var reports: StaffPage<StaffReport>
+            var users: StaffPage<StaffUser>
+            var audit: AuditPage
+        }
+        let url = try XCTUnwrap(Bundle(for: DearlyCoreTests.self).url(forResource: "staff-responses", withExtension: "json"))
+        let fixture = try JSONDecoder().decode(Fixture.self, from: Data(contentsOf: url))
+        XCTAssertEqual(fixture.envelope.state.currentUserRole, "admin")
+        XCTAssertTrue(fixture.envelope.state.permissions?.contains("roles.manage") == true)
+        let report = try XCTUnwrap(fixture.reports.items.first)
+        XCTAssertEqual(report.status, "reviewed")
+        XCTAssertEqual(report.reviewerID, "server-cli")
+        XCTAssertEqual(report.evidence, "Published fixture.")
+        XCTAssertEqual(report.reviewedAt?.timeIntervalSince1970, 1791892800)
+        XCTAssertTrue(report.canHide)
+        XCTAssertTrue(fixture.users.items.contains { $0.role == .admin })
+        XCTAssertTrue(fixture.audit.items.contains { $0.action == "user.role" && $0.detail.to == "admin" })
+        XCTAssertTrue(fixture.envelope.state.journals.allSatisfy { $0.body.isEmpty })
     }
 
 }

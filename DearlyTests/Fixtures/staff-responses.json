@@ -1,0 +1,155 @@
+{
+  "envelope": {
+    "state": {
+      "schemaVersion": 1,
+      "profiles": [
+        {
+          "id": "4A39B5C9-9E70-418A-A297-B4F42F478141",
+          "nickname": "staff_fixture",
+          "age": 26,
+          "ageVerified": false,
+          "symbol": "leaf.fill",
+          "bio": "",
+          "interests": [
+            "Âm nhạc",
+            "Đọc sách"
+          ],
+          "support": "Chỉ cần lắng nghe",
+          "pace": "Buổi tối"
+        },
+        {
+          "id": "AD74AD03-9658-49DA-A76A-82F26DC61D50",
+          "nickname": "Một người bạn",
+          "age": 0,
+          "ageVerified": false,
+          "symbol": "sparkles",
+          "bio": "",
+          "interests": [],
+          "support": "Chỉ cần lắng nghe",
+          "pace": ""
+        }
+      ],
+      "currentUserID": "4A39B5C9-9E70-418A-A297-B4F42F478141",
+      "journals": [
+        {
+          "id": "AD74AD03-9658-49DA-A76A-82F26DC61D50",
+          "authorID": "AD74AD03-9658-49DA-A76A-82F26DC61D50",
+          "title": "",
+          "body": "",
+          "sharedText": "Published fixture.",
+          "audience": "community",
+          "connectionID": null,
+          "anonymous": true,
+          "commentsEnabled": true,
+          "support": "Chỉ cần lắng nghe",
+          "date": 813585600.0,
+          "listeners": [],
+          "canInviteAuthor": false
+        }
+      ],
+      "comments": [],
+      "invitations": [],
+      "connections": [],
+      "messages": [],
+      "blocks": [],
+      "reports": [],
+      "demoDayOffset": 0,
+      "suggestedUserIDs": [],
+      "currentUserRole": "admin",
+      "permissions": [
+        "audit.read",
+        "reports.hide",
+        "reports.read",
+        "reports.review",
+        "roles.manage",
+        "users.read",
+        "users.suspend",
+        "users.verify_age"
+      ]
+    },
+    "serverNow": 813585600
+  },
+  "reports": {
+    "items": [
+      {
+        "id": "52717441-4CA5-4100-A0E5-D6F31391BFA9",
+        "reporterID": "39348F66-322B-4F16-A6E7-46531365725F",
+        "reportedID": "564BAB6E-61C2-490C-B33B-73913BE4EC00",
+        "reporterNickname": "reporter_fixture",
+        "reportedNickname": "author_fixture",
+        "reason": "Fixture report",
+        "status": "reviewed",
+        "date": 813585600.0,
+        "journalID": "AD74AD03-9658-49DA-A76A-82F26DC61D50",
+        "evidence": "Published fixture.",
+        "canHide": true,
+        "reviewNote": "Fixture reviewed",
+        "reviewerID": "server-cli",
+        "reviewedAt": 813585600.0
+      }
+    ],
+    "nextCursor": null
+  },
+  "users": {
+    "items": [
+      {
+        "id": "564BAB6E-61C2-490C-B33B-73913BE4EC00",
+        "username": "author_fixture",
+        "nickname": "author_fixture",
+        "role": "user",
+        "suspended": false,
+        "ageVerified": false,
+        "birthDate": "2000-01-01"
+      },
+      {
+        "id": "4A39B5C9-9E70-418A-A297-B4F42F478141",
+        "username": "staff_fixture",
+        "nickname": "staff_fixture",
+        "role": "admin",
+        "suspended": false,
+        "ageVerified": false,
+        "birthDate": "2000-01-01"
+      },
+      {
+        "id": "39348F66-322B-4F16-A6E7-46531365725F",
+        "username": "reporter_fixture",
+        "nickname": "reporter_fixture",
+        "role": "user",
+        "suspended": false,
+        "ageVerified": false,
+        "birthDate": "2000-01-01"
+      }
+    ],
+    "nextCursor": null
+  },
+  "audit": {
+    "items": [
+      {
+        "id": 2,
+        "actorID": "server-cli",
+        "actorName": "Server CLI",
+        "action": "report.review",
+        "targetID": "52717441-4CA5-4100-A0E5-D6F31391BFA9",
+        "detail": {
+          "status": "reviewed",
+          "note": "Fixture reviewed"
+        },
+        "date": 813585600.0
+      },
+      {
+        "id": 1,
+        "actorID": "server-cli",
+        "actorName": "Server CLI",
+        "action": "user.role",
+        "targetID": "4A39B5C9-9E70-418A-A297-B4F42F478141",
+        "detail": {
+          "from": "user",
+          "to": "admin",
+          "reason": "Fixture administrator"
+        },
+        "date": 813585600.0
+      }
+    ],
+    "nextCursor": null
+  }
+}

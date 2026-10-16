@@ -22,7 +22,7 @@ struct CompanionView: View {
                         Tag(text: L("\(connection.totalDays) ngày cùng ở đây", "\(connection.totalDays) days here together"), icon: "leaf")
                         NavigationLink { ChatView(connectionID: connection.id) } label: {
                             HStack { Text(L("Ghé trò chuyện")); Spacer(); Image(systemName: "arrow.right") }
-                                .font(.subheadline.weight(.semibold)).padding(18).foregroundStyle(.white)
+                                .font(.subheadline.weight(.semibold)).padding(18).foregroundStyle(DearlyTheme.onAccent)
                                 .background(DearlyTheme.forest, in: RoundedRectangle(cornerRadius: 17))
                         }.accessibilityIdentifier("companion.chat")
                     }.padding(23).dearlyCard()
@@ -64,7 +64,7 @@ struct CompanionView: View {
                         Spacer()
                         Button(L("Đồng ý kết nối")) {
                             Task { await store.accept(invitation.id) }
-                        }.buttonStyle(.borderedProminent).accessibilityIdentifier("companion.accept")
+                        }.buttonStyle(.borderedProminent).foregroundStyle(DearlyTheme.onAccent).accessibilityIdentifier("companion.accept")
                     }
                 }.padding(20).dearlyCard()
             }
@@ -176,10 +176,10 @@ struct ChatView: View {
                     }.font(.caption).foregroundStyle(DearlyTheme.muted)
                     HStack(alignment: .bottom, spacing: 10) {
                         TextField(L("Nhắn một lời…"), text: $text, axis: .vertical).lineLimit(1...5)
-                            .padding(13).background(.white, in: RoundedRectangle(cornerRadius: 21))
+                            .padding(13).background(DearlyTheme.surface, in: RoundedRectangle(cornerRadius: 21))
                             .accessibilityIdentifier("chat.message")
                         Button { Task { await send() } } label: {
-                            Image(systemName: "arrow.up").font(.headline).foregroundStyle(.white).frame(width: 46, height: 46)
+                            Image(systemName: "arrow.up").font(.headline).foregroundStyle(DearlyTheme.onAccent).frame(width: 46, height: 46)
                                 .background(DearlyTheme.forest, in: Circle())
                         }.disabled(text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
                             .accessibilityLabel(L("Gửi tin nhắn")).accessibilityIdentifier("chat.send")
@@ -215,8 +215,8 @@ struct ChatView: View {
             VStack(alignment: .leading, spacing: 6) {
                 Text(message.text).font(.subheadline).lineSpacing(3)
                 Text(message.date.formatted(Date.FormatStyle(date: .omitted, time: .shortened).locale(Locale(identifier: language)))).font(.system(size: 10)).opacity(0.6)
-            }.padding(15).foregroundStyle(mine ? .white : DearlyTheme.ink)
-                .background(mine ? DearlyTheme.forest : .white, in: RoundedRectangle(cornerRadius: 20))
+            }.padding(15).foregroundStyle(mine ? DearlyTheme.onAccent : DearlyTheme.ink)
+                .background(mine ? DearlyTheme.forest : DearlyTheme.surface, in: RoundedRectangle(cornerRadius: 20))
             if !mine { Spacer(minLength: 44) }
         }
     }

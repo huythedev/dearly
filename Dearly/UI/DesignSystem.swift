@@ -1,13 +1,15 @@
 import SwiftUI
 
 enum DearlyTheme {
-    static let cream = Color(red: 0.975, green: 0.966, blue: 0.943)
-    static let forest = Color(red: 0.24, green: 0.36, blue: 0.29)
-    static let ink = Color(red: 0.20, green: 0.25, blue: 0.22)
-    static let muted = Color(red: 0.43, green: 0.47, blue: 0.43)
-    static let sage = Color(red: 0.88, green: 0.92, blue: 0.84)
-    static let peach = Color(red: 0.96, green: 0.87, blue: 0.81)
-    static let border = Color(red: 0.88, green: 0.88, blue: 0.83)
+    static let cream = Color("Background")
+    static let forest = Color("Forest")
+    static let ink = Color("Ink")
+    static let muted = Color("Muted")
+    static let sage = Color("Sage")
+    static let peach = Color("Peach")
+    static let border = Color("Border")
+    static let surface = Color("Surface")
+    static let onAccent = Color("OnAccent")
 }
 
 @MainActor
@@ -24,7 +26,7 @@ struct PrimaryButton: View {
                 Image(systemName: icon)
             }
             .padding(.horizontal, 20).padding(.vertical, 17)
-            .foregroundStyle(.white).background(DearlyTheme.forest, in: RoundedRectangle(cornerRadius: 18))
+            .foregroundStyle(DearlyTheme.onAccent).background(DearlyTheme.forest, in: RoundedRectangle(cornerRadius: 18))
         }.buttonStyle(.plain)
     }
 }
@@ -110,7 +112,7 @@ struct EmptyCard: View {
 
 extension View {
     func dearlyCard() -> some View {
-        background(.white.opacity(0.78), in: RoundedRectangle(cornerRadius: 24))
+        background(DearlyTheme.surface.opacity(0.78), in: RoundedRectangle(cornerRadius: 24))
             .overlay(RoundedRectangle(cornerRadius: 24).stroke(DearlyTheme.border.opacity(0.65), lineWidth: 1))
     }
 }
@@ -226,9 +228,13 @@ struct AccountSettingsView: View {
                 Section(L("Ngôn ngữ")) {
                     LanguagePicker()
                 }
+                Section(L("Giao diện", "Appearance")) {
+                    AppearancePicker()
+                }
                 if store.isOnline {
                     Section(L("Tài khoản đang kết nối")) {
                         LabeledContent(L("Nickname"), value: store.me.nickname)
+                        LabeledContent(L("Vai trò", "Role"), value: store.role.title)
                         LabeledContent("Server", value: store.serverAddress)
                         LabeledContent(L("Tuổi"), value: store.me.ageVerified ? L("Đã xác minh") : L("Chờ quản trị viên xác minh"))
                         if let date = store.lastSync { LabeledContent(L("Đồng bộ"), value: date.formatted(Date.FormatStyle(date: .omitted, time: .shortened).locale(Locale(identifier: language)))) }
@@ -236,6 +242,15 @@ struct AccountSettingsView: View {
                         Button(L("Sửa hồ sơ"), systemImage: "person.crop.circle") { editingProfile = true }
                         Button(L("Đồng bộ ngay"), systemImage: "arrow.clockwise") { Task { await store.refresh(force: true) } }
                         Button(L("Đăng xuất"), role: .destructive) { Task { await store.logout() } }.disabled(store.isBusy)
+                    }
+                    if store.hasPermission("reports.read") {
+                        Section(L("Quản lý", "Management")) {
+                            NavigationLink {
+                                StaffConsoleView()
+                            } label: {
+                                Label(L("Quản lý Dearly", "Dearly management"), systemImage: "checkmark.shield")
+                            }
+                        }
                     }
                     Section {
                         Text(L("Khi online, server quyết định quyền truy cập và ngày check-in (UTC). Tin nhắn tự đồng bộ khoảng 3 giây khi app đang mở. Dữ liệu được lưu trên server.")).font(.caption)
@@ -281,7 +296,7 @@ struct LanguageMenu: View {
                 Image(systemName: "chevron.down").font(.system(size: 8, weight: .bold))
             }.font(.caption.weight(.semibold)).foregroundStyle(DearlyTheme.forest)
                 .padding(.horizontal, 12).padding(.vertical, 10)
-                .background(.white.opacity(0.7), in: Capsule())
+                .background(DearlyTheme.surface.opacity(0.7), in: Capsule())
                 .overlay(Capsule().stroke(DearlyTheme.border, lineWidth: 1))
         }.accessibilityLabel(L("Ngôn ngữ"))
     }
@@ -295,5 +310,45 @@ struct LanguagePicker: View {
             Text(verbatim: "Tiếng Việt").tag("vi")
             Text(verbatim: "English").tag("en")
         }
+    }
+}
+
+enum AppAppearance: String, CaseIterable {
+    case system, light, dark
+    var colorScheme: ColorScheme? {
+        switch self {
+        case .system: return nil
+        case .light: return .light
+        case .dark: return .dark
+        }
+    }
+    var title: String {
+        switch self {
+        case .system: return L("Theo hệ thống", "System")
+        case .light: return L("Sáng", "Light")
+        case .dark: return L("Tối", "Dark")
+        }
+    }
+}
+
+@MainActor
+struct AppearancePicker: View {
+    @AppStorage("dearly.language") private var language = "vi"
+    @AppStorage("dearly.appearance") private var appearance = AppAppearance.system.rawValue
+    var body: some View {
+        Picker(L("Giao diện", "Appearance"), selection: $appearance) {
+            ForEach(AppAppearance.allCases, id: \.rawValue) { Text($0.title).tag($0.rawValue) }
+        }
+    }
+}
+
+@MainActor
+struct AppearanceMenu: View {
+    var body: some View {
+        Menu { AppearancePicker() } label: {
+            Image(systemName: "circle.lefthalf.filled")
+                .foregroundStyle(DearlyTheme.forest).padding(11)
+                .background(DearlyTheme.surface, in: Circle())
+        }.accessibilityLabel(L("Giao diện", "Appearance"))
     }
 }

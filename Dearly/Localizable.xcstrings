@@ -4407,6 +4407,244 @@
           }
         }
       }
+    },
+    "Bài cộng đồng đã bị xóa hoặc không còn công khai." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "This community post was deleted or is no longer public."
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Bài cộng đồng đã bị xóa hoặc không còn công khai."
+          }
+        }
+      }
+    },
+    "Bạn không có quyền thực hiện thao tác này." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "You do not have permission to perform this action."
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Bạn không có quyền thực hiện thao tác này."
+          }
+        }
+      }
+    },
+    "Bộ lọc báo cáo không hợp lệ." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Invalid report filter."
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Bộ lọc báo cáo không hợp lệ."
+          }
+        }
+      }
+    },
+    "Bộ lọc tài khoản không hợp lệ." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Invalid account filter."
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Bộ lọc tài khoản không hợp lệ."
+          }
+        }
+      }
+    },
+    "Chỉ lệnh trên server được cấp quyền admin." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Admin access can only be granted with a backend server command."
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Chỉ lệnh trên server được cấp quyền admin."
+          }
+        }
+      }
+    },
+    "Không thể gỡ hoặc khóa quản trị viên cuối cùng." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The last active admin cannot be removed or suspended."
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Không thể gỡ hoặc khóa quản trị viên cuối cùng."
+          }
+        }
+      }
+    },
+    "Không tìm thấy báo cáo." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Report not found."
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Không tìm thấy báo cáo."
+          }
+        }
+      }
+    },
+    "Không tìm thấy tài khoản." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Account not found."
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Không tìm thấy tài khoản."
+          }
+        }
+      }
+    },
+    "Thao tác quản trị không hợp lệ." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Invalid staff action."
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Thao tác quản trị không hợp lệ."
+          }
+        }
+      }
+    },
+    "Thay đổi tài khoản quản trị viên bằng lệnh trên server." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Use a backend server command to change an admin account."
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Thay đổi tài khoản quản trị viên bằng lệnh trên server."
+          }
+        }
+      }
+    },
+    "Thiếu trường suspended." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The suspended field is required."
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Thiếu trường suspended."
+          }
+        }
+      }
+    },
+    "Trường quản trị không hợp lệ." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Invalid field in staff action."
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Trường quản trị không hợp lệ."
+          }
+        }
+      }
+    },
+    "Trạng thái báo cáo không hợp lệ." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Invalid report status."
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Trạng thái báo cáo không hợp lệ."
+          }
+        }
+      }
+    },
+    "Vai trò không hợp lệ." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Invalid role."
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Vai trò không hợp lệ."
+          }
+        }
+      }
     }
   },
   "version" : "1.0"

@@ -54,6 +54,10 @@ struct CommandPayload: Encodable {
     var bio: String? = nil
     var interests: [String]? = nil
     var pace: String? = nil
+    var status: String? = nil
+    var suspended: Bool? = nil
+    var birthDate: String? = nil
+    var role: String? = nil
 }
 
 struct StateEnvelope: Decodable {
@@ -160,6 +164,26 @@ actor APIClient {
     }
 
     func logout() async throws { _ = try await request(path: "v1/auth/logout", method: "POST") }
+
+    func staffReports(status: String, before: UUID?) async throws -> StaffPage<StaffReport> {
+        var query = [URLQueryItem(name: "status", value: status)]
+        if let before { query.append(URLQueryItem(name: "before", value: before.uuidString)) }
+        let (data, _) = try await request(path: "v1/staff/reports", query: query)
+        return try JSONDecoder().decode(StaffPage<StaffReport>.self, from: data)
+    }
+
+    func staffUsers(query: String, before: UUID?) async throws -> StaffPage<StaffUser> {
+        var items = [URLQueryItem(name: "q", value: query)]
+        if let before { items.append(URLQueryItem(name: "before", value: before.uuidString)) }
+        let (data, _) = try await request(path: "v1/staff/users", query: items)
+        return try JSONDecoder().decode(StaffPage<StaffUser>.self, from: data)
+    }
+
+    func staffAudit(before: Int?) async throws -> AuditPage {
+        let query = before.map { [URLQueryItem(name: "before", value: String($0))] } ?? []
+        let (data, _) = try await request(path: "v1/staff/audit", query: query)
+        return try JSONDecoder().decode(AuditPage.self, from: data)
+    }
 
     func journals(before: UUID?) async throws -> JournalPage {
         var query = [URLQueryItem(name: "limit", value: "40")]

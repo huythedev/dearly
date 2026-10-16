@@ -27,6 +27,8 @@ final class DearlyStore: ObservableObject {
         return calendar
     }
     var me: Profile { state.currentUser }
+    var role: AccountRole { AccountRole(rawValue: state.currentUserRole ?? "") ?? .user }
+    func hasPermission(_ permission: String) -> Bool { isOnline && (state.permissions?.contains(permission) ?? false) }
     var connection: Connection? { state.activeConnection(for: me.id) }
     var partner: Profile? { connection?.members.first(where: { $0 != me.id }).flatMap { state.profile($0) } }
 
@@ -255,5 +257,39 @@ final class DearlyStore: ObservableObject {
         let result = try await client.journals(before: before)
         guard expected == generation else { throw CancellationError() }
         return result
+    }
+
+    // Staff payloads live only in the presented screen; never in the personal snapshot/cache.
+    private func staffRead<T>(_ permission: String, operation: (APIClient) async throws -> T) async throws -> T {
+        guard let client = api, hasPermission(permission) else {
+            throw APIError(status: 403, message: L("Không có quyền truy cập.", "Access denied."))
+        }
+        let expected = generation
+        do {
+            let result = try await operation(client)
+            guard expected == generation, hasPermission(permission) else { throw CancellationError() }
+            return result
+        } catch {
+            if expected == generation {
+                if (error as? APIError)?.status == 401 { disconnect() }
+                if (error as? APIError)?.status == 403 { _ = await refresh(force: true) }
+            }
+            throw error
+        }
+    }
+
+    func staffReports(status: String, before: UUID?) async throws -> StaffPage<StaffReport> {
+        try await staffRead("reports.read") { try await $0.staffReports(status: status, before: before) }
+    }
+    func staffUsers(query: String, before: UUID?) async throws -> StaffPage<StaffUser> {
+        try await staffRead("users.read") { try await $0.staffUsers(query: query, before: before) }
+    }
+    func staffAudit(before: Int?) async throws -> AuditPage {
+        try await staffRead("audit.read") { try await $0.staffAudit(before: before) }
+    }
+    func staffCommand(_ kind: String, payload: CommandPayload) async -> Bool {
+        let success = await execute(kind, payload) { _ in }
+        if !success, isOnline { _ = await refresh(force: true) }
+        return success
     }
 }

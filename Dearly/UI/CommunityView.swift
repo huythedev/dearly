@@ -33,8 +33,8 @@ struct CommunityView: View {
     private func filterButton(_ label: String, value: SupportStyle?) -> some View {
         Button { filter = value } label: {
             Text(label).font(.caption.weight(.medium)).padding(.horizontal, 15).padding(.vertical, 11)
-                .foregroundStyle(filter == value ? .white : DearlyTheme.forest)
-                .background(filter == value ? DearlyTheme.forest : .white, in: Capsule())
+                .foregroundStyle(filter == value ? DearlyTheme.onAccent : DearlyTheme.forest)
+                .background(filter == value ? DearlyTheme.forest : DearlyTheme.surface, in: Capsule())
         }.buttonStyle(.plain)
     }
 }

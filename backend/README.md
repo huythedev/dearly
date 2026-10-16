@@ -87,9 +87,50 @@ Run these commands from `backend`, using the same database as the server. The sa
 
 `verify-age` records that an operator reviewed the birth date outside the app. It does not automatically verify identity documents. Do not store identity document images in this app or database. Correcting a birth date ends existing connections so eligibility can be checked again; verifying the same date again does not end them.
 
-Registration supports ages 16–100. Age is calculated using the UTC date and checked again when sending or accepting invitations, sending messages, and checking in. Under-18 accounts can connect only with other under-18 accounts at most one year apart. Adults form a separate group. Clients cannot set `ageVerified` or change birth dates through the API.
+Registration supports ages 16–100. Age is calculated using the UTC date and checked again when sending or accepting invitations, sending messages, and checking in. Under-18 accounts can connect only with other under-18 accounts at most one year apart. Adults form a separate group. Regular users and moderators cannot set `ageVerified` or change birth dates. Only an admin using the staff API or an operator using the CLI can record a reviewed birth date.
 
-Reports are stored on the server. `reports` lists up to 100 open reports for an operator with host access. `suspend` revokes sessions and ends connections while retaining garden rewards. There is no moderator dashboard, automatic message filter, or appeals system.
+Reports are stored on the server. `reports` lists up to 100 open reports for an operator with host access. `suspend` revokes sessions and ends connections while retaining garden rewards. `restore --username USERNAME` re-enables login without restoring old sessions or connections. The iOS staff console supports manual report review; automatic message filtering and an appeals workflow are not implemented.
+
+### Roles and the in-app staff console
+
+| Role | Permissions |
+|---|---|
+| `user` | Standard Dearly features; no staff endpoints |
+| `moderator` | `reports.read`, `reports.review`, `reports.hide` |
+| `admin` | All moderator permissions plus `users.read`, `users.suspend`, `users.verify_age`, `roles.manage`, `audit.read` |
+
+Staff open **avatar → Dearly management** in the iOS app. Reports can be reopened, marked reviewed, dismissed, or used to withdraw a reported public post. Admins can search accounts by username/nickname prefix, confirm externally reviewed birth dates, suspend/restore non-admin accounts, assign/remove moderators, and inspect the audit log. Every mutation requires a reason. Each list uses bounded pagination (30 records by default, at most 50); the app retains only the displayed page.
+
+Create the account normally, then run on the server host from `backend`:
+
+```bash
+# macOS / Linux
+.venv/bin/python run.py set-role --username YOUR_USERNAME --role admin --reason "Initial administrator"
+.venv/bin/python run.py set-role --username REVIEWER --role moderator --reason "Report review duty"
+.venv/bin/python run.py set-role --username REVIEWER --role user --reason "Review duty ended"
+```
+
+```powershell
+# Windows PowerShell
+.\.venv\Scripts\python.exe run.py set-role --username YOUR_USERNAME --role admin --reason "Initial administrator"
+```
+
+```bash
+# Docker Compose, from repository root
+docker compose exec backend python run.py set-role --username YOUR_USERNAME --role admin --reason "Initial administrator"
+```
+
+`set-role` accepts `user`, `moderator`, or `admin` and requires `--reason`. It acts on an existing username (case-insensitive). It does not create a login or a password. Use `--db PATH` **before the subcommand**, or the same `DEARLY_DB` used by the running server; the default is `data/dearly.sqlite3` relative to the working directory. Docker already sets `DEARLY_DB=/data/dearly.sqlite3`.
+
+Only the server CLI can grant/revoke admin or change an admin account. The API rejects self-management and admin targets. Demoting or suspending the last non-suspended admin is rejected; grant a replacement admin first. All accounts, including existing accounts after migration, default to `user`. Public signup/profile updates cannot grant roles. Roles are read from the database for every request, including retries, so demotion takes effect immediately without waiting for token expiry. The iOS staff entry updates on the next state sync.
+
+Reports contain the submitted reason and, for a reported community post, a snapshot of its **published excerpt**. Staff can identify accounts involved in a report, including anonymous posts. Private journal bodies, unshared text, and chat transcripts are not exposed by staff endpoints. The excerpt remains in the report after the original post is withdrawn or deleted. Hiding a reported post makes it private and deletes its community comments/listening reactions; it does not delete the author's original journal. Authors can subsequently edit/share their journals again; use account suspension when access needs to be revoked.
+
+Staff and CLI mutations append an audit event in the same transaction: actor user ID (or `server-cli`), action, target, reason, and timestamp. No password, token, or birth date is placed in audit details. Staff HTTP responses use `Cache-Control: no-store`. The audit log is admin-readable through the API, has no client edit/delete endpoint, and is not tamper-proof against an operator with direct database access. Reports/audit events have no automatic retention cleanup yet; include their retention in the pilot's operational policy.
+
+### Upgrading an existing database
+
+Use the previous checkout's backup command before upgrading. Restart the backend after updating the code. Startup automatically migrates SQLite `user_version=1` to `2` in a transaction, adds roles/report review fields and audit storage, and preserves accounts, sessions, journals, reports, connections, and rewards. Repeated startup/CLI access is safe. No new runtime dependencies are required, and the default single-worker SQLite setup is unchanged. Do not run the old backend against an upgraded database; rollback requires the pre-upgrade backup and matching code.
 
 ### Backups
 
@@ -172,7 +213,7 @@ From `backend` on macOS/Linux:
 
 On Windows, use `.\.venv\Scripts\python.exe`. The benchmark starts a real HTTP server on a temporary localhost port and removes its temporary fixture data afterward. This temporary-port behavior belongs to the benchmark; the normal server launcher does not choose a free port automatically.
 
-The [historical validation notes](../docs/VALIDATION.md) record 21 passing backend tests on Linux. Local setup and a server health check were also verified on macOS. Windows and Docker execution have not been verified in this session. No GitHub Actions workflows are included in this checkout.
+The current backend suite passes 33 tests on Linux, including staff authorization and database migration. See the [validation notes](../docs/VALIDATION.md). Windows/macOS execution of these changes and Docker have not been verified in this session. No GitHub Actions workflows are included in this checkout.
 
 ## Runtime behavior and limits
 
