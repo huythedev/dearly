@@ -2,7 +2,7 @@
 
 ## Available now
 
-The iOS app connects to a single-node backend with accounts/passwords/sessions, API permissions, SQLite persistence, matching gated by operator-reviewed birth dates, foreground synchronization, journal/chat/garden pagination, server reports, moderator/admin screens, CLI role grants, audit logs, and backups. English is the source/default language with Vietnamese translations. System/Light/Dark appearances include a night garden.
+The iOS and responsive React web apps connect to a single-node backend with accounts/passwords/sessions, API permissions, SQLite persistence, matching gated by operator-reviewed birth dates, foreground synchronization, journal/chat/garden pagination, server reports, moderator/admin screens, CLI role grants, audit logs, and backups. English is the source/default language with Vietnamese translations. System/Light/Dark appearances include a night garden.
 
 ## Before a real pilot
 
@@ -16,7 +16,7 @@ The iOS app connects to a single-node backend with accounts/passwords/sessions, 
 
 ## Future extensions
 
-Optional challenges; memories approved by both people; discreet push notifications; longer community/companion journal history; iPad layouts; delta synchronization or WebSockets when lower latency is needed.
+Optional challenges; memories approved by both people; discreet push notifications; longer community/companion journal history; iPad layouts; per-user delta synchronization and shared pub/sub when multiple server workers are needed (iOS and web already receive live WebSocket chat).
 
 ## Two-person team
 

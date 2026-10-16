@@ -65,6 +65,11 @@ struct StateEnvelope: Decodable {
     var serverNow: Date
 }
 
+struct ChatEvent: Decodable, Sendable {
+    var type: String
+    var message: ChatMessage?
+}
+
 struct MessagePage: Decodable {
     var items: [ChatMessage]
     var nextCursor: UUID?
@@ -170,6 +175,54 @@ actor APIClient {
     }
 
     func logout() async throws { _ = try await request(path: "v1/auth/logout", method: "POST") }
+
+    static func chatURL(for baseURL: URL) throws -> URL {
+        guard var components = URLComponents(url: baseURL, resolvingAgainstBaseURL: false),
+              ["https", "http"].contains(components.scheme ?? ""),
+              components.user == nil, components.password == nil, components.host != nil else {
+            throw DearlyError.invalid(L("The server returned an invalid response."))
+        }
+        components.scheme = components.scheme == "https" ? "wss" : "ws"
+        components.path = "/ws/chat"; components.query = nil; components.fragment = nil
+        guard let url = components.url else { throw DearlyError.invalid(L("The server returned an invalid response.")) }
+        return url
+    }
+
+    func listenForChat(_ receive: @escaping @Sendable (ChatEvent) async -> Void) async throws {
+        guard let token else { throw APIError(status: 401, message: L("Please log in.")) }
+        let url = try Self.chatURL(for: baseURL)
+        // A separate session avoids applying the short REST resource deadline to a live socket.
+        let configuration = URLSessionConfiguration.ephemeral
+        configuration.timeoutIntervalForRequest = 30
+        configuration.timeoutIntervalForResource = 86400
+        configuration.urlCache = nil
+        configuration.waitsForConnectivity = false
+        let socketSession = URLSession(configuration: configuration, delegate: delegate, delegateQueue: nil)
+        let socket = socketSession.webSocketTask(with: url)
+        socket.maximumMessageSize = 16 * 1024
+        defer { socketSession.invalidateAndCancel() }
+        try await withTaskCancellationHandler {
+            socket.resume()
+            let authentication = try JSONSerialization.data(withJSONObject: ["type": "authenticate", "token": token])
+            try await socket.send(.string(String(decoding: authentication, as: UTF8.self)))
+            while !Task.isCancelled {
+                let data: Data
+                switch try await socket.receive() {
+                case .string(let text): data = Data(text.utf8)
+                case .data(let value): data = value
+                @unknown default: throw DearlyError.invalid(L("The server returned an invalid response."))
+                }
+                guard data.count <= 16 * 1024 else { throw DearlyError.invalid(L("The server returned an invalid response.")) }
+                let event = try JSONDecoder().decode(ChatEvent.self, from: data)
+                if event.type == "ping" {
+                    try await socket.send(.string("{\"type\":\"ping\"}"))
+                } else { await receive(event) }
+            }
+            try Task.checkCancellation()
+        } onCancel: {
+            socket.cancel(with: .goingAway, reason: nil)
+        }
+    }
 
     func staffReports(status: String, before: UUID?) async throws -> StaffPage<StaffReport> {
         var query = [URLQueryItem(name: "status", value: status)]

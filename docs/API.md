@@ -1,6 +1,8 @@
-# API contract v0.4
+# API contract v0.5
 
 The base URL is the server origin, without a path or query. All `/v1/*` endpoints except register/login require `Authorization: Bearer TOKEN`. The running server exposes the full OpenAPI specification at `/docs`.
+
+The web client uses the same origin with relative `/v1/...` paths. It opts into an HttpOnly session cookie by sending `X-Dearly-Client: web` on register/login. This response omits `token` while keeping `userID` / `expiresAt`; native bearer responses are unchanged. Cookie-authenticated unsafe requests require that header and a matching Origin/Host. Browser logout clears/revokes the cookie session. HTTPS web cookies use Secure; all use SameSite=Strict. No CORS configuration is needed.
 
 | Method / path | Input | Output |
 |---|---|---|
@@ -18,6 +20,30 @@ The base URL is the server origin, without a path or query. All `/v1/*` endpoint
 | GET `/v1/staff/audit` | before: integer event ID, limit 1–50 | Audit page; requires audit.read |
 
 JSON dates are **seconds since 2001-01-01 UTC**, matching the default Swift JSONEncoder/JSONDecoder Date representation. Native DTOs do not use the Unix epoch. `birthDate` is a Gregorian date string rather than a timestamp. IDs are UUIDs. Check-in days use YYYY-MM-DD in server UTC.
+
+## WebSocket chat
+
+Connect to `/ws/chat` using the origin's `ws:` or `wss:` scheme. A browser must send a matching Origin and its HttpOnly cookie. Native clients may omit Origin and send a bearer token in the first frame. Do not put a token in a URL/query string. Within 5 seconds, send:
+
+```json
+{"type":"authenticate"}
+```
+
+For a native client, add `"token":"TOKEN"` to that frame. Success replies with `{"type":"ready","userID":"UUID"}`. Then send:
+
+```json
+{"type":"message.send","requestID":"B9438240-7D2B-49A3-83EE-4B68543D34E6","connectionID":"439903D4-52BE-454D-9F02-BF068F88F39F","text":"Hello"}
+```
+
+| type | Fields / behavior |
+|---|---|
+| `ack` | `requestID`, `result: {ok, id}` after commit |
+| `message` | `message` with the existing chat DTO, authorized for the current active connection |
+| `state.changed` | Invalidation only; fetch `/v1/state` to reconcile other changes or an overflowed queue |
+| `error` | `requestID`, HTTP-like `status`, English `detail`; invalid input does not mutate |
+| `ping` / `pong` | Keepalive; respond to server ping with `{type: "ping"}` |
+
+REST `/v1/actions` and socket sends share authorization, validation, rate limits, transactions, and the request-ID store. Retry the same UUID/payload through either transport after a lost reply. Socket sends cannot execute staff/profile/journal actions. Event delivery rechecks sessions, suspension, active membership, and age eligibility. Revoked/expired sessions close with 4401, disallowed origins with 4403, excess sessions with 4429, malformed frames with 1008, oversized messages with 1009, and temporary database failures with 1013. Idle sessions are rechecked within 15 seconds, including CLI changes. There are at most 32 sockets globally, 4 per account, and 32 queued events per socket. Uvicorn/wsproto bounds assembled frames to 16 KiB; the app also checks complete frames. Use the documented single worker.
 
 ## Actions
 

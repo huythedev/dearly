@@ -1,3 +1,12 @@
+# Web monorepo and realtime validation — 2026-10-16
+
+- Local backend: 87 tests passed, including same-origin browser cookies, SPA/API route boundaries, member-only socket delivery, REST/socket idempotency, expiry/suspension, frame size, and per-account connection limits.
+- Web: TypeScript/Vite production build passed; 5 contract/retry tests passed. npm audit and the pinned backend dependency audit reported no known vulnerabilities. Python static checks passed.
+- iOS now receives live messages/state invalidation using URLSessionWebSocketTask, cancels on background/logout, reconnects with backoff, and keeps REST sends/polling for compatibility. Added native URL/DTO/deduplication/membership tests.
+- Local environment has no Xcode, Docker, or browser-control surface. CI is configured for an iPhone Simulator, desktop/mobile Playwright flows, and the combined Docker web/API image. Those executions must be reported separately from the local checks.
+
+The notes below describe earlier revisions.
+
 # Validation — English source and Vietnamese translations, 2026-10-16
 
 - **77 backend tests passed** on Linux/Python 3.12, including 21 localization cases for language negotiation, translated static/dynamic errors, upload rejection, credential-safe validation, stable support identifiers, legacy inputs, database migration, and English defaults after an older schema upgrade.
@@ -31,7 +40,7 @@
 - 21 API pytest cases passed on Linux/Python 3.12, covering HTTP contracts, privacy/anonymous aliases, authentication/logout/expiry, age/birth-date gates, consent, concurrent writes, duplicate check-ins, streaks/reward retention, pause/leave/block/report, idempotent retries, pagination, and database restart.
 - A real localhost Uvicorn server passed registration of two accounts, fixture age verification, invitation send/accept, messages from account A read by B, and both check-ins.
 - A sequential HTTP benchmark used 300 journal fixtures; results and limitations are in PERFORMANCE.md.
-- `DearlyTests/Fixtures/server-state.json` was exported from actual API responses without tokens or other users' private journal content. A native XCTest decodes the fixture to detect wire-contract drift in Xcode.
+- `ios/DearlyTests/Fixtures/server-state.json` was exported from actual API responses without tokens or other users' private journal content. A native XCTest decodes the fixture to detect wire-contract drift in Xcode.
 - Swift grammar, Xcode structure/source references, scheme XML, asset catalogs, and Debug/Release Info.plist checks completed.
 - CLI help/database initialization and source packaging checks completed.
 

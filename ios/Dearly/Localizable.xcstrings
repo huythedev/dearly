@@ -1429,6 +1429,23 @@
         }
       }
     },
+    "Chat updates live while the app is open. If the connection drops, automatic sync keeps your messages up to date. Daily check-ins use UTC. Your data is saved on the server." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Chat updates live while the app is open. If the connection drops, automatic sync keeps your messages up to date. Daily check-ins use UTC. Your data is saved on the server."
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Trò chuyện cập nhật trực tiếp khi ứng dụng đang mở. Nếu kết nối bị gián đoạn, đồng bộ tự động sẽ cập nhật tin nhắn. Lượt ghé thăm hằng ngày tính theo UTC. Dữ liệu của bạn được lưu trên máy chủ."
+          }
+        }
+      }
+    },
     "Check your details and try again." : {
       "extractionState" : "manual",
       "localizations" : {

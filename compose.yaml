@@ -2,7 +2,8 @@ services:
   backend:
     image: dearly-api:latest
     build:
-      context: ./backend
+      context: .
+      dockerfile: backend/Dockerfile
     restart: unless-stopped
     init: true
     ports:

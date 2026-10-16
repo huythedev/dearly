@@ -1,9 +1,0 @@
-# Only the runtime files are needed in the image.
-**
-!Dockerfile
-!.dockerignore
-!requirements.txt
-!server.py
-!run.py
-!localization.py
-!translations.vi.json

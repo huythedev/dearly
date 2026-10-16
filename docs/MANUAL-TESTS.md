@@ -71,3 +71,12 @@ Use synthetic accounts/content for these checks and run the updated backend with
 2. Choose Vietnamese from the language menu, then repeat those screens, accessibility labels, confirmations, and dynamic names/counts. Restart and log out/in; the saved Vietnamese preference remains selected.
 3. Trigger login, field-validation, permission, and oversized-upload errors in both languages. Each uses the chosen language without exposing credentials.
 4. Upgrade a test database with legacy support preferences and Vietnamese user-written content. Both old and new support choices display translated labels; nicknames, journal text, messages, interests, and conversation pace retain their original content. Update app/backend together.
+
+
+## iOS and web live chat (v0.5)
+
+- Open an iOS client and a web client as the two members of an active connection. Send from each side; messages should appear immediately once, even if REST acknowledgement and a live event race.
+- Disconnect/reconnect the network; repeat a send after a lost reply. Confirm history contains one copy and reconnect loads missed messages.
+- Background the iOS app and return. Its socket must stop/restart without accumulating connections; polling remains available while a socket is unavailable.
+- End/block the connection, revoke the session, change age eligibility, or suspend a member while sockets are open. Further messages must be rejected and stale chat must disappear after reconciliation.
+- Verify mobile web account settings include logout and Management for authorized staff. Check desktop/mobile English/Vietnamese, dark/system appearance, keyboard focus, dialogs, sharing previews, and multiline content.

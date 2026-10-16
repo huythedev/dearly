@@ -92,7 +92,7 @@ struct Invitation: Codable, Identifiable {
     var date: Date
 }
 
-struct ChatMessage: Codable, Identifiable {
+struct ChatMessage: Codable, Identifiable, Sendable {
     var id = UUID()
     var connectionID: UUID
     var senderID: UUID
@@ -182,6 +182,15 @@ struct AppState: Codable {
     // Optional so an older server/fixture remains readable with no staff privileges.
     var currentUserRole: String?
     var permissions: [String]?
+
+    mutating func receiveLiveMessage(_ message: ChatMessage) {
+        guard let connection = activeConnection(for: currentUserID),
+              connection.id == message.connectionID, connection.members.contains(message.senderID),
+              !messages.contains(where: { $0.id == message.id }) else { return }
+        messages.append(message)
+        messages.sort { $0.date == $1.date ? $0.id.uuidString < $1.id.uuidString : $0.date < $1.date }
+        if messages.count > 500 { messages = Array(messages.suffix(500)) }
+    }
 
     static func signedOut() -> AppState {
         AppState(profiles: [], currentUserID: UUID(), journals: [])

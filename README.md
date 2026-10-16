@@ -2,11 +2,32 @@
 
 A quiet place to write, find someone willing to listen, and grow a little garden together.
 
-**SwiftUI · iOS 17+ · Python 3.11+ · FastAPI · SQLite**
+**SwiftUI · iOS 17+ · React · Vite · TypeScript · FastAPI · SQLite**
+
+## Run web + API together
+
+The monorepo has `ios/`, `web/`, and the shared `backend/`. Web and iOS use the same accounts and database.
+
+```bash
+# From the repository root, with Docker Compose installed:
+docker compose up -d --build
+```
+
+Open **http://127.0.0.1:8000**. The multi-stage image builds React and lets FastAPI serve it alongside `/v1/*`, `/ws/chat`, `/health`, and `/docs`. There is one service and no Caddy requirement. Keep the existing Cloudflare Tunnel hostname `dearly.huythedev.com` pointing all paths to this service; no separate frontend hostname or CORS setup is needed. Rebuild/restart your backend host to deploy this change; updating this repository alone does not update the running domain.
+
+Without Docker, first build the web app with **Node.js 24**:
+
+```bash
+cd web
+npm ci
+npm run build
+```
+
+Then start the backend using the platform-specific instructions below. It automatically serves `web/dist` when present. Node is needed for the build, not to run the resulting application. API-only operation still works without a frontend build. See [web development and behavior](web/README.md) for Vite's local development proxy, browser sessions, chat, and tests.
 
 ## Run the iOS app
 
-1. Open `Dearly.xcodeproj` in Xcode 26 or newer (deployment target: iOS 17+).
+1. Open `ios/Dearly.xcodeproj` in Xcode 26 or newer (deployment target: iOS 17+).
 2. Select the **Dearly** scheme and an iPhone Simulator, then press **⌘R**. For a physical device, configure your signing team first.
 3. Log in or create an account. The default backend address is **`https://dearly.huythedev.com`**. A previously saved server address takes precedence.
 4. To use a different backend, expand **Server connection / Kết nối server** on the login screen and enter its base URL.
@@ -19,7 +40,7 @@ The interface uses **English as its source language and default**, with **Vietna
 
 ## Run a local backend
 
-No separate database installation, Docker, Redis, or Node.js is required. Run these commands from the repository root.
+For API-only/iOS use, no separate database installation, Docker, Redis, or Node.js is required. Run these commands from the repository root.
 
 ### macOS / Linux
 
@@ -60,7 +81,7 @@ Alternatively, with Docker and Docker Compose installed, run from the repository
 docker compose up -d --build
 ```
 
-This builds `dearly-api:latest` and runs it on `127.0.0.1:8000` with persistent SQLite storage. Copy `.env.example` to `.env` to change the host binding or port. See the [Docker instructions](backend/README.md#docker) for logs, administration, backups, and stopping the service.
+This builds `dearly-api:latest` with both the web app and API and runs it on `127.0.0.1:8000` with persistent SQLite storage. Copy `.env.example` to `.env` to change the host binding or port. See the [Docker instructions](backend/README.md#docker) for logs, administration, backups, and stopping the service.
 
 See the [backend README](backend/README.md) for database paths, LAN troubleshooting, HTTPS hosting, administration, Docker, and tests.
 
@@ -72,13 +93,14 @@ See the [backend README](backend/README.md) for database paths, LAN troubleshoot
 - Companion suggestions based on stated interests and verified age eligibility. Both people must agree before chat opens.
 - Chat, server-side reports, blocking, and leaving connections.
 - Daily check-ins by both companions, garden pauses, streaks, total days, and saved rewards. Browse every saved garden with archive pagination.
-- Gardens drawn in SwiftUI, without downloaded artwork.
-- Foreground synchronization about every 3 seconds, ETag responses, retry backoff, and idempotent mutations. Personal journals and chat support pagination.
+- Gardens drawn in SwiftUI on iOS and SVG on web, without downloaded artwork.
+- Browser chat uses authenticated WebSockets with reconnect, message deduplication, and idempotent REST fallback. iOS receives live events over WebSocket and keeps idempotent REST sends; native REST chat immediately notifies connected iOS/web clients.
+- ETag synchronization, retry backoff, and idempotent mutations. Web checks state every 15 seconds while visible and on socket invalidation; iOS uses 15-second reconciliation while its socket is connected and 3-second polling as a fallback. Journals, messages, and saved gardens support pagination.
 - In-app report moderation and account administration with server-enforced roles and an audit log.
 
 ## Roles and administration
 
-New accounts always start as **User**. Staff open their avatar → **Dearly management / Quản lý Dearly**. Access is checked by the backend on every request; changing the client UI or sending a forged role does not grant permissions.
+New accounts always start as **User**. On iOS, staff open their avatar → **Dearly management / Quản lý Dearly**. On web, use **Management**, or **Settings → Management** on mobile. Access is checked by the backend on every request; changing the client UI or sending a forged role does not grant permissions.
 
 | Function | User | Moderator | Admin |
 |---|:---:|:---:|:---:|
@@ -119,18 +141,21 @@ To try the companion flow, create two accounts on separate devices or simulators
 
 | Path | Purpose |
 |---|---|
-| `Dearly/Core/Models.swift` | Codable models, domain rules, and localization helpers |
-| `Dearly/Core/APIClient.swift` | HTTP requests, session storage, and API DTOs |
-| `Dearly/Core/StaffModels.swift` | Staff roles, reports, account summaries, and audit DTOs |
-| `Dearly/Core/DearlyStore.swift` | Backend authentication, synchronization, mutations, and UI state |
-| `Dearly/UI/` | Login/signup, journal, community, companion, garden, settings, and staff screens |
-| `Dearly/Assets.xcassets/` | Appearance-aware light/dark colors and app icon |
-| `Dearly/Localizable.xcstrings` | English source keys and Vietnamese interface translations |
+| `ios/Dearly/Core/Models.swift` | Codable models, domain rules, and localization helpers |
+| `ios/Dearly/Core/APIClient.swift` | HTTP requests, session storage, and API DTOs |
+| `ios/Dearly/Core/StaffModels.swift` | Staff roles, reports, account summaries, and audit DTOs |
+| `ios/Dearly/Core/DearlyStore.swift` | Backend authentication, synchronization, mutations, and UI state |
+| `ios/Dearly/UI/` | Login/signup, journal, community, companion, garden, settings, and staff screens |
+| `ios/Dearly/Assets.xcassets/` | Appearance-aware light/dark colors and app icon |
+| `ios/Dearly/Localizable.xcstrings` | English source keys and Vietnamese interface translations |
+| `ios/Dearly.xcodeproj` | Native Xcode project; relative source paths remain inside ios/ |
+| `web/src/` | Responsive React app, English source copy, Vietnamese translations, themes, and same-origin API/chat client |
+| `web/e2e/` | Desktop/mobile browser flow tests |
 | `backend/localization.py`, `backend/translations.vi.json` | English API error templates and Vietnamese responses |
 | `backend/server.py` | API, authentication, authorization, and SQLite transactions |
 | `backend/run.py` | Server launcher, role grants, age verification, reports, suspension/restoration, and backups |
 | `backend/tests/` | API, privacy, concurrency, and persistence tests |
-| `DearlyTests/` | Native model, backend contract, signed-out state, and localization tests |
+| `ios/DearlyTests/` | Native model, backend contract, signed-out state, and localization tests |
 | `docs/` | API reference, roadmap, manual checks, and historical validation notes |
 
 Local databases, virtual environments, credentials, Xcode user settings, and build output are excluded by `.gitignore`.
@@ -139,7 +164,7 @@ Local databases, virtual environments, credentials, Xcode user settings, and bui
 
 This environment has no Xcode or iOS Simulator. A GitHub Actions job builds and runs native tests on an available iPhone Simulator; its result is separate from the local backend checks. Device rendering still needs the [manual checklist](docs/MANUAL-TESTS.md).
 
-The backend regression suite covers the security fixes, role boundaries, database upgrades, persistent moderation, upload timeouts, and complete garden archives. See [validation notes](docs/VALIDATION.md) and [security behavior](docs/SECURITY.md). GitHub Actions runs backend tests, static checks, a dependency advisory audit, and native iOS tests. Windows/macOS backend execution, Docker, public HTTPS deployment, and App Store/TestFlight distribution have not been verified locally.
+The backend regression suite covers the security fixes, role boundaries, database upgrades, persistent moderation, upload timeouts, and complete garden archives. See [validation notes](docs/VALIDATION.md) and [security behavior](docs/SECURITY.md). GitHub Actions runs backend/security tests, frontend contract tests/build/audit, desktop/mobile browser flows, a combined Docker image smoke test, and native iOS tests from `ios/Dearly.xcodeproj`. Windows/macOS backend execution, Docker, public HTTPS deployment, and App Store/TestFlight distribution have not been verified locally.
 
 This is a small-server pilot. Age verification and moderation require an operator; there is no automatic identity verification, message moderation, or appeals dashboard. See the [roadmap](docs/ROADMAP.md) for remaining work. Dearly is a space for companionship, not a therapy service.
 
