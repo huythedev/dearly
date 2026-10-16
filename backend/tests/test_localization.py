@@ -129,7 +129,7 @@ def test_registration_after_legacy_schema_upgrade_uses_english_defaults(tmp_path
 
 def test_english_catalog_and_error_templates_have_complete_vietnamese_translations():
     root = Path(__file__).resolve().parents[2]
-    catalog = json.loads((root / 'Dearly/Localizable.xcstrings').read_text())
+    catalog = json.loads((root / 'ios/Dearly/Localizable.xcstrings').read_text())
     assert catalog['sourceLanguage'] == 'en'
     for key, entry in catalog['strings'].items():
         # Brand names and language badges can opt out of translation.
@@ -140,9 +140,9 @@ def test_english_catalog_and_error_templates_have_complete_vietnamese_translatio
         assert source == key
         assert translated
         assert sorted(re.findall(r'%\d+\$@', source)) == sorted(re.findall(r'%\d+\$@', translated))
-    project = (root / 'Dearly.xcodeproj/project.pbxproj').read_text()
+    project = (root / 'ios/Dearly.xcodeproj/project.pbxproj').read_text()
     assert 'developmentRegion = en;' in project
-    for path in (root / 'Dearly').rglob('*.swift'):
+    for path in (root / 'ios/Dearly').rglob('*.swift'):
         source_keys = re.findall(r'\bL(?:F)?\("((?:[^"\\]|\\.)*)"', path.read_text())
         for raw in source_keys:
             key = json.loads('"' + raw + '"')

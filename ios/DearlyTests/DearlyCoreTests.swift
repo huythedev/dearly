@@ -2,6 +2,32 @@ import XCTest
 @testable import Dearly
 
 final class DearlyCoreTests: XCTestCase {
+    func testNativeSocketURLUsesSameHostWithoutCredentialsInURL() throws {
+        let secure = try APIClient.chatURL(for: URL(string: "https://dearly.huythedev.com")!)
+        XCTAssertEqual(secure.absoluteString, "wss://dearly.huythedev.com/ws/chat")
+        let local = try APIClient.chatURL(for: URL(string: "http://localhost:8001")!)
+        XCTAssertEqual(local.absoluteString, "ws://localhost:8001/ws/chat")
+        XCTAssertNil(secure.query)
+    }
+
+    func testLiveChatDTOAndDeduplicationRespectActiveConnection() throws {
+        var state = try connected()
+        let connection = try XCTUnwrap(state.activeConnection(for: state.currentUserID))
+        let message = ChatMessage(connectionID: connection.id, senderID: connection.members[1], text: "A live hello", date: day)
+        let data = try JSONSerialization.data(withJSONObject: ["type": "message", "message": JSONSerialization.jsonObject(with: JSONEncoder().encode(message))])
+        let event = try JSONDecoder().decode(ChatEvent.self, from: data)
+        let decoded = try XCTUnwrap(event.message)
+        XCTAssertEqual(decoded.date, day)
+        state.receiveLiveMessage(decoded); state.receiveLiveMessage(decoded)
+        XCTAssertEqual(state.messages.filter { $0.id == message.id }.count, 1)
+        state.receiveLiveMessage(ChatMessage(connectionID: UUID(), senderID: decoded.senderID, text: "Different connection", date: day))
+        state.receiveLiveMessage(ChatMessage(connectionID: connection.id, senderID: UUID(), text: "Non-member", date: day))
+        XCTAssertEqual(state.messages.count, 1)
+        state.leave(now: day)
+        state.receiveLiveMessage(ChatMessage(connectionID: connection.id, senderID: decoded.senderID, text: "Ended connection", date: day))
+        XCTAssertFalse(state.messages.contains { $0.text == "Ended connection" })
+    }
+
     @MainActor
     func testStoreStartsSignedOutWithoutSampleData() async {
         let store = DearlyStore()

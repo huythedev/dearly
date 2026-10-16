@@ -1,9 +1,11 @@
 """Dearly single-node API. Python 3.11+, SQLite, standard asyncio on every OS."""
 from __future__ import annotations
 
+import asyncio
 import hashlib
 import hmac
 import json
+import os
 import secrets
 import sqlite3
 import threading
@@ -15,12 +17,14 @@ from datetime import date, datetime, timedelta, timezone
 from pathlib import Path
 from typing import Callable
 
-from fastapi import FastAPI, Header, Request
+from fastapi import FastAPI, Header, Request, WebSocket, WebSocketDisconnect
 from fastapi.responses import JSONResponse, Response
 from fastapi.exceptions import RequestValidationError
 import anyio
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, ValidationError
 from localization import RequestError, error_response
+from realtime import ChatHub
+from web_support import BrowserSession, COOKIE, browser_session, mount_web, same_origin
 
 SWIFT_EPOCH = 978307200  # Swift JSONEncoder default: seconds since 2001-01-01 UTC.
 SUPPORT = frozenset({'listen', 'relate', 'brainstorm'})
@@ -758,17 +762,19 @@ def apply_action(db,user,kind,p,now):
 
 
 def create_app(path: str | Path = 'data/dearly.sqlite3', *, clock: Callable[[],float] = time.time,
-               body_idle_timeout: float = 5.0, body_total_timeout: float = 15.0) -> FastAPI:
+               body_idle_timeout: float = 5.0, body_total_timeout: float = 15.0,
+               web_dir: str | Path | None = None) -> FastAPI:
     if body_idle_timeout <= 0 or body_total_timeout <= 0:
         raise ValueError('Request body timeouts must be positive.')
-    database=Database(path); limiter=Limiter(); hashing=threading.BoundedSemaphore(2)
+    database=Database(path); limiter=Limiter(); hashing=threading.BoundedSemaphore(2); hub=ChatHub()
     @asynccontextmanager
     async def lifespan(app):
         anyio.to_thread.current_default_thread_limiter().total_tokens=16
         yield
-    app=FastAPI(title='Dearly API',version='0.4.0',docs_url='/docs',redoc_url=None,lifespan=lifespan)
+    app=FastAPI(title='Dearly API',version='0.5.0',docs_url='/docs',redoc_url=None,lifespan=lifespan)
     app.state.database=database
     app.add_middleware(BodyLimit, idle_timeout=body_idle_timeout, total_timeout=body_total_timeout)
+    app.add_middleware(BrowserSession)
 
     @app.exception_handler(RequestError)
     async def request_error(request, exc):
@@ -807,7 +813,7 @@ def create_app(path: str | Path = 'data/dearly.sqlite3', *, clock: Callable[[],f
         return dict(token=token,userID=uid,expiresAt=expires-SWIFT_EPOCH)
 
     @app.get('/health')
-    def health(): return {'status':'ok','version':'0.4.0','dayBoundary':'UTC'}
+    def health(): return {'status':'ok','version':'0.5.0','dayBoundary':'UTC'}
 
     @app.post('/v1/auth/register',status_code=201)
     def register(data: Registration,request: Request):
@@ -823,7 +829,7 @@ def create_app(path: str | Path = 'data/dearly.sqlite3', *, clock: Callable[[],f
             # Explicit defaults also apply to databases whose original column defaults were Vietnamese.
             db.execute('INSERT INTO users(id,username,password_hash,nickname,birth_date,created,interests,support,pace) VALUES(?,?,?,?,?,?,?,?,?)',
                        (uid,data.username.lower(),encoded,nickname,birth,clock(),json.dumps(['Music','Reading']),'listen','Evenings'))
-            changed(db);return session(db,uid)
+            changed(db);return browser_session(session(db,uid), request, 201)
 
     @app.post('/v1/auth/login')
     def login(data: Credentials,request: Request):
@@ -838,14 +844,17 @@ def create_app(path: str | Path = 'data/dearly.sqlite3', *, clock: Callable[[],f
         if not valid or user is None or user['suspended']: fail('Incorrect username or password.',401)
         with database.connect(write=True) as db:
             if db.execute('SELECT suspended FROM users WHERE id=?',(user['id'],)).fetchone()[0]: fail('This account is unavailable.',401)
-            return session(db,user['id'])
+            return browser_session(session(db,user['id']), request)
 
     @app.post('/v1/auth/logout')
     def logout(authorization: str | None=Header(default=None)):
         with database.connect(write=True) as db:
             authenticate(db,authorization)
             db.execute('DELETE FROM sessions WHERE token_hash=?',(hashlib.sha256(authorization[7:].encode()).hexdigest(),))
-        return {'ok':True}
+        hub.publish()
+        response=JSONResponse({'ok':True},headers={'Cache-Control':'no-store'})
+        response.delete_cookie(COOKIE,path='/')
+        return response
 
     @app.get('/v1/state')
     def state(authorization: str | None=Header(default=None),if_none_match: str | None=Header(default=None)):
@@ -859,8 +868,7 @@ def create_app(path: str | Path = 'data/dearly.sqlite3', *, clock: Callable[[],f
             if if_none_match==tag: return Response(status_code=304,headers=headers)
             return JSONResponse(dict(state=snapshot(db,user,now),serverNow=now-SWIFT_EPOCH),headers=headers)
 
-    @app.post('/v1/actions')
-    def action(data: Action,authorization: str | None=Header(default=None)):
+    def execute_action(data: Action, authorization):
         rid=identifier(data.requestID)
         fingerprint=hashlib.sha256(json.dumps({'kind':data.kind,'payload':data.payload},sort_keys=True,separators=(',',':')).encode()).hexdigest()
         with database.connect(write=True) as db:
@@ -876,7 +884,109 @@ def create_app(path: str | Path = 'data/dearly.sqlite3', *, clock: Callable[[],f
             result={'ok':True,**apply_action(db,user,data.kind,data.payload,now)}
             db.execute('INSERT INTO requests VALUES(?,?,?,?,?)',(uid,rid,fingerprint,json.dumps(result),now))
             db.execute('DELETE FROM requests WHERE created<?',(now-7*86400,))
-            changed(db);return result
+            changed(db)
+        if data.kind=='message.send':
+            hub.publish({'type':'message', 'id':result['id'], 'connectionID':identifier(data.payload['connectionID'])})
+        else:
+            hub.publish()
+        return result
+
+    @app.post('/v1/actions')
+    def action(data: Action,authorization: str | None=Header(default=None)):
+        return execute_action(data,authorization)
+
+    def socket_user(authorization, event=None):
+        with database.connect() as db:
+            user=authenticate(db,authorization)
+            message=None
+            if event and event['type']=='message':
+                conn=active(db,user['id'])
+                if conn and conn['id']==event['connectionID'] and eligible(db,conn['first_id'],conn['second_id'],clock()):
+                    row=db.execute('SELECT * FROM messages WHERE id=? AND connection_id=?',
+                                   (event['id'],conn['id'])).fetchone()
+                    if row: message=message_dto(row)
+            return user['id'],message
+
+    @app.websocket('/ws/chat')
+    async def chat(websocket: WebSocket):
+        # Browser cookies are never accepted across origins; native clients authenticate in-frame.
+        if not same_origin(websocket) or (websocket.cookies.get(COOKIE) and not websocket.headers.get('origin')):
+            await websocket.close(code=4403);return
+        try:
+            ip=websocket.client.host if websocket.client else 'unknown'
+            limiter.check('socket-ip:'+ip,12,1/10)
+        except RequestError:
+            await websocket.close(code=4429);return
+        await websocket.accept()
+        tasks=[]
+        try:
+            raw=await asyncio.wait_for(websocket.receive_text(),timeout=5)
+            if len(raw.encode())>16384: await websocket.close(code=1009);return
+            frame=json.loads(raw)
+            if not isinstance(frame,dict) or frame.get('type')!='authenticate':
+                await websocket.close(code=4401);return
+            token=websocket.cookies.get(COOKIE) or frame.get('token')
+            if not isinstance(token,str) or len(token)>128:
+                await websocket.close(code=4401);return
+            authorization='Bearer '+token
+            uid,_=await anyio.to_thread.run_sync(socket_user,authorization)
+            with hub.subscribe(uid) as queue:
+                await websocket.send_json({'type':'ready','userID':uid})
+                incoming=asyncio.create_task(websocket.receive_text())
+                outgoing=asyncio.create_task(queue.get())
+                tasks=[incoming,outgoing]
+                while True:
+                    done,_=await asyncio.wait(tasks,timeout=15,return_when=asyncio.FIRST_COMPLETED)
+                    # Re-check revocation and suspension even on an idle socket / CLI changes.
+                    await anyio.to_thread.run_sync(socket_user,authorization)
+                    if not done:
+                        await websocket.send_json({'type':'ping'});continue
+                    if incoming in done:
+                        raw=incoming.result()
+                        if len(raw.encode())>16384: await websocket.close(code=1009);return
+                        frame=json.loads(raw)
+                        request_id=frame.get('requestID') if isinstance(frame,dict) else None
+                        try:
+                            limiter.check('socket-frame:'+uid,60,2)
+                            if not isinstance(frame,dict): fail('Invalid chat frame.')
+                            if frame.get('type')=='ping':
+                                await websocket.send_json({'type':'pong'})
+                            elif frame.get('type')=='message.send':
+                                command=Action.model_validate({'requestID':request_id,'kind':'message.send',
+                                    'payload':{'connectionID':frame.get('connectionID'),'text':frame.get('text')}})
+                                result=await anyio.to_thread.run_sync(execute_action,command,authorization)
+                                await websocket.send_json({'type':'ack','requestID':request_id,'result':result})
+                            else: fail('This chat frame is not supported.')
+                        except (RequestError,ValidationError) as exc:
+                            status=exc.status_code if isinstance(exc,RequestError) else 400
+                            detail=str(exc.detail) if isinstance(exc,RequestError) else 'Invalid chat message.'
+                            await websocket.send_json({'type':'error','requestID':request_id,'status':status,'detail':detail})
+                            if status==429: await websocket.close(code=4429);return
+                        incoming=asyncio.create_task(websocket.receive_text())
+                        tasks=[incoming,outgoing]
+                    if outgoing in done:
+                        event=outgoing.result()
+                        _,message=await anyio.to_thread.run_sync(socket_user,authorization,event)
+                        if message: await websocket.send_json({'type':'message','message':message})
+                        elif event['type']=='state.changed': await websocket.send_json(event)
+                        outgoing=asyncio.create_task(queue.get())
+                    tasks=[incoming,outgoing]
+        except RequestError as exc:
+            await websocket.close(code=4401 if exc.status_code==401 else 4403)
+        except OverflowError:
+            await websocket.close(code=4429)
+        except (asyncio.TimeoutError, json.JSONDecodeError, UnicodeError, KeyError, TypeError):
+            await websocket.close(code=1008)
+        except sqlite3.OperationalError:
+            await websocket.close(code=1013)
+        except WebSocketDisconnect:
+            pass
+        except asyncio.CancelledError:
+            pass
+        finally:
+            for task in tasks: task.cancel()
+            with anyio.CancelScope(shield=True):
+                if tasks: await asyncio.gather(*tasks,return_exceptions=True)
 
     staff_headers = {'Cache-Control': 'no-store', 'Vary': 'Authorization'}
 
@@ -989,4 +1099,10 @@ def create_app(path: str | Path = 'data/dearly.sqlite3', *, clock: Callable[[],f
             return JSONResponse(dict(items=[message_dto(r) for r in reversed(page)],
                                      nextCursor=page[-1]['id'] if len(rows)>limit else None), headers=staff_headers)
 
+    selected_web=web_dir or os.environ.get('DEARLY_WEB_DIST')
+    directory=Path(selected_web) if selected_web else Path(__file__).resolve().parents[1]/'web'/'dist'
+    if (directory/'index.html').is_file():
+        mount_web(app,directory)
+    elif selected_web:
+        raise ValueError('The selected web directory has no index.html. Run npm run build in web first.')
     return app

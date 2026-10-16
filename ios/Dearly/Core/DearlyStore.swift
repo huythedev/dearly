@@ -12,11 +12,18 @@ final class DearlyStore: ObservableObject {
     @Published private(set) var syncError: String?
     @Published private(set) var serverAddress = ""
     @Published private(set) var lastSync: Date?
-    var foreground = true
+    @Published private(set) var isChatConnected = false
+    var foreground = true {
+        didSet {
+            guard foreground != oldValue else { return }
+            if foreground { startChat() } else { stopChat() }
+        }
+    }
     private var api: APIClient?
     private var generation = UUID()
     private var etag: String?
     private var refreshing = false
+    private var chatTask: Task<Void, Never>?
     private var serverClockOffset: TimeInterval = 0
     var now: Date {
         Date().addingTimeInterval(serverClockOffset)
@@ -55,6 +62,7 @@ final class DearlyStore: ObservableObject {
             serverClockOffset = envelope.serverNow.timeIntervalSinceNow
             lastSync = Date(); errorMessage = nil; syncError = nil
             UserDefaults.standard.set(record.baseURL, forKey: "dearly.server.address")
+            startChat()
             return true
         } catch { errorMessage = error.localizedDescription; return false }
     }
@@ -70,6 +78,7 @@ final class DearlyStore: ObservableObject {
             generation = UUID(); api = client; etag = tag; state = envelope.state
             isOnline = true; serverAddress = record.baseURL; lastSync = Date()
             serverClockOffset = envelope.serverNow.timeIntervalSinceNow
+            startChat()
         } catch {
             if (error as? APIError)?.status == 401 { SessionKeychain.clear() }
             errorMessage = LF("Couldn’t restore your session. Please log in again. %1$@", String(describing: error.localizedDescription))
@@ -91,6 +100,7 @@ final class DearlyStore: ObservableObject {
     }
 
     private func disconnect() {
+        stopChat()
         generation = UUID(); api = nil; etag = nil; refreshing = false
         SessionKeychain.clear(); state = .signedOut(); isOnline = false
         serverAddress = ""; syncError = nil; lastSync = nil; serverClockOffset = 0
@@ -133,12 +143,57 @@ final class DearlyStore: ObservableObject {
 
     func syncLoop() async {
         await restoreSession()
+        if chatTask == nil { startChat() }
+        defer { stopChat() }
         var delay: UInt64 = 3
         while !Task.isCancelled {
             do { try await Task.sleep(nanoseconds: delay * 1_000_000_000) } catch { return }
             if foreground && isOnline && !isBusy && !isAuthenticating {
-                delay = await refresh() ? 3 : min(delay * 2, 30)
+                delay = await refresh() ? (isChatConnected ? 15 : 3) : min(delay * 2, 30)
             } else { delay = 3 }
+        }
+    }
+
+    private func stopChat() {
+        chatTask?.cancel(); chatTask = nil; isChatConnected = false
+    }
+
+    private func startChat() {
+        stopChat()
+        guard foreground, isOnline, let client = api else { return }
+        let expected = generation
+        chatTask = Task { [weak self] in
+            var delay: UInt64 = 1
+            while !Task.isCancelled, self?.generation == expected, self?.foreground == true {
+                do {
+                    try await client.listenForChat { [weak self] event in
+                        await self?.receiveChat(event, generation: expected)
+                    }
+                } catch {
+                    guard !Task.isCancelled, let self, self.generation == expected else { return }
+                    if self.isChatConnected { delay = 1 }
+                    self.isChatConnected = false
+                    // REST checks expiry/suspension and remains the compatibility fallback.
+                    _ = await self.refresh(force: true)
+                }
+                guard !Task.isCancelled, self?.generation == expected else { return }
+                do { try await Task.sleep(nanoseconds: delay * 1_000_000_000) } catch { return }
+                delay = min(delay * 2, 30)
+            }
+        }
+    }
+
+    private func receiveChat(_ event: ChatEvent, generation expected: UUID) async {
+        guard generation == expected, isOnline, foreground else { return }
+        switch event.type {
+        case "ready":
+            isChatConnected = true
+            _ = await refresh(force: true) // Reconcile anything missed while disconnected.
+        case "message":
+            if let message = event.message { state.receiveLiveMessage(message) }
+        case "state.changed":
+            _ = await refresh()
+        default: break
         }
     }
 

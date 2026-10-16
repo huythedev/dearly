@@ -23,6 +23,7 @@ def main():
     serve.add_argument('--proxy-ips',default='',help='Trusted reverse-proxy IPs only (e.g. 127.0.0.1). Empty disables forwarded headers.')
     serve.add_argument('--cert',help='TLS certificate PEM (optional behind an HTTPS reverse proxy)')
     serve.add_argument('--key',help='TLS private key PEM')
+    serve.add_argument('--web-dir',default=os.environ.get('DEARLY_WEB_DIST'),help='Vite dist directory (defaults to ../web/dist when built)')
     verify=sub.add_parser('verify-age',help='Mark date of birth reviewed by an operator')
     verify.add_argument('--username',required=True); verify.add_argument('--birth-date',required=True)
     verify.add_argument('--reason',default='Birth date reviewed by server operator')
@@ -47,8 +48,9 @@ def main():
         if args.body_idle_timeout <= 0 or args.body_total_timeout <= 0:
             parser.error('Request body timeouts must be positive.')
         import uvicorn
-        uvicorn.run(create_app(args.db,body_idle_timeout=args.body_idle_timeout,body_total_timeout=args.body_total_timeout),
+        uvicorn.run(create_app(args.db,body_idle_timeout=args.body_idle_timeout,body_total_timeout=args.body_total_timeout,web_dir=args.web_dir),
                     host=args.host,port=args.port,workers=1,loop='asyncio',http='h11',
+                    ws='wsproto',ws_max_size=16384,ws_max_queue=8,
                     limit_concurrency=64,timeout_keep_alive=5,proxy_headers=bool(args.proxy_ips),forwarded_allow_ips=args.proxy_ips,
                     ssl_certfile=args.cert,ssl_keyfile=args.key)
         return

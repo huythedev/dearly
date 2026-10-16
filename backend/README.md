@@ -1,6 +1,6 @@
-# Dearly backend 0.4
+# Dearly backend 0.5
 
-A Python 3.11+ / FastAPI / SQLite backend for the Dearly iOS app. It runs as a single server on macOS, Linux, or Windows. No separate database server, Redis, Node.js, or Docker is required.
+A Python 3.11+ / FastAPI / SQLite backend shared by the Dearly iOS and web apps. It runs as a single server on macOS, Linux, or Windows. No separate database server, Redis, Node.js runtime, or Docker is required. Building the optional web frontend requires Node.js 24 or the Docker multi-stage build.
 
 ## Setup and run
 
@@ -59,14 +59,14 @@ Administration commands must use the same database path as the running server. V
 
 The app’s default server is **`https://dearly.huythedev.com`**. This is a client default; running the local backend does not configure DNS, TLS, or deployment for that domain. Previously saved server addresses and sessions keep their existing server URL.
 
-1. Open `Dearly.xcodeproj`, select the **Dearly** scheme, and run a **Debug** build on a simulator or iPhone.
+1. Open `ios/Dearly.xcodeproj` from the repository root, select the **Dearly** scheme, and run a **Debug** build on a simulator or iPhone.
 2. On the login screen, expand **Server connection / Kết nối server** to choose your backend.
 3. For a simulator on the same Mac, enter `http://localhost:8000`.
 4. For a physical iPhone, use the computer’s LAN IP, such as `http://192.168.1.10:8000`. Bind the backend to `0.0.0.0`, connect both devices to the same Wi-Fi, and allow Local Network access if prompted. Do not use `localhost` to reach your computer from an iPhone.
 5. Register or log in. Usernames use 3–64 characters from `a-z A-Z 0-9 _ . -`; passwords use 10–128 characters; nicknames allow up to 40 characters.
 6. To test matching and chat, create two accounts on separate devices or simulators and verify their birth dates with the administration CLI below.
 
-The app requires a backend session and has no offline demo fallback. New accounts can write journals immediately; matching requires operator-verified age. While the app is open, changes normally synchronize about every 3 seconds. English is the default and source language; choose Vietnamese from the login screen’s language menu or account settings. API errors default to English and support `Accept-Language: vi`. Stored support preferences use `listen`, `relate`, or `brainstorm`, independently of display language.
+The app requires a backend session and has no offline demo fallback. New accounts can write journals immediately; matching requires operator-verified age. While the iOS app is open, WebSocket events deliver chat and invalidate state immediately. It reconciles every 15 seconds when connected and falls back to 3-second REST sync when disconnected. English is the default and source language; choose Vietnamese from the login screen’s language menu or account settings. API errors default to English and support `Accept-Language: vi`. Stored support preferences use `listen`, `relate`, or `brainstorm`, independently of display language.
 
 Debug builds allow HTTP to localhost, private IPv4 addresses, and `.local` hosts. Release builds require HTTPS. The API client rejects redirects and uses normal certificate validation; a self-signed certificate must be trusted by iOS to work.
 
@@ -142,25 +142,13 @@ Keep SQLite on a local disk, not SMB/NFS. Do not run multiple replicas writing t
 
 ## HTTPS hosting
 
-For Internet hosting, run the backend on localhost behind an HTTPS reverse proxy. For example, a Caddy configuration for the app’s default domain is:
+FastAPI serves the built web app and every API/WebSocket route on the same port. No extra reverse proxy is required just to combine them.
 
-```caddyfile
-dearly.huythedev.com {
-    reverse_proxy 127.0.0.1:8000
-}
-```
+For the existing **dearly.huythedev.com** setup, keep the Cloudflare Tunnel hostname forwarding **all paths** to `http://localhost:8000`. Do not create a static-only route that captures `/v1` or `/ws`. Preserve the incoming `Host` and browser `Origin`; browser sessions and WebSockets enforce that they match. HTTPS at the public domain gives browser sessions a Secure, HttpOnly, SameSite=Strict cookie. No frontend API-origin environment variable or CORS allowlist is needed.
 
-The domain must be under your control and point to the host, with the proxy’s required ports reachable. This configuration is an example, not confirmation that the domain is deployed.
+If a trusted local proxy supplies client IP headers, run `serve --proxy-ips 127.0.0.1` (use the actual proxy addresses, never `*`). Forwarded headers are ignored by default. The launcher can also terminate TLS directly using `serve --cert certificate.pem --key private-key.pem`.
 
-When the reverse proxy runs on the same machine, start the backend with:
-
-```bash
-.venv/bin/python run.py serve --proxy-ips 127.0.0.1
-```
-
-Trust only the actual proxy IP addresses, not `*`. This lets the rate limiter use the client IP supplied by that proxy. Forwarded headers are not trusted by default.
-
-Alternatively, the launcher accepts `--cert certificate.pem --key private-key.pem` after `serve` to terminate TLS directly. Both options are required together. Keep keys and credentials out of version control.
+Build `web/dist` with `npm ci && npm run build` from `web/`, then start the backend normally. It discovers that directory relative to the source, independently of the working directory. Override it with `serve --web-dir /absolute/path/to/dist` or `DEARLY_WEB_DIST`. An explicit path without `index.html` fails startup; without a build or override the backend remains API-only. Static SPA fallback never captures API, WebSocket, documentation, or missing asset paths.
 
 ## Docker
 
@@ -175,7 +163,7 @@ docker compose ps
 docker compose logs -f backend
 ```
 
-This builds the local **`dearly-api:latest`** image, starts the backend at `http://127.0.0.1:8000`, and stores SQLite in a named volume. The service restarts unless explicitly stopped. The image runs as a non-root user and checks `/health` every 30 seconds; `docker compose ps` displays its health status.
+This builds the local **`dearly-api:latest`** image, serves the web app and backend at `http://127.0.0.1:8000`, and stores SQLite in a named volume. The service restarts unless explicitly stopped. The image runs as a non-root user and checks `/health` every 30 seconds; `docker compose ps` displays its health status.
 
 If port 8000 is occupied, set `DEARLY_PORT=8001` in a root `.env` file before starting. For LAN access, set `DEARLY_BIND=0.0.0.0`. Otherwise the port is accessible only on the Docker host. Update the app’s server URL to match. The container’s internal port remains 8000.
 
@@ -189,17 +177,17 @@ docker compose down
 
 `docker compose down` preserves the database volume. **Adding `--volumes` deletes that volume and its data.** Use a new backup filename for each backup. Do not run the native backend and Compose on the same host port.
 
-### Build and run without Compose (from `backend`)
+### Build and run without Compose (from the repository root)
 
 ```bash
-docker build -t dearly-api:latest .
+docker build -f backend/Dockerfile -t dearly-api:latest .
 docker run -d --name dearly-api --restart unless-stopped --init -p 127.0.0.1:8000:8000 -v dearly-data:/data dearly-api:latest
 docker logs -f dearly-api
 ```
 
 To avoid a host port conflict, change the mapping to `127.0.0.1:8001:8000`. Run administration commands with `docker exec dearly-api python run.py reports`. Stop the container with `docker stop dearly-api`.
 
-The build context includes only the Dockerfile, runtime Python files, and dependency manifest. Local databases, credentials, virtual environments, and tests are excluded from the image. The image does not configure public DNS or HTTPS; use a reverse proxy as described above.
+The repository-root `.dockerignore` allows only backend runtime files and web build inputs. Node builds the frontend in a separate stage; the final Python image contains only runtime dependencies and built web assets. Local databases, credentials, iOS sources, virtual environments, and Node dependencies are excluded. Keep the same named data volume when upgrading. The image does not configure public DNS, HTTPS, or your tunnel.
 
 Docker is not installed on the current development machine, so the image build and container health check have not yet been verified here.
 
@@ -225,8 +213,8 @@ The backend suite covers staff authorization, migration, the audit regressions, 
 - Journals are limited to 20,000 characters; messages to 4,000; responses to 2,000. The rate limiter holds at most 4,096 buckets in memory.
 - State snapshots return bounded windows: up to 60 personal journals, 60 community posts, 60 companion journals, 20 recent gardens plus the active connection if needed, 100 invitations, 200 responses, and 100 recent messages.
 - Personal journal pagination uses 40 entries per page in the app, with an API maximum of 60. Saved gardens use 20 per page (API maximum 50) with member profiles included. Chat supports up to 100 messages per API page; the app retains at most 500 messages in memory. Community and companion journal screens show the latest window without older-history navigation.
-- The app polls about every 3 seconds in the foreground. ETag/304 responses avoid resending unchanged state; failed requests increase the delay up to 30 seconds. There is no push delivery or WebSocket connection while the app is closed.
+- iOS receives live socket messages/invalidation with foreground-aware reconnect and idempotent REST sends, using 15-second reconciliation or 3-second polling while disconnected. Web uses `/ws/chat` for sending/receiving chat, immediate state invalidation, exponential reconnect, and an idempotent REST send fallback. Visible web tabs also poll state every 15 seconds for recovery and CLI changes. There is no background push delivery after a client closes. The event hub is single-worker, bounded to 32 sockets globally / 4 per account, with 32 queued notifications each; slow clients resync instead of accumulating an unbounded message backlog. Session/suspension is rechecked on each frame/event and every 15 seconds while idle. Uvicorn/wsproto limits assembled frames to 16 KiB; authentication must arrive within 5 seconds.
 - Mutations use request UUIDs. Results are stored in the same transaction so retrying a request does not duplicate a message. Retry keys are retained for 7 days; daily check-ins have a separate UTC uniqueness constraint.
-- Passwords use salted PBKDF2-SHA256 with 600,000 iterations. Random bearer tokens are stored only as hashes on the server, expire after 30 days, and are kept in Keychain on iOS. App session state stays in memory rather than being written to a local journal/chat cache.
+- Passwords use salted PBKDF2-SHA256 with 600,000 iterations. Random bearer tokens are stored only as hashes on the server, expire after 30 days, and are kept in Keychain on iOS and in HttpOnly session cookies on web. Browser tokens never appear in JavaScript storage, URLs, or web authentication response bodies. Cookie-authenticated writes require the same-origin web header; cross-origin WebSocket handshakes are denied. App session state stays in memory rather than being written to a local journal/chat cache.
 
 This design targets a small, controlled pilot. Larger write volumes or multiple replicas require a server database and more targeted cache invalidation. ETags currently use a shared revision, so one account’s mutation can cause other clients to reload their snapshots.

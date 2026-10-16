@@ -253,7 +253,7 @@ struct AccountSettingsView: View {
                         }
                     }
                     Section {
-                        Text(L("The server manages permissions and daily check-ins (UTC). Messages sync about every 3 seconds while the app is open. Your data is saved on the server.")).font(.caption)
+                        Text(L("Chat updates live while the app is open. If the connection drops, automatic sync keeps your messages up to date. Daily check-ins use UTC. Your data is saved on the server.")).font(.caption)
                     }
                 }
             }.navigationTitle(L("Dearly settings")).navigationBarTitleDisplayMode(.inline)

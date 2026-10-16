@@ -5,13 +5,17 @@ English is the development language, source language, and fallback for Dearly. N
 ## Source conventions
 
 - Use English identifiers, comments, fixture defaults, and documentation.
-- Write static interface text as `L("English source text")`. Add the English key and Vietnamese translation to `Dearly/Localizable.xcstrings`; its source language and the Xcode development region are both `en`.
+- Write static interface text as `L("English source text")`. Add the English key and Vietnamese translation to `ios/Dearly/Localizable.xcstrings`; its source language and the Xcode development region are both `en`.
 - Use `LF("With %1$@", name)` for variable text. Translations may reorder positional placeholders. Values are inserted after translation, so user names, journal text, and percent signs in user content remain unchanged.
 - Catalog entries used through the custom helpers are marked manual so Xcode keeps them. Keep the English value equal to the key and match placeholders in both languages.
 - Keep user-written profile fields, journals, messages, reports, and review notes as entered. Do not use their text as localization keys.
 - Use stable English identifiers for structured values: `SupportStyle` encodes `listen`, `relate`, or `brainstorm`; its localized `title` is only for display. API field names, roles, actions, and audience identifiers are independent of language.
 
 Vietnamese in source code is limited to the language picker's own name and explicit legacy decoding maps. Other Vietnamese product text belongs in translation resources.
+
+## Web interface
+
+Web components use English source keys with `t("English source text")`; Vietnamese translations live in `web/src/vi.json`. Store only language/appearance in browser storage. Keep backend support identifiers and all user-written text unchanged. API requests send the selected `Accept-Language`; WebSocket error details are translated for display using the same English templates.
 
 ## Backend errors
 

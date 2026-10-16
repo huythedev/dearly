@@ -1,4 +1,5 @@
 {
+  "A same-origin browser request is required.": "Yêu cầu trình duyệt phải đến từ cùng nguồn.",
   "Account not found.": "Không tìm thấy tài khoản.",
   "Accounts are available for ages 16 through 100.": "Bản này hỗ trợ tài khoản từ 16 đến 100 tuổi.",
   "Admin access can only be granted with a backend server command.": "Chỉ lệnh trên server được cấp quyền admin.",
@@ -9,6 +10,7 @@
   "Incorrect username or password.": "Sai tên đăng nhập hoặc mật khẩu.",
   "Invalid ID.": "ID không hợp lệ.",
   "Invalid account filter.": "Bộ lọc tài khoản không hợp lệ.",
+  "Invalid chat frame.": "Dữ liệu trò chuyện không hợp lệ.",
   "Invalid date of birth.": "Ngày sinh không hợp lệ.",
   "Invalid details. Check your username, password, and required fields.": "Thông tin chưa hợp lệ. Kiểm tra tên đăng nhập, mật khẩu và các trường bắt buộc.",
   "Invalid field in staff action.": "Trường quản trị không hợp lệ.",
@@ -43,6 +45,7 @@
   "The suspended field is required.": "Thiếu trường suspended.",
   "This account is unavailable.": "Tài khoản không khả dụng.",
   "This action is not supported.": "Thao tác không được hỗ trợ.",
+  "This chat frame is not supported.": "Dữ liệu trò chuyện này không được hỗ trợ.",
   "This connection is no longer active.": "Kết nối không hoạt động.",
   "This connection is no longer eligible, or someone has another connection.": "Kết nối không còn phù hợp hoặc đang có kết nối khác.",
   "This entry has no sharing restriction.": "Bài viết không bị hạn chế chia sẻ.",
