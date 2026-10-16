@@ -57,8 +57,6 @@ function GuideDialog({ index, next, back, dismiss }: { index: number; next: () =
   }, []);
 
   useLayoutEffect(() => {
-    // Every step starts with its heading visible, even after reading a long previous step.
-    card.current!.querySelector<HTMLElement>('.guide-copy')!.scrollTop = 0;
     let frame = 0;
     let observed: Element | null = null;
     const targetSelector = step ? `[data-guide="${step.target}"]` : '';
@@ -130,7 +128,7 @@ function GuideDialog({ index, next, back, dismiss }: { index: number; next: () =
     <div ref={card} className={`guide-card ${step ? '' : 'guide-intro'}`} style={{ left: placement.left, top: placement.top, width: placement.width, maxHeight: placement.maxHeight }}>
       {step ? <div className="guide-topline"><span>{progress}</span><button type="button" className="text-button" onClick={dismiss}>{t('Skip guide')}</button></div>
         : <span className="small-icon"><Leaf size={23} /></span>}
-      <div className="guide-copy" tabIndex={0} role="region" aria-labelledby="guide-title">
+      <div key={index} className="guide-copy" tabIndex={0} role="region" aria-labelledby="guide-title">
         <h2 ref={heading} id="guide-title" tabIndex={-1}>{t(step?.title ?? 'A little guide to Dearly')}</h2>
         <p id="guide-description">{t(step?.body ?? 'Explore the main features at your own pace. You can skip the guide and open it again from Settings.')}</p>
       </div>
