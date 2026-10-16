@@ -2,7 +2,7 @@ import SwiftUI
 
 @MainActor
 struct StaffConsoleView: View {
-    @AppStorage("dearly.language") private var language = "vi"
+    @AppStorage("dearly.language") private var language = "en"
     @EnvironmentObject private var store: DearlyStore
     @State private var section = "reports"
     @State private var status: ReportStatus = .open
@@ -22,19 +22,19 @@ struct StaffConsoleView: View {
                 List {
                     Section {
                         Text(store.role.title).font(.headline).foregroundStyle(DearlyTheme.forest)
-                        Picker(L("Mục quản lý", "Section"), selection: $section) {
-                            Text(L("Báo cáo", "Reports")).tag("reports")
-                            if store.hasPermission("users.read") { Text(L("Tài khoản", "Accounts")).tag("users") }
-                            if store.hasPermission("audit.read") { Text(L("Nhật ký", "Audit log")).tag("audit") }
+                        Picker(L("Section"), selection: $section) {
+                            Text(L("Reports")).tag("reports")
+                            if store.hasPermission("users.read") { Text(L("Accounts")).tag("users") }
+                            if store.hasPermission("audit.read") { Text(L("Audit log")).tag("audit") }
                         }.pickerStyle(.segmented)
                     }
                     if section == "reports" {
                         Section {
-                            Picker(L("Trạng thái", "Status"), selection: $status) {
+                            Picker(L("Status"), selection: $status) {
                                 ForEach(ReportStatus.allCases, id: \.self) { Text($0.title).tag($0) }
                             }
                         }
-                        Section(L("Báo cáo", "Reports")) {
+                        Section(L("Reports")) {
                             ForEach(reports) { report in
                                 NavigationLink {
                                     StaffReportView(report: report)
@@ -46,16 +46,16 @@ struct StaffConsoleView: View {
                                     }
                                 }
                             }
-                            if reports.isEmpty && !loading { Text(L("Không có báo cáo.", "No reports.")) }
+                            if reports.isEmpty && !loading { Text(L("No reports.")) }
                         }
                     } else if section == "users" && store.hasPermission("users.read") {
                         Section {
-                            TextField(L("Tìm theo tên hoặc username", "Search name or username"), text: $query)
+                            TextField(L("Search name or username"), text: $query)
                                 .textInputAutocapitalization(.never).autocorrectionDisabled().submitLabel(.search)
                                 .onSubmit { Task { await load() } }
-                            Button(L("Tìm kiếm", "Search")) { Task { await load() } }.disabled(loading)
+                            Button(L("Search")) { Task { await load() } }.disabled(loading)
                         }
-                        Section(L("Tài khoản", "Accounts")) {
+                        Section(L("Accounts")) {
                             ForEach(users) { user in
                                 NavigationLink {
                                     StaffUserView(user: user)
@@ -63,14 +63,14 @@ struct StaffConsoleView: View {
                                     VStack(alignment: .leading, spacing: 5) {
                                         Text(user.nickname).font(.headline)
                                         Text("@\(user.username) · \(user.role.title)").font(.caption)
-                                        if user.suspended { Label(L("Đã khóa", "Suspended"), systemImage: "lock.fill").font(.caption).foregroundStyle(.red) }
+                                        if user.suspended { Label(L("Suspended"), systemImage: "lock.fill").font(.caption).foregroundStyle(.red) }
                                     }
                                 }
                             }
-                            if users.isEmpty && !loading { Text(L("Không có tài khoản phù hợp.", "No matching accounts.")) }
+                            if users.isEmpty && !loading { Text(L("No matching accounts.")) }
                         }
                     } else if section == "audit" && store.hasPermission("audit.read") {
-                        Section(L("Nhật ký quản trị", "Administration log")) {
+                        Section(L("Administration log")) {
                             ForEach(audit) { entry in
                                 VStack(alignment: .leading, spacing: 7) {
                                     Text(entry.title).font(.headline)
@@ -82,28 +82,28 @@ struct StaffConsoleView: View {
                                     if let value = entry.detail.status.flatMap(ReportStatus.init(rawValue:)) {
                                         Text(value.title).font(.caption)
                                     }
-                                    Text(L("Đối tượng: \(entry.targetID)", "Target: \(entry.targetID)"))
+                                    Text(LF("Target: %1$@", String(describing: entry.targetID)))
                                         .font(.caption2).textSelection(.enabled)
                                     Text(entry.date, format: .dateTime).font(.caption).foregroundStyle(DearlyTheme.muted)
                                 }
                             }
-                            if audit.isEmpty && !loading { Text(L("Chưa có thao tác.", "No actions yet.")) }
+                            if audit.isEmpty && !loading { Text(L("No actions yet.")) }
                         }
                     }
                     Section {
                         if loading { ProgressView() }
                         if let failure { Text(failure).font(.footnote).foregroundStyle(.red) }
                         if nextID != nil || nextAuditID != nil {
-                            Button(L("Trang tiếp theo", "Next page")) { Task { await load(next: true) } }.disabled(loading)
+                            Button(L("Next page")) { Task { await load(next: true) } }.disabled(loading)
                         }
-                        Button(L("Về trang đầu / Làm mới", "First page / Refresh")) { Task { await load() } }.disabled(loading)
+                        Button(L("First page / Refresh")) { Task { await load() } }.disabled(loading)
                     }
                 }.scrollContentBackground(.hidden).background(DearlyTheme.cream)
             } else {
-                ContentUnavailableView(L("Không có quyền truy cập", "Access denied"), systemImage: "lock.shield")
+                ContentUnavailableView(L("Access denied"), systemImage: "lock.shield")
             }
         }
-        .navigationTitle(L("Quản lý Dearly", "Dearly management")).navigationBarTitleDisplayMode(.inline)
+        .navigationTitle(L("Dearly management")).navigationBarTitleDisplayMode(.inline)
         .onAppear { Task { await load() } }
         .onDisappear { requestID = UUID() }
         .onChange(of: section) { _, _ in Task { await load() } }
@@ -150,7 +150,7 @@ struct StaffConsoleView: View {
 
 @MainActor
 private struct StaffReportView: View {
-    @AppStorage("dearly.language") private var language = "vi"
+    @AppStorage("dearly.language") private var language = "en"
     @EnvironmentObject private var store: DearlyStore
     @Environment(\.dismiss) private var dismiss
     let report: StaffReport
@@ -162,52 +162,52 @@ private struct StaffReportView: View {
         Group {
             if store.hasPermission("reports.read") {
                 Form {
-                    Section(L("Báo cáo", "Report")) {
-                        LabeledContent(L("Người gửi", "Reporter"), value: report.reporterNickname)
-                        LabeledContent(L("Tài khoản bị báo cáo", "Reported account"), value: report.reportedNickname)
-                        LabeledContent(L("Trạng thái", "Status"), value: ReportStatus(rawValue: report.status)?.title ?? report.status)
+                    Section(L("Report")) {
+                        LabeledContent(L("Reporter"), value: report.reporterNickname)
+                        LabeledContent(L("Reported account"), value: report.reportedNickname)
+                        LabeledContent(L("Status"), value: ReportStatus(rawValue: report.status)?.title ?? report.status)
                         Text(report.reason).textSelection(.enabled)
                         Text(report.date, format: .dateTime).font(.caption)
                     }
                     if !report.evidence.isEmpty {
-                        Section(L("Đoạn công khai được báo cáo", "Reported public excerpt")) { Text(report.evidence).textSelection(.enabled) }
+                        Section(L("Reported public excerpt")) { Text(report.evidence).textSelection(.enabled) }
                     }
                     if !report.reviewNote.isEmpty {
-                        Section(L("Ghi chú trước đó", "Previous review note")) { Text(report.reviewNote) }
+                        Section(L("Previous review note")) { Text(report.reviewNote) }
                     }
                     if store.hasPermission("reports.review") {
-                        Section(L("Xem xét", "Review")) {
-                            TextField(L("Lý do / ghi chú bắt buộc", "Required reason / review note"), text: $reason, axis: .vertical).lineLimit(3...6)
+                        Section(L("Review")) {
+                            TextField(L("Required reason / review note"), text: $reason, axis: .vertical).lineLimit(3...6)
                             ForEach(ReportStatus.allCases, id: \.self) { status in
                                 Button(status.title) { Task { await review(status) } }.disabled(!canSubmit)
                             }
                             if report.canHide && store.hasPermission("reports.hide") {
-                                Button(L("Ẩn bài khỏi cộng đồng", "Hide community post"), role: .destructive) { confirmHide = true }.disabled(!canSubmit)
+                                Button(L("Hide community post"), role: .destructive) { confirmHide = true }.disabled(!canSubmit)
                             }
                             if report.canRestore == true && store.hasPermission("reports.hide") {
-                                Button(L("Cho phép tác giả chia sẻ lại", "Allow the author to share again")) { confirmRestore = true }.disabled(!canSubmit)
+                                Button(L("Allow the author to share again")) { confirmRestore = true }.disabled(!canSubmit)
                             }
                         }
                     }
                     if let error = store.errorMessage { Text(error).foregroundStyle(.red) }
                 }
-            } else { ContentUnavailableView(L("Không có quyền truy cập", "Access denied"), systemImage: "lock.shield") }
+            } else { ContentUnavailableView(L("Access denied"), systemImage: "lock.shield") }
         }
-        .navigationTitle(L("Chi tiết báo cáo", "Report details"))
-        .confirmationDialog(L("Ẩn bài khỏi cộng đồng?", "Hide this community post?"), isPresented: $confirmHide, titleVisibility: .visible) {
-            Button(L("Ẩn bài", "Hide post"), role: .destructive) {
+        .navigationTitle(L("Report details"))
+        .confirmationDialog(L("Hide this community post?"), isPresented: $confirmHide, titleVisibility: .visible) {
+            Button(L("Hide post"), role: .destructive) {
                 Task {
                     if await store.staffCommand("staff.report.hide", payload: CommandPayload(id: report.id, reason: reason)) { dismiss() }
                 }
             }
-        } message: { Text(L("Bài được chuyển về riêng tư và hạn chế chia sẻ cho đến khi quản trị viên cho phép lại. Journal gốc được giữ lại.", "The post becomes private and sharing stays restricted until staff restore it. The author's journal is preserved.")) }
-        .confirmationDialog(L("Cho phép chia sẻ lại?", "Allow sharing again?"), isPresented: $confirmRestore, titleVisibility: .visible) {
-            Button(L("Cho phép", "Allow")) {
+        } message: { Text(L("The post becomes private and sharing stays restricted until staff restore it. The author's journal is preserved.")) }
+        .confirmationDialog(L("Allow sharing again?"), isPresented: $confirmRestore, titleVisibility: .visible) {
+            Button(L("Allow")) {
                 Task {
                     if await store.staffCommand("staff.report.restore", payload: CommandPayload(id: report.id, reason: reason)) { dismiss() }
                 }
             }
-        } message: { Text(L("Bài vẫn riêng tư. Tác giả sẽ tự chọn có chia sẻ lại hay không.", "The entry stays private. Its author can choose whether to share it again.")) }
+        } message: { Text(L("The entry stays private. Its author can choose whether to share it again.")) }
     }
     private var canSubmit: Bool { !store.isBusy && (1...1000).contains(reason.trimmingCharacters(in: .whitespacesAndNewlines).count) }
     private func review(_ status: ReportStatus) async {
@@ -217,7 +217,7 @@ private struct StaffReportView: View {
 
 @MainActor
 private struct StaffUserView: View {
-    @AppStorage("dearly.language") private var language = "vi"
+    @AppStorage("dearly.language") private var language = "en"
     @EnvironmentObject private var store: DearlyStore
     @Environment(\.dismiss) private var dismiss
     let user: StaffUser
@@ -232,49 +232,49 @@ private struct StaffUserView: View {
                 Form {
                     Section {
                         LabeledContent(L("Nickname"), value: user.nickname)
-                        LabeledContent("Username", value: user.username)
-                        LabeledContent(L("Vai trò", "Role"), value: user.role.title)
-                        LabeledContent(L("Trạng thái", "Status"), value: user.suspended ? L("Đã khóa", "Suspended") : L("Hoạt động", "Active"))
-                        LabeledContent(L("Tuổi", "Age"), value: user.ageVerified ? L("Đã xác minh", "Verified") : L("Chưa xác minh", "Unverified"))
+                        LabeledContent(L("Username"), value: user.username)
+                        LabeledContent(L("Role"), value: user.role.title)
+                        LabeledContent(L("Status"), value: user.suspended ? L("Suspended") : L("Active"))
+                        LabeledContent(L("Age"), value: user.ageVerified ? L("Verified") : L("Unverified"))
                     }
                     if user.role == .admin || user.id == store.state.currentUserID {
-                        Text(L("Tài khoản quản trị viên được quản lý bằng lệnh trên server.", "Admin accounts are managed with commands on the backend server."))
+                        Text(L("Admin accounts are managed with commands on the backend server."))
                     } else {
                         Section {
-                            TextField(L("Lý do bắt buộc", "Required reason"), text: $reason, axis: .vertical).lineLimit(2...5)
+                            TextField(L("Required reason"), text: $reason, axis: .vertical).lineLimit(2...5)
                         }
                         if store.hasPermission("roles.manage") {
-                            Section(L("Vai trò", "Role")) {
-                                Picker(L("Vai trò", "Role"), selection: $role) {
+                            Section(L("Role")) {
+                                Picker(L("Role"), selection: $role) {
                                     Text(AccountRole.user.title).tag(AccountRole.user)
                                     Text(AccountRole.moderator.title).tag(AccountRole.moderator)
                                 }
-                                Button(L("Lưu vai trò", "Save role")) { pending = "role" }.disabled(!canSubmit || role == user.role)
+                                Button(L("Save role")) { pending = "role" }.disabled(!canSubmit || role == user.role)
                             }
                         }
                         if store.hasPermission("users.verify_age") {
-                            Section(L("Xác minh tuổi", "Age verification")) {
+                            Section(L("Age verification")) {
                                 TextField("YYYY-MM-DD", text: $birthDate).keyboardType(.numbersAndPunctuation)
-                                Text(L("Chỉ xác nhận sau khi đã kiểm tra tuổi bên ngoài app. Sửa ngày sinh sẽ kết thúc kết nối hiện tại.", "Confirm only after reviewing age outside the app. Correcting the date ends current connections.")).font(.caption)
-                                Button(L("Xác nhận tuổi đã kiểm tra", "Confirm reviewed age")) { pending = "age" }.disabled(!canSubmit || birthDate.count != 10)
+                                Text(L("Confirm only after reviewing age outside the app. Correcting the date ends current connections.")).font(.caption)
+                                Button(L("Confirm reviewed age")) { pending = "age" }.disabled(!canSubmit || birthDate.count != 10)
                             }
                         }
                         if store.hasPermission("users.suspend") {
                             Section {
-                                Button(user.suspended ? L("Mở lại tài khoản", "Restore account") : L("Khóa tài khoản", "Suspend account"), role: user.suspended ? nil : .destructive) { pending = "suspend" }.disabled(!canSubmit)
-                                Text(L("Khóa tài khoản thu hồi mọi phiên và kết thúc kết nối. Mở lại cần đăng nhập mới; khu vườn đã lưu vẫn được giữ.", "Suspension revokes sessions and ends connections. Restored accounts need a new login; archived gardens remain.")).font(.caption)
+                                Button(user.suspended ? L("Restore account") : L("Suspend account"), role: user.suspended ? nil : .destructive) { pending = "suspend" }.disabled(!canSubmit)
+                                Text(L("Suspension revokes sessions and ends connections. Restored accounts need a new login; archived gardens remain.")).font(.caption)
                             }
                         }
                     }
                     if let error = store.errorMessage { Text(error).foregroundStyle(.red) }
                 }
-            } else { ContentUnavailableView(L("Không có quyền truy cập", "Access denied"), systemImage: "lock.shield") }
+            } else { ContentUnavailableView(L("Access denied"), systemImage: "lock.shield") }
         }
-        .navigationTitle(L("Quản lý tài khoản", "Manage account"))
+        .navigationTitle(L("Manage account"))
         .onAppear { birthDate = user.birthDate; role = user.role }
-        .confirmationDialog(L("Xác nhận thay đổi", "Confirm change"), isPresented: Binding(get: { pending != nil }, set: { if !$0 { pending = nil } }), titleVisibility: .visible) {
+        .confirmationDialog(L("Confirm change"), isPresented: Binding(get: { pending != nil }, set: { if !$0 { pending = nil } }), titleVisibility: .visible) {
             let operation = pending ?? ""
-            Button(L("Xác nhận", "Confirm"), role: operation == "suspend" && !user.suspended ? .destructive : nil) {
+            Button(L("Confirm"), role: operation == "suspend" && !user.suspended ? .destructive : nil) {
                 Task { await apply(operation) }
             }
         } message: { Text(confirmationText) }
@@ -282,9 +282,9 @@ private struct StaffUserView: View {
     private var canSubmit: Bool { !store.isBusy && (1...1000).contains(reason.trimmingCharacters(in: .whitespacesAndNewlines).count) }
     private var confirmationText: String {
         switch pending {
-        case "role": return L("Đổi vai trò @\(user.username) thành \(role.title)?", "Change @\(user.username) to \(role.title)?")
-        case "age": return L("Xác nhận ngày sinh đã kiểm tra: \(birthDate)?", "Confirm reviewed birth date: \(birthDate)?")
-        default: return user.suspended ? L("Mở lại @\(user.username)?", "Restore @\(user.username)?") : L("Khóa @\(user.username) và kết thúc kết nối?", "Suspend @\(user.username) and end their connection?")
+        case "role": return LF("Change @%1$@ to %2$@?", String(describing: user.username), String(describing: role.title))
+        case "age": return LF("Confirm reviewed birth date: %1$@?", String(describing: birthDate))
+        default: return user.suspended ? LF("Restore @%1$@?", String(describing: user.username)) : LF("Suspend @%1$@ and end their connection?", String(describing: user.username))
         }
     }
     private func apply(_ operation: String) async {

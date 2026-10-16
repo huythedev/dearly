@@ -2,31 +2,31 @@ import SwiftUI
 
 @MainActor
 struct GardenView: View {
-    @AppStorage("dearly.language") private var language = "vi"
+    @AppStorage("dearly.language") private var language = "en"
     @EnvironmentObject private var store: DearlyStore
     @State private var showingArchive = false
     private var archives: [Connection] { store.state.connections.filter { !$0.active && $0.members.contains(store.me.id) } }
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 24) {
-                PageHeading(eyebrow: L("Lớn lên từ sự hiện diện"), title: L("Khu vườn của chúng mình."), subtitle: L("Không cần vội. Những điều nhỏ vẫn đang lớn lên."))
+                PageHeading(eyebrow: L("GROWING BY SHOWING UP"), title: L("Our little garden."), subtitle: L("There’s no rush. Little things are still growing."))
                 if let connection = store.connection {
                     activeGarden(connection)
                 } else {
                     GardenIllustration(stage: 0).frame(height: 280).clipShape(RoundedRectangle(cornerRadius: 28))
-                    EmptyCard(icon: "leaf", title: L("Một hạt giống đang đợi"), detail: L("Gửi lời mời ở tab Đồng hành. Khi cả hai đồng ý và check-in, khu vườn bắt đầu."))
+                    EmptyCard(icon: "leaf", title: L("A seed is waiting"), detail: L("Send an invitation in the Companion tab. When you both accept and check in, your garden begins."))
                 }
                 if !archives.isEmpty {
-                    SectionLabel(title: L("Những khu vườn đã lưu"))
+                    SectionLabel(title: L("Saved gardens"))
                     ForEach(archives) { connection in
                         VStack(alignment: .leading, spacing: 12) {
                             GardenIllustration(stage: connection.growth).frame(height: 190).clipShape(RoundedRectangle(cornerRadius: 20))
-                            Text(L("Cùng \(otherName(connection))", "With \(otherName(connection))")).font(.system(size: 22, design: .serif))
-                            Text(L("\(connection.totalDays) ngày kết nối · Cây và phần thưởng vẫn ở đây.", "\(connection.totalDays) days connected · Your plants and rewards are still here.")).font(.caption).foregroundStyle(DearlyTheme.muted)
+                            Text(LF("With %1$@", String(describing: otherName(connection)))).font(.system(size: 22, design: .serif))
+                            Text(LF("%1$@ days connected · Your plants and rewards are still here.", String(describing: connection.totalDays))).font(.caption).foregroundStyle(DearlyTheme.muted)
                         }.padding(16).dearlyCard()
                     }
                 }
-                Button(L("Xem tất cả khu vườn đã lưu", "Browse all saved gardens"), systemImage: "books.vertical") { showingArchive = true }
+                Button(L("Browse all saved gardens"), systemImage: "books.vertical") { showingArchive = true }
                     .font(.subheadline)
             }.padding(22).padding(.bottom, 20)
         }
@@ -41,48 +41,48 @@ struct GardenView: View {
             VStack(spacing: 0) {
                 ZStack(alignment: .topLeading) {
                     GardenIllustration(stage: connection.growth).frame(height: 280)
-                    Tag(text: connection.paused ? L("ĐANG NGHỈ") : "\(store.me.nickname) & \(otherName(connection))", icon: "leaf", color: DearlyTheme.surface.opacity(0.85)).padding(17)
+                    Tag(text: connection.paused ? L("RESTING") : "\(store.me.nickname) & \(otherName(connection))", icon: "leaf", color: DearlyTheme.surface.opacity(0.85)).padding(17)
                 }.clipShape(RoundedRectangle(cornerRadius: 27))
                 HStack {
-                    metric("\(connection.streak(on: store.now, calendar: store.calendar))", label: L("ngày liên tiếp"))
+                    metric("\(connection.streak(on: store.now, calendar: store.calendar))", label: L("days in a row"))
                     Rectangle().fill(DearlyTheme.border).frame(width: 1, height: 36)
-                    metric("\(connection.totalDays)", label: L("ngày kết nối"))
+                    metric("\(connection.totalDays)", label: L("days connected"))
                     Rectangle().fill(DearlyTheme.border).frame(width: 1, height: 36)
-                    metric("\(connection.bestStreak)", label: L("chuỗi dài nhất"))
+                    metric("\(connection.bestStreak)", label: L("longest streak"))
                 }.padding(.vertical, 22)
             }.dearlyCard()
             VStack(alignment: .leading, spacing: 17) {
-                SectionLabel(title: L("Hôm nay, mình ở đây"), detail: store.isOnline ? L("Ngày theo UTC") : "")
+                SectionLabel(title: L("Today, I’m here"), detail: store.isOnline ? L("Based on UTC") : "")
                 statusRow(name: store.me.nickname, checked: checked)
                 statusRow(name: otherName(connection), checked: partnerChecked)
-                PrimaryButton(title: connection.paused ? L("Khu vườn đang nghỉ") : (checked ? L("Bạn đã check-in hôm nay") : L("Mình vẫn ở đây")), icon: checked ? "checkmark" : "drop") {
+                PrimaryButton(title: connection.paused ? L("Your garden is resting") : (checked ? L("You checked in today") : L("I’m still here")), icon: checked ? "checkmark" : "drop") {
                     Task { await store.checkIn() }
                 }.disabled(checked || connection.paused).opacity(checked || connection.paused ? 0.65 : 1)
                     .accessibilityIdentifier("garden.checkin")
-                Text(checked && partnerChecked ? L("Cả hai đã có mặt. Khu vườn có thêm một ngày lớn lên 🌱") : L("Cả hai check-in để ghi nhận một ngày. Không cần gửi đủ số tin nhắn nào cả."))
+                Text(checked && partnerChecked ? L("You both showed up. Another day for your garden to grow 🌱") : L("Both of you check in to count a day together. No message quota to meet."))
                     .font(.caption).foregroundStyle(DearlyTheme.muted).lineSpacing(3)
             }
             VStack(alignment: .leading, spacing: 16) {
-                SectionLabel(title: L("Từng chút, từng chút một"))
-                milestone(L("Gieo hạt"), detail: L("Ngày kết nối đầu tiên"), symbol: "circle.dotted", unlocked: connection.totalDays >= 1)
-                milestone(L("Một chiếc mầm"), detail: L("3 ngày liên tiếp"), symbol: "leaf", unlocked: connection.bestStreak >= 3)
-                milestone(L("Mùa hoa đầu"), detail: L("7 ngày liên tiếp"), symbol: "camera.macro", unlocked: connection.bestStreak >= 7)
-                milestone(L("Góc vườn ấm áp"), detail: L("14 ngày liên tiếp"), symbol: "lamp.desk", unlocked: connection.bestStreak >= 14)
-                milestone(L("Thêm một khoảng xanh"), detail: L("Tổng 30 ngày kết nối"), symbol: "tree", unlocked: connection.totalDays >= 30)
+                SectionLabel(title: L("Little by little"))
+                milestone(L("Plant a seed"), detail: L("Your first day connected"), symbol: "circle.dotted", unlocked: connection.totalDays >= 1)
+                milestone(L("A little sprout"), detail: L("3 days in a row"), symbol: "leaf", unlocked: connection.bestStreak >= 3)
+                milestone(L("The first flowers"), detail: L("7 days in a row"), symbol: "camera.macro", unlocked: connection.bestStreak >= 7)
+                milestone(L("A cozy garden corner"), detail: L("14 days in a row"), symbol: "lamp.desk", unlocked: connection.bestStreak >= 14)
+                milestone(L("Room for more green"), detail: L("30 days connected in total"), symbol: "tree", unlocked: connection.totalDays >= 30)
             }.padding(22).dearlyCard()
             Button {
                 Task { await store.togglePause() }
             } label: {
-                Label(connection.paused ? L("Tiếp tục chăm vườn") : L("Cho khu vườn nghỉ một chút"), systemImage: connection.paused ? "play.circle" : "moon")
+                Label(connection.paused ? L("Care for your garden again") : L("Let your garden rest"), systemImage: connection.paused ? "play.circle" : "moon")
                     .font(.subheadline).frame(maxWidth: .infinity)
             }
-            Text(L("Bỏ lỡ một ngày không làm mất cây hay đồ đã nhận. Ngày nghỉ không cộng streak. Bạn luôn có thể rời kết nối trong chat."))
+            Text(L("Missing a day won’t take away your plants or rewards. Rest days don’t add to your streak. You can always leave a connection from chat."))
                 .font(.caption).foregroundStyle(DearlyTheme.muted).multilineTextAlignment(.center).lineSpacing(3)
         }
     }
 
     private func otherName(_ connection: Connection) -> String {
-        connection.members.first { $0 != store.me.id }.flatMap { store.state.profile($0)?.nickname } ?? L("một người bạn")
+        connection.members.first { $0 != store.me.id }.flatMap { store.state.profile($0)?.nickname } ?? L("a friend")
     }
     private func metric(_ value: String, label: String) -> some View {
         VStack(spacing: 5) {
@@ -95,7 +95,7 @@ struct GardenView: View {
             Image(systemName: checked ? "checkmark.circle.fill" : "circle.dotted").foregroundStyle(checked ? DearlyTheme.forest : DearlyTheme.muted)
             Text(name).font(.subheadline)
             Spacer()
-            Text(checked ? L("Đã ở đây") : L("Theo nhịp của bạn")).font(.caption).foregroundStyle(DearlyTheme.muted)
+            Text(checked ? L("Checked in") : L("At your own pace")).font(.caption).foregroundStyle(DearlyTheme.muted)
         }
     }
     private func milestone(_ name: String, detail: String, symbol: String, unlocked: Bool) -> some View {
@@ -127,30 +127,30 @@ private struct GardenArchiveView: View {
                     if let failure { Text(failure).foregroundStyle(.red) }
                     if let page {
                         if page.items.isEmpty && !loading {
-                            EmptyCard(icon: "leaf", title: L("Chưa có vườn lưu trữ", "No saved gardens yet"), detail: L("Khu vườn sẽ được lưu khi kết nối kết thúc.", "Gardens are saved when a connection ends."))
+                            EmptyCard(icon: "leaf", title: L("No saved gardens yet"), detail: L("Gardens are saved when a connection ends."))
                         }
                         ForEach(page.items) { connection in
                             VStack(alignment: .leading, spacing: 12) {
                                 GardenIllustration(stage: connection.growth).frame(height: 190).clipShape(RoundedRectangle(cornerRadius: 20))
                                 Text(otherName(connection, profiles: page.profiles)).font(.system(size: 22, design: .serif))
-                                Text(L("\(connection.totalDays) ngày · Chuỗi dài nhất: \(connection.bestStreak)", "\(connection.totalDays) days · Best streak: \(connection.bestStreak)"))
+                                Text(LF("%1$@ days · Best streak: %2$@", String(describing: connection.totalDays), String(describing: connection.bestStreak)))
                                     .font(.caption).foregroundStyle(DearlyTheme.muted)
                             }.padding(16).dearlyCard()
                         }
                     }
                     HStack {
                         if cursors.count > 1 {
-                            Button(L("Trang trước")) { cursors.removeLast(); Task { await load() } }.disabled(loading)
+                            Button(L("Previous page")) { cursors.removeLast(); Task { await load() } }.disabled(loading)
                         }
                         Spacer()
                         if let next = page?.nextCursor {
-                            Button(L("Trang tiếp")) { cursors.append(next); Task { await load() } }.disabled(loading)
+                            Button(L("Next page")) { cursors.append(next); Task { await load() } }.disabled(loading)
                         }
                     }
                 }.padding(22)
             }.background(DearlyTheme.cream)
-                .navigationTitle(L("Khu vườn đã lưu", "Saved gardens")).navigationBarTitleDisplayMode(.inline)
-                .toolbar { ToolbarItem(placement: .confirmationAction) { Button(L("Xong")) { dismiss() } } }
+                .navigationTitle(L("Saved gardens")).navigationBarTitleDisplayMode(.inline)
+                .toolbar { ToolbarItem(placement: .confirmationAction) { Button(L("Done")) { dismiss() } } }
                 .task { await load() }
                 .onDisappear { requestID = UUID() }
                 .onChange(of: store.state.currentUserID) { _, _ in page = nil; dismiss() }
@@ -158,7 +158,7 @@ private struct GardenArchiveView: View {
     }
 
     private func otherName(_ connection: Connection, profiles: [Profile]) -> String {
-        connection.members.first { $0 != store.state.currentUserID }.flatMap { id in profiles.first { $0.id == id }?.nickname } ?? L("một người bạn")
+        connection.members.first { $0 != store.state.currentUserID }.flatMap { id in profiles.first { $0.id == id }?.nickname } ?? L("a friend")
     }
 
     private func load() async {
@@ -180,7 +180,7 @@ private struct GardenArchiveView: View {
 struct GardenIllustration: View {
     @Environment(\.colorScheme) private var colorScheme
     private var night: Bool { colorScheme == .dark }
-    @AppStorage("dearly.language") private var language = "vi"
+    @AppStorage("dearly.language") private var language = "en"
     var stage: Int
     var body: some View {
         Canvas { context, size in
@@ -277,6 +277,6 @@ struct GardenIllustration: View {
             }
         }
         .background(LinearGradient(colors: night ? [Color(red: 0.08, green: 0.14, blue: 0.16), Color(red: 0.14, green: 0.24, blue: 0.20)] : [Color(red: 0.92, green: 0.94, blue: 0.85), Color(red: 0.86, green: 0.91, blue: 0.78)], startPoint: .top, endPoint: .bottom))
-        .accessibilityLabel([L("Mảnh đất chờ gieo hạt"), L("Hạt giống đầu tiên"), L("Mầm cây xanh"), L("Hoa đầu mùa"), L("Vườn hoa có đèn"), L("Khu vườn mở rộng")][min(max(stage, 0), 5)])
+        .accessibilityLabel([L("A patch of earth waiting for seeds"), L("The first seed"), L("A green sprout"), L("The first flowers"), L("A flower garden with a lantern"), L("An expanded garden")][min(max(stage, 0), 5)])
     }
 }

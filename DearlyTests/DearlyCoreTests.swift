@@ -20,22 +20,44 @@ final class DearlyCoreTests: XCTestCase {
     }
 
     @MainActor
-    func testLanguageChoiceTranslatesUIAndPreservesBackendValues() {
+    func testEnglishSourceDefaultsAndVietnameseTranslation() {
         let defaults = UserDefaults.standard
         let previous = defaults.object(forKey: "dearly.language")
         defer {
             if let previous { defaults.set(previous, forKey: "dearly.language") }
             else { defaults.removeObject(forKey: "dearly.language") }
         }
+        defaults.removeObject(forKey: "dearly.language")
+        XCTAssertEqual(AppLanguage.code, "en")
+        XCTAssertEqual(L("Log in"), "Log in")
+        XCTAssertEqual(L("Garden"), "Garden")
+        XCTAssertEqual(SupportStyle.listen.title, "Just listen")
+        XCTAssertEqual(SupportStyle.listen.rawValue, "listen")
+        XCTAssertEqual(LF("With %1$@", "Alex"), "With Alex")
+        XCTAssertEqual(L("An untranslated future message"), "An untranslated future message")
+        defaults.set("fr", forKey: "dearly.language")
+        XCTAssertEqual(AppLanguage.code, "en")
         defaults.set("en", forKey: "dearly.language")
-        XCTAssertEqual(L("Đăng nhập"), "Log in")
-        XCTAssertEqual(L("Khu vườn"), "Garden")
-        XCTAssertEqual(L(SupportStyle.listen.rawValue), "Just listen")
-        XCTAssertEqual(SupportStyle.listen.rawValue, "Chỉ cần lắng nghe")
-        XCTAssertEqual(L("Cùng Alex", "With Alex"), "With Alex")
+        XCTAssertEqual(L("Log in"), "Log in")
         defaults.set("vi", forKey: "dearly.language")
-        XCTAssertEqual(L("Đăng nhập"), "Đăng nhập")
-        XCTAssertEqual(L("Cùng Alex", "With Alex"), "Cùng Alex")
+        XCTAssertEqual(AppLanguage.code, "vi")
+        XCTAssertEqual(L("Log in"), "Đăng nhập")
+        XCTAssertEqual(L("Garden"), "Khu vườn")
+        XCTAssertEqual(SupportStyle.listen.title, "Chỉ cần lắng nghe")
+        XCTAssertEqual(LF("With %1$@", "Mây %@"), "Cùng Mây %@")
+        XCTAssertEqual(LF("%1$@ days · Best streak: %2$@", "30", "7"), "30 ngày · Chuỗi dài nhất: 7")
+    }
+
+    func testSupportStylesDecodeLegacyValuesAndEncodeCanonicalIdentifiers() throws {
+        let legacy = ["Chỉ cần lắng nghe", "Chia sẻ trải nghiệm", "Cùng nghĩ cách"]
+        for (style, value) in zip(SupportStyle.allCases, legacy) {
+            let oldData = try JSONEncoder().encode(value)
+            XCTAssertEqual(try JSONDecoder().decode(SupportStyle.self, from: oldData), style)
+            let encoded = try JSONEncoder().encode(style)
+            XCTAssertEqual(try JSONDecoder().decode(String.self, from: encoded), style.rawValue)
+            XCTAssertEqual(try JSONDecoder().decode(SupportStyle.self, from: encoded), style)
+        }
+        XCTAssertThrowsError(try JSONDecoder().decode(SupportStyle.self, from: Data("\"unknown\"".utf8)))
     }
 
     private var calendar: Calendar {

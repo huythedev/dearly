@@ -32,7 +32,7 @@ def pair(env):
     return a,ha,b,hb,cid
 
 def journal(client,h,**kwargs):
-    p=dict(title='PRIVATE TITLE',body='PRIVATE PREFIX. Public excerpt.',sharedText='Public excerpt.',audience='community',anonymous=False,commentsEnabled=True,support='Chỉ cần lắng nghe')
+    p=dict(title='PRIVATE TITLE',body='PRIVATE PREFIX. Public excerpt.',sharedText='Public excerpt.',audience='community',anonymous=False,commentsEnabled=True,support='listen')
     p.update(kwargs)
     return action(client,h,'journal.save',p)['id']
 
@@ -261,7 +261,7 @@ def test_journal_pagination_owner_scope_and_active_suggestions(env):
     assert b['userID'] not in state(client,hc)['suggestedUserIDs']
     with app.state.database.connect(write=True) as db:
         for i in range(85):
-            db.execute('INSERT INTO journals VALUES(?,?,?,?,?,?,?,?,?,?,?)',(str(uuid.uuid4()).upper(),a['userID'],'Title',f'Only Alice {i}','','privateOnly',None,0,1,'Chỉ cần lắng nghe',clock[0]))
+            db.execute('INSERT INTO journals VALUES(?,?,?,?,?,?,?,?,?,?,?)',(str(uuid.uuid4()).upper(),a['userID'],'Title',f'Only Alice {i}','','privateOnly',None,0,1,'listen',clock[0]))
         changed(db)
     seen=set();before=None
     while True:

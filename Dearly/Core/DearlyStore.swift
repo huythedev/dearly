@@ -47,7 +47,7 @@ final class DearlyStore: ObservableObject {
             let client = APIClient(baseURL: url, token: record.token)
             let (envelope, tag) = try await client.fetchState(etag: nil)
             guard let envelope, envelope.state.profile(record.userID) != nil, envelope.state.currentUserID == record.userID else {
-                throw DearlyError.invalid(L("Dữ liệu đăng nhập không hợp lệ."))
+                throw DearlyError.invalid(L("The sign-in data is invalid."))
             }
             try SessionKeychain.save(record)
             generation = UUID(); api = client; etag = tag
@@ -66,13 +66,13 @@ final class DearlyStore: ObservableObject {
         do {
             let client = APIClient(baseURL: try APIClient.validatedURL(record.baseURL), token: record.token)
             let (envelope, tag) = try await client.fetchState(etag: nil)
-            guard let envelope, envelope.state.currentUserID == record.userID, envelope.state.profile(record.userID) != nil else { throw DearlyError.invalid(L("Phiên không hợp lệ.")) }
+            guard let envelope, envelope.state.currentUserID == record.userID, envelope.state.profile(record.userID) != nil else { throw DearlyError.invalid(L("This session is invalid.")) }
             generation = UUID(); api = client; etag = tag; state = envelope.state
             isOnline = true; serverAddress = record.baseURL; lastSync = Date()
             serverClockOffset = envelope.serverNow.timeIntervalSinceNow
         } catch {
             if (error as? APIError)?.status == 401 { SessionKeychain.clear() }
-            errorMessage = L("Chưa khôi phục được phiên server. Vui lòng thử đăng nhập lại. \(error.localizedDescription)", "Couldn’t restore your session. Please log in again. \(error.localizedDescription)")
+            errorMessage = LF("Couldn’t restore your session. Please log in again. %1$@", String(describing: error.localizedDescription))
         }
     }
 
@@ -86,7 +86,7 @@ final class DearlyStore: ObservableObject {
             disconnect()
         } catch {
             if (error as? APIError)?.status == 401 { disconnect() }
-            else { errorMessage = L("Chưa thu hồi được phiên trên server. \(error.localizedDescription)", "Couldn’t revoke the server session. \(error.localizedDescription)") }
+            else { errorMessage = LF("Couldn’t revoke the server session. %1$@", String(describing: error.localizedDescription)) }
         }
     }
 
@@ -108,7 +108,7 @@ final class DearlyStore: ObservableObject {
             if let envelope {
                 guard envelope.state.currentUserID == state.currentUserID,
                       envelope.state.profile(envelope.state.currentUserID) != nil else {
-                    throw DearlyError.invalid(L("Server trả về hồ sơ tài khoản không hợp lệ.", "The server returned an invalid account profile."))
+                    throw DearlyError.invalid(L("The server returned an invalid account profile."))
                 }
                 var updated = envelope.state
                 // Preserve only already paged immutable messages in the still-active connection.
@@ -125,7 +125,7 @@ final class DearlyStore: ObservableObject {
         } catch {
             guard expected == generation else { return false }
             if (error as? APIError)?.status == 401 {
-                disconnect(); errorMessage = L("Phiên đã hết hạn. Đăng nhập lại để tiếp tục.")
+                disconnect(); errorMessage = L("Your session has expired. Log in to continue.")
             } else { syncError = error.localizedDescription }
             return false
         }
@@ -146,7 +146,7 @@ final class DearlyStore: ObservableObject {
     private func execute(_ kind: String, _ payload: CommandPayload, local: (inout AppState) throws -> Void) async -> Bool {
         guard !isBusy, !isAuthenticating else { return false }
         guard let client = api, isOnline else {
-            errorMessage = L("Vui lòng đăng nhập server để tiếp tục.")
+            errorMessage = L("Please log in to continue.")
             return false
         }
         isBusy = true
@@ -160,7 +160,7 @@ final class DearlyStore: ObservableObject {
             while refreshing && expected == generation { try await Task.sleep(nanoseconds: 50_000_000) }
             guard expected == generation else { return false }
             let synced = await refresh(force: true)
-            if !synced && isOnline { notice = L("Server đã lưu thay đổi. App sẽ đồng bộ lại khi mạng ổn định.") }
+            if !synced && isOnline { notice = L("Your changes are saved on the server. The app will sync when the connection improves.") }
             return true
         } catch {
             if expected == generation {
@@ -238,7 +238,7 @@ final class DearlyStore: ObservableObject {
         let success = await execute("report.create", CommandPayload(userID: journalID == nil ? id : nil, journalID: journalID, reason: reason)) {
             $0.reports.append(LocalReport(reporterID: reporter, reportedID: id, reason: reason, date: date))
         }
-        if success { notice = L("Đã gửi báo cáo tới server để quản trị viên xem xét.") }
+        if success { notice = L("Your report has been sent for an administrator to review.") }
         return success
     }
     func loadOlderMessages(connectionID: UUID, before: UUID?) async -> Bool {
@@ -264,7 +264,7 @@ final class DearlyStore: ObservableObject {
     }
 
     func journalPage(before: UUID?) async throws -> JournalPage {
-        guard let client = api else { throw DearlyError.invalid(L("Cần kết nối server để xem các trang cũ.")) }
+        guard let client = api else { throw DearlyError.invalid(L("Connect to the server to browse earlier entries.")) }
         let expected = generation
         let result = try await client.journals(before: before)
         guard expected == generation else { throw CancellationError() }
@@ -272,7 +272,7 @@ final class DearlyStore: ObservableObject {
     }
 
     func connectionPage(before: UUID?) async throws -> ConnectionPage {
-        guard let client = api, isOnline else { throw APIError(status: 401, message: L("Cần đăng nhập.", "Please log in.")) }
+        guard let client = api, isOnline else { throw APIError(status: 401, message: L("Please log in.")) }
         let expected = generation
         do {
             let page = try await client.archivedConnections(before: before)
@@ -287,7 +287,7 @@ final class DearlyStore: ObservableObject {
     // Staff payloads live only in the presented screen; never in the personal snapshot/cache.
     private func staffRead<T>(_ permission: String, operation: (APIClient) async throws -> T) async throws -> T {
         guard let client = api, hasPermission(permission) else {
-            throw APIError(status: 403, message: L("Không có quyền truy cập.", "Access denied."))
+            throw APIError(status: 403, message: L("Access denied."))
         }
         let expected = generation
         do {

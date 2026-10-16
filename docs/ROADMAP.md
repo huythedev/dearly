@@ -1,29 +1,29 @@
-# Dearly roadmap và phân công
+# Dearly roadmap and responsibilities
 
-## Hiện đã có
+## Available now
 
-App iOS kết nối server một node, tài khoản/password/session, API permission, SQLite persistence, matching gate theo ngày sinh đã operator xác minh, sync foreground, phân trang journal/chat, báo cáo server, giao diện moderator/admin, cấp vai trò qua CLI, audit log và backup. Giao diện tiếng Việt/Anh, System/Light/Dark và vườn ban đêm.
+The iOS app connects to a single-node backend with accounts/passwords/sessions, API permissions, SQLite persistence, matching gated by operator-reviewed birth dates, foreground synchronization, journal/chat/garden pagination, server reports, moderator/admin screens, CLI role grants, audit logs, and backups. English is the source/default language with Vietnamese translations. System/Light/Dark appearances include a night garden.
 
-## Trước pilot thật
+## Before a real pilot
 
-- Build/XCTest và chạy đủ luồng trên iPhone; thử bàn phím, mạng chập chờn, foreground/background, hết hạn phiên, Dynamic Type và VoiceOver.
-- Chạy matrix backend trên các OS mục tiêu; triển khai HTTPS, đường dẫn database ổn định, backup/restore, user OS có quyền tối thiểu.
-- Thiết kế quy trình xác minh tuổi và sự đồng ý phù hợp phạm vi pilot. Cờ CLI hiện là manual review, chưa có tự xác minh giấy tờ. Chốt timezone check-in cho sản phẩm; bản hiện tại UTC chung.
-- Có người trực báo cáo, xử lý vi phạm, hướng dẫn trường hợp nhạy cảm và quy trình kháng nghị. Đã có màn hình staff xử lý báo cáo; chưa có bộ lọc tin tự động hoặc luồng kháng nghị cho người dùng.
-- Thêm quản lý/xóa/xuất tài khoản, đổi mật khẩu, revoke mọi thiết bị, email/recovery; không coi username/password prototype là hệ thống identity đầy đủ.
-- Thiết kế retention journal/chat/report, vận hành bản backup và quyền truy cập người quản trị. Dữ liệu ở server hiện là SQLite, không phải mã hóa đầu-cuối.
-- Đo performance dưới tải dự kiến; khi cần scale nhiều node, đổi database/repository và per-user invalidation.
+- Build/run XCTest and complete all flows on iPhone, including keyboards, unreliable networks, foreground/background transitions, session expiry, Dynamic Type, and VoiceOver.
+- Run the backend on each target OS; configure HTTPS, a stable database path, backup/restore, and an OS account with minimal privileges.
+- Design age-verification and consent procedures for the pilot. The CLI flag records manual review rather than automatic document verification. Confirm the product's check-in timezone; the current implementation uses shared UTC.
+- Assign report coverage, violation handling, guidance for sensitive cases, and an appeals process. Staff report screens exist; automatic message filtering and user appeals do not.
+- Add account management/deletion/export, password changes, session revocation across devices, and email/recovery. The username/password prototype is not a complete identity system.
+- Define journal/chat/report retention, backup operations, and administrator access. Server data is stored in SQLite without end-to-end encryption.
+- Measure performance at expected load; move to a server database/repository and per-user invalidation when multiple nodes are required.
 
-## Mở rộng
+## Future extensions
 
-Challenge tùy chọn; kỷ niệm phải hai người duyệt; push kín đáo; lịch sử cộng đồng/journal companion dài; bố cục iPad; tối ưu delta sync hoặc WebSocket khi cần latency thấp hơn polling.
+Optional challenges; memories approved by both people; discreet push notifications; longer community/companion journal history; iPad layouts; delta synchronization or WebSockets when lower latency is needed.
 
-## Team hai người
+## Two-person team
 
-| Người | Sở hữu | Bằng chứng |
+| Person | Ownership | Evidence |
 |---|---|---|
-| Kỹ thuật | SwiftUI, API, permissions, database, tests, deploy/backup | PR, kiến trúc, test results, demo |
-| Sản phẩm/nghiên cứu | Phỏng vấn, nội dung app, kịch bản test, tổng hợp feedback | Tài liệu ẩn danh, issues, thiết kế và báo cáo test |
-| Cả hai | Chốt scope, review thay đổi, trình bày đóng góp/giới hạn | Decision log, changelog, README credits |
+| Engineering | SwiftUI, API, permissions, database, tests, deployment/backups | PRs, architecture, test results, demos |
+| Product/research | Interviews, app copy, test scenarios, feedback synthesis | Anonymized documents, issues, designs, test reports |
+| Both | Scope, change review, contributions and limitations | Decision log, changelog, README credits |
 
-Issues phù hợp bạn không thiên tech: người thử có hiểu ba mức chia sẻ không; phân biệt ẩn câu chuyện ẩn danh và chặn hồ sơ; cảm giác áp lực streak; onboarding theo feedback. Dùng nội dung giả khi thử các luồng nhạy cảm.
+Suitable nontechnical issues include whether testers understand the three sharing levels, the difference between hiding an anonymous story and blocking a profile, pressure from streaks, and onboarding improvements from feedback. Use synthetic content for sensitive test flows.

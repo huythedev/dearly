@@ -1,4 +1,12 @@
-# Validation — security fixes, 2026-10-16
+# Validation — English source and Vietnamese translations, 2026-10-16
+
+- **77 backend tests passed** on Linux/Python 3.12, including 21 localization cases for language negotiation, translated static/dynamic errors, upload rejection, credential-safe validation, stable support identifiers, legacy inputs, database migration, and English defaults after an older schema upgrade.
+- Catalog checks verify English source configuration, Vietnamese translations, matching positional/named placeholders, and coverage of literal interface keys and backend error templates.
+- Native tests now cover the English default/fallback, saved Vietnamese preference, translated formatting with literal user content, and canonical/legacy support decoding. GitHub Actions builds and runs the iOS tests on a simulator; check the result for the specific commit.
+- User-written text and the existing Vietnamese language preference are preserved. SQLite v4 changes only known support enum values. Upgrade the app and backend together, as described in [localization](LOCALIZATION.md).
+- Local Linux cannot run Xcode. Device layout/VoiceOver, Docker, Windows/macOS backend execution, and production deployment remain outside this local validation.
+
+## Historical validation — security fixes, 2026-10-16
 
 - **56 backend tests passed** on Linux/Python 3.12, including 23 added regression cases for the audit findings and adjacent bugs. A real loopback HTTP test verifies upload admission, timeout responses, and continued health availability. Private/hidden entries retain their author's anonymous sharing preference.
 - A separate real-HTTP two-account smoke test passed: login/registration, invitation acceptance, messaging, check-ins, and conditional state synchronization with 300 journal fixtures.
@@ -18,19 +26,19 @@
 
 ## Historical validation — 2026-10-14
 
-## Đã thực hiện
+### Completed at that revision
 
-- 21 pytest API trên Linux/Python 3.12: pass. Bao gồm HTTP contract, privacy/anonymous alias, xác thực/logout/expiry, gate tuổi/birthday, đồng thuận, write đồng thời, check-in trùng, streak/giữ thưởng, pause/rời/chặn/báo cáo, retry idempotent, phân trang và database restart.
-- Server Uvicorn thật trên localhost: đăng ký hai tài khoản, xác minh fixture, gửi/chấp nhận lời mời, gửi tin từ tài khoản A và đọc ở B, cả hai check-in. Pass.
-- Benchmark HTTP tuần tự với 300 journal fixture; kết quả và giới hạn trong PERFORMANCE.md.
-- Fixture `DearlyTests/Fixtures/server-state.json` được xuất từ response API thật, không chứa token hoặc phần journal riêng của người khác. Một XCTest sẽ decode fixture thành DTO native để phát hiện lệch wire contract khi chạy Xcode.
-- Kiểm tra grammar toàn bộ Swift, cấu trúc/source references Xcode, scheme XML, asset catalogs và Info.plist Debug/Release.
-- CLI help/khởi tạo database, cấu trúc đóng gói source.
+- 21 API pytest cases passed on Linux/Python 3.12, covering HTTP contracts, privacy/anonymous aliases, authentication/logout/expiry, age/birth-date gates, consent, concurrent writes, duplicate check-ins, streaks/reward retention, pause/leave/block/report, idempotent retries, pagination, and database restart.
+- A real localhost Uvicorn server passed registration of two accounts, fixture age verification, invitation send/accept, messages from account A read by B, and both check-ins.
+- A sequential HTTP benchmark used 300 journal fixtures; results and limitations are in PERFORMANCE.md.
+- `DearlyTests/Fixtures/server-state.json` was exported from actual API responses without tokens or other users' private journal content. A native XCTest decodes the fixture to detect wire-contract drift in Xcode.
+- Swift grammar, Xcode structure/source references, scheme XML, asset catalogs, and Debug/Release Info.plist checks completed.
+- CLI help/database initialization and source packaging checks completed.
 
-## Chưa thực hiện
+### Not completed at that revision
 
-- Apple Swift compiler/type checking/linking, xcodebuild, 17 XCTest native, code signing, Simulator/device và kiểm tra layout/VoiceOver.
-- Chạy thực trên Windows/macOS, build Docker, hoặc chạy các workflow GitHub Actions. Matrix Windows/macOS/Linux × Python 3.11/3.12/3.13 đã được chuẩn bị.
-- Load test đồng thời lớn, TLS public server hoặc App Store/TestFlight release.
+- Apple Swift compilation/type checking/linking, xcodebuild, the 17 native XCTest cases, code signing, Simulator/device operation, and layout/VoiceOver checks.
+- Actual Windows/macOS execution, Docker builds, or GitHub Actions runs. A Windows/macOS/Linux × Python 3.11/3.12/3.13 matrix had been prepared.
+- Large concurrent load tests, a public TLS server, or App Store/TestFlight release.
 
-Môi trường hiện tại không có Swift compiler, Xcode/Apple SDK hay iOS Simulator. Parser Swift không thay thế Xcode build. Trên Mac chạy ⌘U rồi checklist MANUAL-TESTS.md. Backend qua test không tự xác nhận UI iOS đã hoạt động trên thiết bị.
+That environment had no Swift compiler, Xcode/Apple SDK, or iOS Simulator. Parser checks do not replace an Xcode build. Run ⌘U on a Mac followed by MANUAL-TESTS.md; passing backend tests does not establish that the iOS interface works on a device.

@@ -13,7 +13,7 @@ A quiet place to write, find someone willing to listen, and grow a little garden
 
 The app requires a backend account. It starts at login, restores a saved session when possible, and returns to login after logout or session expiry. There is no offline demo fallback. Journal entries, messages, and account changes are saved through the backend; session tokens are stored in Keychain.
 
-The interface supports **English and Vietnamese**. Use the language menu on the login screen or open your avatar → **Language / Ngôn ngữ** in settings. Your language choice is saved between launches; user-written content is not translated.
+The interface uses **English as its source language and default**, with **Vietnamese translations**. Use the language menu on the login screen or open your avatar → **Language / Ngôn ngữ** in settings. Your language choice is saved between launches, including an existing Vietnamese choice; user-written content is not translated. See the [localization guide](docs/LOCALIZATION.md) for source strings, API errors, and compatibility.
 
 **Dark mode:** use the appearance icon on the login screen or your avatar → **Appearance / Giao diện**. Choose **System** (default), **Light**, or **Dark**. The choice is saved between launches and applies to login, journals, community, chat, gardens, settings, and staff screens. The garden uses a moon and darker landscape in dark mode.
 
@@ -125,7 +125,8 @@ To try the companion flow, create two accounts on separate devices or simulators
 | `Dearly/Core/DearlyStore.swift` | Backend authentication, synchronization, mutations, and UI state |
 | `Dearly/UI/` | Login/signup, journal, community, companion, garden, settings, and staff screens |
 | `Dearly/Assets.xcassets/` | Appearance-aware light/dark colors and app icon |
-| `Dearly/Localizable.xcstrings` | English and Vietnamese interface translations |
+| `Dearly/Localizable.xcstrings` | English source keys and Vietnamese interface translations |
+| `backend/localization.py`, `backend/translations.vi.json` | English API error templates and Vietnamese responses |
 | `backend/server.py` | API, authentication, authorization, and SQLite transactions |
 | `backend/run.py` | Server launcher, role grants, age verification, reports, suspension/restoration, and backups |
 | `backend/tests/` | API, privacy, concurrency, and persistence tests |
