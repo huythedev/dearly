@@ -156,6 +156,7 @@ private struct StaffReportView: View {
     let report: StaffReport
     @State private var reason = ""
     @State private var confirmHide = false
+    @State private var confirmRestore = false
 
     var body: some View {
         Group {
@@ -183,6 +184,9 @@ private struct StaffReportView: View {
                             if report.canHide && store.hasPermission("reports.hide") {
                                 Button(L("Ẩn bài khỏi cộng đồng", "Hide community post"), role: .destructive) { confirmHide = true }.disabled(!canSubmit)
                             }
+                            if report.canRestore == true && store.hasPermission("reports.hide") {
+                                Button(L("Cho phép tác giả chia sẻ lại", "Allow the author to share again")) { confirmRestore = true }.disabled(!canSubmit)
+                            }
                         }
                     }
                     if let error = store.errorMessage { Text(error).foregroundStyle(.red) }
@@ -196,7 +200,14 @@ private struct StaffReportView: View {
                     if await store.staffCommand("staff.report.hide", payload: CommandPayload(id: report.id, reason: reason)) { dismiss() }
                 }
             }
-        } message: { Text(L("Bài được chuyển về riêng tư, phản hồi bị xóa. Journal gốc của tác giả được giữ lại.", "The post becomes private and its comments are removed. The author's original journal is preserved.")) }
+        } message: { Text(L("Bài được chuyển về riêng tư và hạn chế chia sẻ cho đến khi quản trị viên cho phép lại. Journal gốc được giữ lại.", "The post becomes private and sharing stays restricted until staff restore it. The author's journal is preserved.")) }
+        .confirmationDialog(L("Cho phép chia sẻ lại?", "Allow sharing again?"), isPresented: $confirmRestore, titleVisibility: .visible) {
+            Button(L("Cho phép", "Allow")) {
+                Task {
+                    if await store.staffCommand("staff.report.restore", payload: CommandPayload(id: report.id, reason: reason)) { dismiss() }
+                }
+            }
+        } message: { Text(L("Bài vẫn riêng tư. Tác giả sẽ tự chọn có chia sẻ lại hay không.", "The entry stays private. Its author can choose whether to share it again.")) }
     }
     private var canSubmit: Bool { !store.isBusy && (1...1000).contains(reason.trimmingCharacters(in: .whitespacesAndNewlines).count) }
     private func review(_ status: ReportStatus) async {

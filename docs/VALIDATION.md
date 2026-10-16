@@ -1,4 +1,15 @@
-# Validation — roles and appearance, 2026-10-16
+# Validation — security fixes, 2026-10-16
+
+- **55 backend tests passed** on Linux/Python 3.12, including 22 added regression cases for the audit findings and adjacent bugs. A real loopback HTTP test verifies upload admission, timeout responses, and continued health availability.
+- A separate real-HTTP two-account smoke test passed: login/registration, invitation acceptance, messaging, check-ins, and conditional state synchronization with 300 journal fixtures.
+- **517 payload-type variations** across mutation handlers completed without unexpected exceptions; each trial rolled back its database changes. This was an exploratory input-validation check, not a production test.
+- Ruff `F,E9`, Python compilation, and whitespace checks passed. The dependency advisory scan reported no known vulnerabilities across the 14 pinned runtime packages, including the formerly unpinned OpenTelemetry dependency.
+- Bandit's SQL-construction warnings were reviewed: interpolated fragments are fixed clauses or generated parameter placeholders, with user values bound separately. Development subprocess/assert/fixture-password alerts do not establish a runtime exploit.
+- Native XCTest coverage was added for signed-out model access, Gregorian UTC dates, anonymous invitation guards, independent anonymous visibility, and archived garden DTOs. The `ios` GitHub Actions job performs the simulator build and XCTest run; check its result for the specific PR commit. Local Linux checks do not replace native validation.
+- Database upgrade coverage includes v1→v3 preservation and v2→v3 reconstruction of earlier moderation restrictions, cancellation of unsafe anonymous invitations, repeated startup, and foreign-key integrity.
+- Remaining manual scope: iPhone layout/VoiceOver, Windows/macOS backend operation, Docker, the production proxy/TLS boundary, and App Store/TestFlight distribution.
+
+## Historical validation — roles and appearance, 2026-10-16
 
 - **33 backend pytest tests passed** on Linux/Python 3.12 with the repository's pinned runtime dependencies. This includes the original 21 cases plus authorization, attempted role escalation, moderator review/hiding, live demotion and replay rejection, admin suspension/restoration, CLI bootstrap/last-admin protection, pagination, and v1→v2 migration preserving existing data.
 - The test runner reports one upstream Starlette warning about its httpx TestClient adapter; there were no test failures.

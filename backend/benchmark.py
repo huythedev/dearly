@@ -56,7 +56,7 @@ def main():
                 assert peer.json()['state']['messages'][-1]['text']=='Real HTTP smoke test'
                 for _,h in users:action(h,'connection.checkin',dict(connectionID=cid))
                 assert client.get('/v1/state',headers=users[0][1]).json()['state']['connections'][0]['serverTotalDays']==1
-                timings={};payload_size=0
+                timings={};payload_size=0;etag=None
                 for cached in [False,True]:
                     values=[]
                     for _ in range(20):

@@ -28,6 +28,7 @@ struct StaffReport: Decodable, Identifiable {
     var journalID: UUID?
     var evidence: String
     var canHide: Bool
+    var canRestore: Bool?
     var reviewNote: String
     var reviewerID: String?
     var reviewedAt: Date?
@@ -82,6 +83,7 @@ struct AuditEntry: Decodable, Identifiable {
         case "user.verify_age": return L("Xác minh tuổi", "Age verified")
         case "report.review": return L("Xem xét báo cáo", "Report reviewed")
         case "report.hide": return L("Ẩn bài cộng đồng", "Community post hidden")
+        case "report.restore": return L("Cho phép chia sẻ lại", "Sharing restriction removed")
         default: return action
         }
     }

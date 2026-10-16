@@ -22,7 +22,7 @@ final class DearlyStore: ObservableObject {
         Date().addingTimeInterval(serverClockOffset)
     }
     var calendar: Calendar {
-        var calendar = Calendar.current
+        var calendar = Calendar(identifier: .gregorian)
         calendar.timeZone = TimeZone(secondsFromGMT: 0)!
         return calendar
     }
@@ -84,13 +84,16 @@ final class DearlyStore: ObservableObject {
         do {
             if let api { try await api.logout() }
             disconnect()
-        } catch { errorMessage = L("Chưa thu hồi được phiên trên server. \(error.localizedDescription)", "Couldn’t revoke the server session. \(error.localizedDescription)") }
+        } catch {
+            if (error as? APIError)?.status == 401 { disconnect() }
+            else { errorMessage = L("Chưa thu hồi được phiên trên server. \(error.localizedDescription)", "Couldn’t revoke the server session. \(error.localizedDescription)") }
+        }
     }
 
     private func disconnect() {
         generation = UUID(); api = nil; etag = nil; refreshing = false
         SessionKeychain.clear(); state = .signedOut(); isOnline = false
-        serverAddress = ""; syncError = nil; lastSync = nil
+        serverAddress = ""; syncError = nil; lastSync = nil; serverClockOffset = 0
     }
 
     @discardableResult
@@ -103,7 +106,10 @@ final class DearlyStore: ObservableObject {
             let (envelope, tag) = try await client.fetchState(etag: force ? nil : etag)
             guard expected == generation else { return false }
             if let envelope {
-                guard envelope.state.profile(envelope.state.currentUserID) != nil else { throw DearlyError.invalid(L("Server thiếu hồ sơ tài khoản.")) }
+                guard envelope.state.currentUserID == state.currentUserID,
+                      envelope.state.profile(envelope.state.currentUserID) != nil else {
+                    throw DearlyError.invalid(L("Server trả về hồ sơ tài khoản không hợp lệ.", "The server returned an invalid account profile."))
+                }
                 var updated = envelope.state
                 // Preserve only already paged immutable messages in the still-active connection.
                 if let connection = updated.activeConnection(for: updated.currentUserID) {
@@ -186,7 +192,7 @@ final class DearlyStore: ObservableObject {
         return await execute("journal.comment", CommandPayload(id: id, text: text)) { try $0.comment(on: id, text: text, now: date) }
     }
     func canInvitePost(_ journal: Journal) -> Bool {
-        isOnline ? journal.canInviteAuthor == true : state.canInvite(journal.authorID)
+        !journal.anonymous && (isOnline ? journal.canInviteAuthor == true : state.canInvite(journal.authorID))
     }
     func invite(_ userID: UUID, journalID: UUID? = nil) async -> Bool {
         let date = now
@@ -220,6 +226,12 @@ final class DearlyStore: ObservableObject {
     func block(_ id: UUID, journalID: UUID? = nil) async -> Bool {
         let date = now
         return await execute("user.block", CommandPayload(userID: journalID == nil ? id : nil, journalID: journalID)) { $0.block(id, now: date) }
+    }
+    func hidePost(_ id: UUID) async -> Bool {
+        await execute("journal.hide", CommandPayload(id: id)) { state in
+            state.journals.removeAll { $0.id == id }
+            state.comments.removeAll { $0.journalID == id }
+        }
     }
     func report(_ id: UUID, journalID: UUID? = nil, reason: String) async -> Bool {
         let date = now; let reporter = me.id
@@ -257,6 +269,19 @@ final class DearlyStore: ObservableObject {
         let result = try await client.journals(before: before)
         guard expected == generation else { throw CancellationError() }
         return result
+    }
+
+    func connectionPage(before: UUID?) async throws -> ConnectionPage {
+        guard let client = api, isOnline else { throw APIError(status: 401, message: L("Cần đăng nhập.", "Please log in.")) }
+        let expected = generation
+        do {
+            let page = try await client.archivedConnections(before: before)
+            guard expected == generation else { throw CancellationError() }
+            return page
+        } catch {
+            if expected == generation, (error as? APIError)?.status == 401 { disconnect() }
+            throw error
+        }
     }
 
     // Staff payloads live only in the presented screen; never in the personal snapshot/cache.

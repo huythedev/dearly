@@ -75,6 +75,12 @@ struct JournalPage: Decodable {
     var nextCursor: UUID?
 }
 
+struct ConnectionPage: Decodable {
+    var items: [Connection]
+    var profiles: [Profile]
+    var nextCursor: UUID?
+}
+
 struct APIError: LocalizedError {
     var status: Int
     var message: String
@@ -190,6 +196,13 @@ actor APIClient {
         if let before { query.append(URLQueryItem(name: "before", value: before.uuidString)) }
         let (data, _) = try await request(path: "v1/journals", query: query)
         return try JSONDecoder().decode(JournalPage.self, from: data)
+    }
+
+    func archivedConnections(before: UUID?) async throws -> ConnectionPage {
+        var query = [URLQueryItem(name: "limit", value: "20")]
+        if let before { query.append(URLQueryItem(name: "before", value: before.uuidString)) }
+        let (data, _) = try await request(path: "v1/connections", query: query)
+        return try JSONDecoder().decode(ConnectionPage.self, from: data)
     }
 
     private func request(path: String, method: String = "GET", body: Data? = nil,

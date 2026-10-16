@@ -102,6 +102,9 @@ struct CommunityDetail: View {
                                 }
                                 Text(L("Chỉ mở chat khi cả hai đồng ý. Người nhận lời mời sẽ thấy nickname của bạn."))
                                     .font(.caption).foregroundStyle(DearlyTheme.muted)
+                            } else if entry.anonymous {
+                                Text(L("Bài ẩn danh không liên kết với hồ sơ. Bạn có thể ẩn riêng bài này hoặc gửi báo cáo.", "Anonymous stories do not link to profiles. You can hide this story or report it."))
+                                    .font(.caption).foregroundStyle(DearlyTheme.muted)
                             } else {
                                 Text(L("Lời mời chỉ khả dụng khi cả hai chưa có kết nối và thuộc nhóm tuổi phù hợp."))
                                     .font(.caption).foregroundStyle(DearlyTheme.muted)
@@ -109,7 +112,7 @@ struct CommunityDetail: View {
                             HStack {
                                 Button(L("Báo cáo"), systemImage: "flag") { reportPresented = true }
                                 Spacer()
-                                Button(L("Chặn"), systemImage: "hand.raised", role: .destructive) { blockConfirmation = true }
+                                Button(entry.anonymous ? L("Ẩn bài này", "Hide this story") : L("Chặn"), systemImage: "hand.raised", role: .destructive) { blockConfirmation = true }
                             }.font(.caption)
                         }
                         SectionLabel(title: L("Phản hồi"), detail: entry.commentsEnabled ? L("Nhẹ nhàng thôi nhé") : L("Đã tắt"))
@@ -135,9 +138,17 @@ struct CommunityDetail: View {
                 .navigationTitle(L("Một câu chuyện")).navigationBarTitleDisplayMode(.inline)
                 .toolbar { ToolbarItem(placement: .confirmationAction) { Button(L("Xong")) { dismiss() } } }
                 .sheet(isPresented: $reportPresented) { if let entry { ReportView(userID: entry.authorID, journalID: entry.id) } }
-                .confirmationDialog(L("Chặn người này? Bạn sẽ không thấy bài viết hay nhận lời mời từ họ."), isPresented: $blockConfirmation, titleVisibility: .visible) {
-                    Button(L("Chặn"), role: .destructive) {
-                        Task { if let entry, await store.block(entry.authorID, journalID: entry.id) { dismiss() } }
+                .confirmationDialog(entry?.anonymous == true
+                    ? L("Ẩn riêng câu chuyện này? Hồ sơ và các bài khác không bị ảnh hưởng.", "Hide this story only? Profiles and other stories are unaffected.")
+                    : L("Chặn người này? Bạn sẽ không thấy bài viết hay nhận lời mời từ họ."), isPresented: $blockConfirmation, titleVisibility: .visible) {
+                    Button(entry?.anonymous == true ? L("Ẩn bài này", "Hide this story") : L("Chặn"), role: .destructive) {
+                        Task {
+                            guard let entry else { return }
+                            let success: Bool
+                            if entry.anonymous { success = await store.hidePost(entry.id) }
+                            else { success = await store.block(entry.authorID, journalID: entry.id) }
+                            if success { dismiss() }
+                        }
                     }
                 }
         }

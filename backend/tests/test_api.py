@@ -1,17 +1,8 @@
 import concurrent.futures
 import json
 import uuid
-from datetime import datetime, timezone
-import pytest
 from fastapi.testclient import TestClient
 from server import create_app, changed
-
-@pytest.fixture
-def env(tmp_path):
-    clock=[datetime(2026,10,13,12,tzinfo=timezone.utc).timestamp()]
-    app=create_app(tmp_path/'test.sqlite3',clock=lambda:clock[0])
-    with TestClient(app) as client:
-        yield client,app,clock
 
 def register(env,name,birth='2009-01-01',verified=True):
     client,app,_=env
@@ -89,7 +80,7 @@ def test_private_and_owner_authorization(env):
     action(client,hb,'journal.delete',dict(id=public),expected=403)
     action(client,hb,'journal.comment',dict(id=private,text='Peek'),expected=404)
 
-def test_anonymity_through_comment_invitation_and_deleted_source(env):
+def test_anonymity_through_comments_and_profile_only_invitations(env):
     client,_,_=env
     author,ha=register(env,'author');viewer,hb=register(env,'viewer')
     jid=journal(client,ha,anonymous=True)
@@ -97,10 +88,11 @@ def test_anonymity_through_comment_invitation_and_deleted_source(env):
     s=state(client,hb)
     assert next(x for x in s['journals'] if x['id']==jid)['authorID']==jid
     assert s['comments'][0]['authorID']==jid
-    iid=action(client,hb,'invitation.send',{'journalID':jid})['id']
-    assert state(client,hb)['invitations'][0]['recipientID']==jid
+    action(client,hb,'invitation.send',{'journalID':jid},expected=403)
+    assert state(client,hb)['invitations']==[]
+    iid=action(client,hb,'invitation.send',{'userID':author['userID']})['id']
     action(client,ha,'journal.delete',dict(id=jid))
-    assert state(client,hb)['invitations'][0]['recipientID']==jid
+    assert state(client,hb)['invitations'][0]['recipientID']==author['userID']
     action(client,ha,'invitation.accept',dict(id=iid))
     assert set(state(client,hb)['connections'][0]['members'])=={author['userID'],viewer['userID']}
 
@@ -148,6 +140,7 @@ def test_concurrent_duplicate_checkins_streak_and_gap(env):
     _,ha,_,hb,cid=pair(env);p=dict(connectionID=cid)
     with concurrent.futures.ThreadPoolExecutor(max_workers=4) as pool:
         results=list(pool.map(lambda h:action(client,h,'connection.checkin',p),[ha,hb,ha,hb]))
+    assert all(r['ok'] for r in results)
     assert state(client,ha)['connections'][0]['serverTotalDays']==1
     for _ in range(6):
         clock[0]+=86400
@@ -186,7 +179,11 @@ def test_anonymous_block_and_report(env):
     assert state(client,hb)['reports']==[]
     action(client,ha,'user.block',dict(journalID=jid))
     s=state(client,ha)
-    assert not any(x['id']==jid for x in s['journals']) and s['connections'][0]['endedAt'] is not None
+    assert not any(x['id']==jid for x in s['journals']) and s['connections'][0]['endedAt'] is None
+    assert s['blocks']==[]
+    # Anonymous stories are hidden independently; identified account blocking still ends chat.
+    action(client,ha,'user.block',dict(userID=b['userID']))
+    assert state(client,ha)['connections'][0]['endedAt'] is not None
     action(client,hb,'invitation.send',dict(userID=a['userID']),expected=403)
 
 def test_idempotency_lost_response_retry(env):
@@ -308,6 +305,7 @@ def test_cli_age_reports_suspend_and_backup(env,tmp_path):
     cid=action(client,hb,'invitation.accept',dict(id=iid))['id']
     # Same verified birth date is idempotent and must not end an active relationship.
     cli('verify-age','--username','alice','--birth-date','2009-01-01')
+    assert state(client,ha)['connections'][0]['id']==cid
     assert state(client,ha)['connections'][0]['endedAt'] is None
     action(client,ha,'report.create',dict(userID=b['userID'],reason='CLI review'))
     reports=json.loads(cli('reports'));assert len(reports)==1

@@ -9,6 +9,11 @@ final class DearlyCoreTests: XCTestCase {
         XCTAssertTrue(store.state.profiles.isEmpty)
         XCTAssertTrue(store.state.journals.isEmpty)
         XCTAssertTrue(store.state.messages.isEmpty)
+        XCTAssertEqual(store.me.id, store.state.currentUserID)
+        XCTAssertEqual(store.me.nickname, "")
+        XCTAssertFalse(store.me.ageVerified)
+        XCTAssertEqual(store.calendar.identifier, .gregorian)
+        XCTAssertEqual(store.calendar.timeZone.secondsFromGMT(), 0)
         let saved = await store.send("Requires a backend session", connectionID: UUID())
         XCTAssertFalse(saved)
         XCTAssertTrue(store.state.messages.isEmpty)
@@ -260,9 +265,38 @@ final class DearlyCoreTests: XCTestCase {
         XCTAssertEqual(report.evidence, "Published fixture.")
         XCTAssertEqual(report.reviewedAt?.timeIntervalSince1970, 1791892800)
         XCTAssertTrue(report.canHide)
+        XCTAssertNil(report.canRestore) // Compatible with a v0.3 server response.
         XCTAssertTrue(fixture.users.items.contains { $0.role == .admin })
         XCTAssertTrue(fixture.audit.items.contains { $0.action == "user.role" && $0.detail.to == "admin" })
         XCTAssertTrue(fixture.envelope.state.journals.allSatisfy { $0.body.isEmpty })
+    }
+
+    @MainActor
+    func testAnonymousPostsCannotInviteEvenWhenLegacyServerSaysTheyCan() {
+        let store = DearlyStore()
+        var entry = AppState.demo(now: day).journals.last!
+        entry.anonymous = true
+        entry.canInviteAuthor = true
+        XCTAssertFalse(store.canInvitePost(entry))
+    }
+
+    func testAccountBlocksDoNotRevealAnonymousStories() {
+        var state = AppState.demo(now: day)
+        let anonymous = state.journals.first { $0.anonymous }!
+        state.block(anonymous.authorID, now: day)
+        XCTAssertTrue(state.canRead(anonymous))
+        XCTAssertTrue(state.feed.contains { $0.id == anonymous.id })
+    }
+
+    func testArchivedConnectionsDecodeWithTheirProfilesAndRewards() throws {
+        let url = try XCTUnwrap(Bundle(for: DearlyCoreTests.self).url(forResource: "server-state", withExtension: "json"))
+        let root = try XCTUnwrap(JSONSerialization.jsonObject(with: Data(contentsOf: url)) as? [String: Any])
+        let state = try XCTUnwrap(root["state"] as? [String: Any])
+        let data = try JSONSerialization.data(withJSONObject: ["items": state["connections"]!, "profiles": state["profiles"]!, "nextCursor": NSNull()])
+        let page = try JSONDecoder().decode(ConnectionPage.self, from: data)
+        XCTAssertEqual(page.items.first?.totalDays, 1)
+        XCTAssertFalse(page.profiles.isEmpty)
+        XCTAssertNil(page.nextCursor)
     }
 
 }

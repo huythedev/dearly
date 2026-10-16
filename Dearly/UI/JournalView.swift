@@ -82,7 +82,7 @@ struct JournalArchiveView: View {
                 .toolbar { ToolbarItem(placement: .confirmationAction) { Button(L("Xong")) { dismiss() } } }
                 .sheet(item: $editing, onDismiss: { Task { await load() } }) { JournalEditor(entry: $0) }
                 .task { await load() }
-                .onChange(of: store.me.id) { _, _ in dismiss() }
+                .onChange(of: store.state.currentUserID) { _, _ in dismiss() }
         }
     }
     private func load() async {
@@ -128,6 +128,10 @@ struct JournalEditor: View {
     @State private var commentsEnabled = true
     @State private var confirmDelete = false
     @State private var validation: String?
+    private var sharingRestricted: Bool {
+        guard let entry else { return false }
+        return (store.state.journals.first { $0.id == entry.id } ?? entry).moderationHidden == true
+    }
 
     var body: some View {
         NavigationStack {
@@ -141,6 +145,10 @@ struct JournalEditor: View {
                 Section {
                     Picker(L("Ai được đọc?"), selection: $audience) {
                         ForEach(Audience.allCases) { option in Text(L(option.title)).tag(option) }
+                    }.disabled(sharingRestricted)
+                    if sharingRestricted {
+                        Text(L("Quản trị viên đã hạn chế chia sẻ bài này. Bạn vẫn có thể chỉnh sửa và lưu riêng tư.", "Staff have restricted sharing for this entry. You can still edit and save it privately."))
+                            .font(.caption).foregroundStyle(.secondary)
                     }
                     if audience != .privateOnly {
                         Toggle(L("Chỉ chia sẻ một đoạn"), isOn: $useExcerpt)
@@ -189,9 +197,10 @@ struct JournalEditor: View {
                 guard let entry else { return }
                 title = entry.title; bodyText = entry.body; excerpt = entry.sharedText
                 useExcerpt = !entry.sharedText.isEmpty && entry.sharedText != entry.body
-                audience = entry.audience; support = entry.support
+                audience = sharingRestricted ? .privateOnly : entry.audience; support = entry.support
                 anonymous = entry.anonymous; commentsEnabled = entry.commentsEnabled
             }
+            .onChange(of: sharingRestricted) { _, restricted in if restricted { audience = .privateOnly } }
         }
     }
 

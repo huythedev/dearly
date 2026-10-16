@@ -52,6 +52,7 @@ struct Journal: Codable, Identifiable {
     var date: Date
     var listeners: Set<UUID> = []
     var canInviteAuthor: Bool?
+    var moderationHidden: Bool?
 }
 
 struct JournalComment: Codable, Identifiable {
@@ -164,7 +165,12 @@ struct AppState: Codable {
         AppState(profiles: [], currentUserID: UUID(), journals: [])
     }
 
-    var currentUser: Profile { profiles.first { $0.id == currentUserID }! }
+    // Views can be re-evaluated while logout removes the authenticated subtree.
+    // Keep that transition safe without retaining a signed-in profile or sample data.
+    var currentUser: Profile {
+        profiles.first { $0.id == currentUserID } ?? Profile(id: currentUserID, nickname: "", age: 0,
+            symbol: "leaf.fill", bio: "", interests: [], support: .listen, pace: "", ageVerified: false)
+    }
     func profile(_ id: UUID) -> Profile? { profiles.first { $0.id == id } }
     func activeConnection(for id: UUID) -> Connection? {
         connections.first { $0.active && $0.members.contains(id) }
@@ -187,6 +193,8 @@ struct AppState: Codable {
     }
     func canRead(_ journal: Journal) -> Bool {
         if journal.authorID == currentUserID { return true }
+        guard journal.moderationHidden != true else { return false }
+        if journal.audience == .community && journal.anonymous { return true }
         guard !isBlocked(currentUserID, journal.authorID) else { return false }
         if journal.audience == .community { return true }
         return journal.audience == .companion && connections.contains {

@@ -1,6 +1,5 @@
 """Authorization boundaries, migration, operator commands, and staff workflows."""
 import hashlib
-import json
 import sqlite3
 import subprocess
 import sys
@@ -10,7 +9,7 @@ from pathlib import Path
 import pytest
 from fastapi.testclient import TestClient
 from server import Database, SCHEMA, changed, create_app, set_role
-from test_api import env, action, journal, pair, register, state
+from test_api import action, journal, pair, register, state
 
 
 def grant(env, uid, role):
@@ -75,13 +74,13 @@ def test_moderator_reviews_report_without_private_content_or_account_access(env)
     assert len(client.get('/v1/staff/reports', headers=hm).json()['items']) == 1
 
 
-def test_hide_reported_post_preserves_private_journal_and_alias(env):
+def test_hide_reported_post_preserves_private_journal_and_moderation_hold(env):
     client, app, _ = env
     owner, ho = register(env, 'owner'); _, hr = register(env, 'reporter'); mod, hm = register(env, 'mod')
     grant(env, mod['userID'], 'moderator')
     jid = journal(client, ho, anonymous=True)
     action(client, hr, 'journal.comment', dict(id=jid, text='Comment'))
-    action(client, hr, 'invitation.send', dict(journalID=jid))
+    action(client, hr, 'invitation.send', dict(journalID=jid), expected=403)
     action(client, hr, 'report.create', dict(journalID=jid, reason='Reported excerpt'))
     report = client.get('/v1/staff/reports', headers=hm).json()['items'][0]
     rid = str(uuid.uuid4()); payload = dict(id=report['id'], reason='Remove from community')
@@ -90,7 +89,8 @@ def test_hide_reported_post_preserves_private_journal_and_alias(env):
     assert all(j['id'] != jid for j in state(client, hr)['journals'])
     own = next(j for j in state(client, ho)['journals'] if j['id'] == jid)
     assert own['audience'] == 'privateOnly' and 'PRIVATE PREFIX' in own['body']
-    assert state(client, hr)['invitations'][0]['recipientID'] == jid
+    assert state(client, hr)['invitations'] == []
+    assert own['moderationHidden'] is True
     with app.state.database.connect() as db:
         assert db.execute('SELECT count(*) FROM comments WHERE journal_id=?', (jid,)).fetchone()[0] == 0
         assert db.execute("SELECT count(*) FROM audit_log WHERE action='report.hide'").fetchone()[0] == 1
@@ -213,10 +213,10 @@ def test_schema_v1_upgrade_preserves_accounts_sessions_journals_and_reports(tmp_
     with TestClient(app) as client:
         snapshot = state(client, {'Authorization': 'Bearer ' + token})
         assert snapshot['currentUserRole'] == 'user' and snapshot['journals'][0]['body'] == 'Private body'
-    # Reopening v2 is idempotent, including startup by a second operator process.
+    # Reopening v3 is idempotent, including startup by a second operator process.
     Database(path)
     with app.state.database.connect() as db:
-        assert db.execute('PRAGMA user_version').fetchone()[0] == 2
+        assert db.execute('PRAGMA user_version').fetchone()[0] == 3
         assert db.execute('PRAGMA foreign_key_check').fetchall() == []
         report = db.execute('SELECT * FROM reports WHERE id=?', (rid,)).fetchone()
         assert report['reason'] == 'Legacy report' and report['journal_id'] is None and report['evidence'] == ''
