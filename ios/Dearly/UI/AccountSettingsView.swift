@@ -2,6 +2,7 @@ import SwiftUI
 
 @MainActor
 struct AccountSettingsView: View {
+    var onStartGuide: () -> Void
     @AppStorage("dearly.language") private var language = "en"
     @EnvironmentObject private var store: DearlyStore
     @Environment(\.dismiss) private var dismiss
@@ -14,6 +15,11 @@ struct AccountSettingsView: View {
                 }
                 Section(L("Appearance")) {
                     AppearancePicker()
+                }
+                Section(L("A little help getting started")) {
+                    Button(L("Take a guided tour"), systemImage: "book.closed") { onStartGuide() }
+                    Text(L("Revisit the main features with a step-by-step guide."))
+                        .font(.caption).foregroundStyle(DearlyTheme.muted)
                 }
                 if store.isOnline {
                     Section(L("Your account")) {

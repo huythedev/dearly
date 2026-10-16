@@ -2,6 +2,9 @@ import { expect, test } from '@playwright/test';
 import type { Envelope, Journal } from '../src/types';
 
 const userID = '11111111-1111-4111-8111-111111111111';
+test.beforeEach(async ({ page }) => {
+  await page.addInitScript(id => localStorage.setItem(`dearly.guide.v1:${id}`, 'seen'), userID);
+});
 const envelope: Envelope = {
   serverNow: 813585600,
   state: {

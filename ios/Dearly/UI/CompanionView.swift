@@ -5,9 +5,10 @@ struct CompanionView: View {
     @AppStorage("dearly.language") private var language = "en"
     @EnvironmentObject private var store: DearlyStore
     var body: some View {
-        ScrollView {
+        GuideScrollView {
             VStack(alignment: .leading, spacing: 24) {
                 PageHeading(eyebrow: L("YOU DON’T HAVE TO GO ALONE"), title: L("Someone, alongside you."), subtitle: L("Start with something in common. Connect at a pace that feels right for both of you."))
+                    .guideTarget(.companion)
                 if let partner = store.partner, let connection = store.connection {
                     VStack(alignment: .leading, spacing: 20) {
                         HStack(spacing: 14) {

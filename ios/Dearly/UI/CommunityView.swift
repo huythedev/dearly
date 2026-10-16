@@ -8,7 +8,7 @@ struct CommunityView: View {
     @State private var selected: Journal?
     private var entries: [Journal] { store.state.feed.filter { filter == nil || $0.support == filter } }
     var body: some View {
-        ScrollView {
+        GuideScrollView {
             VStack(alignment: .leading, spacing: 24) {
                 PageHeading(eyebrow: L("STORIES SHARED HERE"), title: L("Stay and listen."), subtitle: L("Sometimes, someone being there is enough."))
                 ScrollView(.horizontal, showsIndicators: false) {
@@ -16,7 +16,7 @@ struct CommunityView: View {
                         filterButton(L("All"), value: nil)
                         ForEach(SupportStyle.allCases) { filterButton($0.title, value: $0) }
                     }
-                }
+                }.guideTarget(.community)
                 HStack(spacing: 10) {
                     Image(systemName: "heart.text.square")
                     Text(L("A gentle word. No judgment, no rush to give advice.")).font(.caption).lineSpacing(3)

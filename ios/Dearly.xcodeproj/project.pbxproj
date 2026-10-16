@@ -7,6 +7,8 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		F7D4A692A5CE7D4E1DB1EB3A /* Dearly/UI/GuidedTour.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8A651D89649E04DA9DCACC5A /* Dearly/UI/GuidedTour.swift */; };
+		909389F91544B3A64CE1A1EC /* Dearly/Core/GuideProgress.swift in Sources */ = {isa = PBXBuildFile; fileRef = BF2F5809E3CAFA9ED83C2E84 /* Dearly/Core/GuideProgress.swift */; };
 		F264F7CA4FC506052EDA1ABD /* Dearly/UI/AccountSettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 89D176AEC402F25DE7A6D83B; };
 		69DD7FCF886CAC8A2A80AF0A /* Dearly/UI/RootView.swift in Sources */ = {isa = PBXBuildFile; fileRef = BD89AE342DDEBF0D5BB16F71; };
 		42A58EF170E40BEC12794626 /* Dearly/Core/StateSynchronizer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 27D0CAF9CB6E431245895C0E; };
@@ -43,6 +45,8 @@
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXFileReference section */
+		8A651D89649E04DA9DCACC5A /* Dearly/UI/GuidedTour.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Dearly/UI/GuidedTour.swift; sourceTree = "<group>"; };
+		BF2F5809E3CAFA9ED83C2E84 /* Dearly/Core/GuideProgress.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Dearly/Core/GuideProgress.swift; sourceTree = "<group>"; };
 		89D176AEC402F25DE7A6D83B /* Dearly/UI/AccountSettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Dearly/UI/AccountSettingsView.swift; sourceTree = "<group>"; };
 		BD89AE342DDEBF0D5BB16F71 /* Dearly/UI/RootView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Dearly/UI/RootView.swift; sourceTree = "<group>"; };
 		27D0CAF9CB6E431245895C0E /* Dearly/Core/StateSynchronizer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Dearly/Core/StateSynchronizer.swift; sourceTree = "<group>"; };
@@ -111,6 +115,8 @@
 			children = (
 				A10000000000000000000002 /* Localizable.xcstrings */,
 				6431BD92EEBEB86576039E48 /* Dearly/Core/APIClient.swift */,
+				8A651D89649E04DA9DCACC5A /* Dearly/UI/GuidedTour.swift */,
+				BF2F5809E3CAFA9ED83C2E84 /* Dearly/Core/GuideProgress.swift */,
 				89D176AEC402F25DE7A6D83B /* Dearly/UI/AccountSettingsView.swift */,
 				BD89AE342DDEBF0D5BB16F71 /* Dearly/UI/RootView.swift */,
 				27D0CAF9CB6E431245895C0E /* Dearly/Core/StateSynchronizer.swift */,
@@ -255,6 +261,8 @@
 			buildActionMask = 2147483647;
 			files = (
 				C5EA4C3E67762C047B68CB72 /* Dearly/Core/APIClient.swift in Sources */,
+				F7D4A692A5CE7D4E1DB1EB3A /* Dearly/UI/GuidedTour.swift in Sources */,
+				909389F91544B3A64CE1A1EC /* Dearly/Core/GuideProgress.swift in Sources */,
 				F264F7CA4FC506052EDA1ABD /* Dearly/UI/AccountSettingsView.swift in Sources */,
 				69DD7FCF886CAC8A2A80AF0A /* Dearly/UI/RootView.swift in Sources */,
 				42A58EF170E40BEC12794626 /* Dearly/Core/StateSynchronizer.swift in Sources */,

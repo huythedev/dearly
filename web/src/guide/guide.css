@@ -1,0 +1,18 @@
+.guide-dialog { position: fixed; inset: 0; margin: 0; padding: 0; width: 100vw; height: 100dvh; max-width: none; max-height: none; border: 0; background: transparent; color: var(--ink); overflow: hidden; overscroll-behavior: contain; }
+.guide-dialog::backdrop { background: transparent; }
+.guide-shade { position: absolute; inset: 0; pointer-events: auto; touch-action: none; }
+.guide-outline { fill: none; stroke: var(--forest); stroke-width: 2; }
+.guide-card { position: absolute; display: flex; flex-direction: column; gap: 17px; padding: 23px; border: 1px solid var(--border); border-radius: 20px; background: var(--surface); box-shadow: 0 18px 65px #0005; }
+.guide-topline { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-shrink: 0; }
+.guide-topline > span { font-size: 10px; color: var(--muted); letter-spacing: 1px; }
+.guide-topline .text-button { font-size: 11px; min-height: 36px; }
+.guide-copy { min-height: 0; overflow-y: auto; overscroll-behavior: contain; }
+.guide-copy h2 { font-size: 27px; line-height: 1.25; letter-spacing: -.5px; }
+.guide-copy h2:focus { outline: none; }
+.guide-copy p { color: var(--muted); font-size: 13px; line-height: 1.8; margin-top: 12px; }
+.guide-actions { display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-shrink: 0; }
+.guide-actions .button { min-height: 42px; }
+.guide-intro { gap: 22px; }
+.guide-intro-actions { display: grid; gap: 10px; flex-shrink: 0; }
+.guide-intro-actions > .text-button { justify-self: center; min-height: 36px; }
+@media (max-width: 600px) { .guide-card { padding: 20px; } .guide-topline .text-button, .guide-intro-actions > .text-button { min-height: 44px; } }

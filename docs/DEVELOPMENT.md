@@ -60,6 +60,7 @@ Web chat sends/receives over WebSocket, with reconnect, deduplication, and an id
 | `ios/Dearly/Core/APIClient.swift` | HTTP and WebSocket transport |
 | `ios/Dearly/Core/APITypes.swift`, `SessionKeychain.swift`, `Localization.swift` | Wire DTOs, Keychain session storage and language lookup |
 | `ios/Dearly/Core/StateSynchronizer.swift` | Serial, coalesced snapshot reads |
+| `ios/Dearly/Core/GuideProgress.swift`, `ios/Dearly/UI/GuidedTour.swift` | Account-scoped tour progress, spotlight geometry and native guide UI |
 | `ios/Dearly/Core/StaffModels.swift` | Staff roles, reports, account summaries, and audit DTOs |
 | `ios/Dearly/Core/DearlyStore.swift` | Backend authentication, synchronization, mutations, and UI state |
 | `ios/Dearly/UI/` | Login/signup, journal, community, companion, garden, settings, and staff screens |
@@ -67,6 +68,7 @@ Web chat sends/receives over WebSocket, with reconnect, deduplication, and an id
 | `ios/Dearly/Localizable.xcstrings` | English source keys and Vietnamese interface translations |
 | `ios/Dearly.xcodeproj` | Native Xcode project; relative source paths remain inside ios/ |
 | `web/src/` | Responsive React app, English source copy, Vietnamese translations, themes, and same-origin API/chat client |
+| `web/src/guide/` | Read-only feature tour, spotlight placement and browser-local progress |
 | `web/e2e/` | Desktop/mobile browser flow tests |
 | `web/Dockerfile`, `web/docker/` | Independent frontend image, runtime backend address prompt, Nginx REST/WebSocket proxy |
 | `backend/Dockerfile` | API-only image with configurable listen port |

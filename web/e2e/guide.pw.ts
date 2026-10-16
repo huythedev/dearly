@@ -1,0 +1,114 @@
+import { expect, test, type Page } from '@playwright/test';
+import { guideSteps, guideStorageKey } from '../src/guide/model';
+import type { Envelope } from '../src/types';
+
+const userID = '22222222-2222-4222-8222-222222222222';
+async function fixture(page: Page, connected = false) {
+  const envelope: Envelope = {
+    serverNow: 813585600,
+    state: {
+      currentUserID: userID, profiles: [{ id: userID, nickname: 'Guide friend', age: 25, ageVerified: true,
+        symbol: 'leaf.fill', bio: '', interests: [], support: 'listen', pace: 'Evenings' }],
+      journals: [], messages: [], comments: [], invitations: [], suggestedUserIDs: [],
+      connections: connected ? [{ id: 'garden', members: [userID, 'friend'], startedAt: 813585600,
+        endedAt: null, paused: false, checkIns: {}, bestStreak: 0, serverTotalDays: 0, serverCurrentStreak: 0 }] : [],
+    },
+  };
+  const writes: string[] = [];
+  await page.routeWebSocket('**/ws/chat', socket => {
+    socket.onMessage(() => socket.send(JSON.stringify({ type: 'ready' })));
+  });
+  await page.route('**/v1/**', route => {
+    if (route.request().method() !== 'GET') writes.push(route.request().url());
+    return route.fulfill({ json: route.request().url().endsWith('/state') ? envelope : { items: [], profiles: [], nextCursor: null } });
+  });
+  return writes;
+}
+
+async function alignedSpotlight(page: Page, target: string) {
+  await expect(page.locator('[data-guide-hole]')).toBeVisible();
+  await expect.poll(async () => page.evaluate(name => {
+    const control = document.querySelector(`[data-guide="${name}"]`)!.getBoundingClientRect();
+    const hole = document.querySelector('[data-guide-hole]')!.getBoundingClientRect();
+    return hole.left <= control.left + 1 && hole.right >= control.right - 1
+      && hole.top <= control.top + 1 && hole.bottom >= control.bottom - 1;
+  }, target)).toBe(true);
+  const card = await page.locator('.guide-card').boundingBox();
+  const screen = page.viewportSize()!;
+  expect(card!.x).toBeGreaterThanOrEqual(15);
+  expect(card!.y).toBeGreaterThanOrEqual(15);
+  expect(card!.x + card!.width).toBeLessThanOrEqual(screen.width - 15);
+  expect(card!.y + card!.height).toBeLessThanOrEqual(screen.height - 15);
+}
+
+test('welcome can be deferred, remembered and replayed from settings', async ({ page }) => {
+  await fixture(page);
+  await page.goto('/journal');
+  await expect(page.getByRole('dialog', { name: 'A little guide to Dearly' })).toBeVisible();
+  await page.getByRole('button', { name: 'Maybe later', exact: true }).click();
+  await page.reload();
+  await expect(page.getByRole('heading', { name: 'Make room for your thoughts.' })).toBeVisible();
+  await expect(page.getByRole('dialog')).toHaveCount(0);
+  await page.getByRole('button', { name: 'Account settings', exact: true }).click();
+  await page.getByRole('button', { name: 'Take a guided tour', exact: true }).click();
+  await expect(page.getByRole('dialog', { name: guideSteps[0].title })).toBeVisible();
+  await page.keyboard.press('Escape');
+  await expect(page.getByRole('dialog')).toHaveCount(0);
+  await expect(page.getByRole('button', { name: 'Account settings', exact: true })).toBeFocused();
+  expect(await page.evaluate(key => localStorage.getItem(key), guideStorageKey(userID))).toBe('seen');
+});
+
+test('six steps highlight real controls without writing data and keep keyboard focus inside', async ({ page }) => {
+  const writes = await fixture(page, true);
+  await page.goto('/journal');
+  await page.getByRole('button', { name: 'Show me around', exact: true }).click();
+  for (let i = 0; i < guideSteps.length; i++) {
+    const step = guideSteps[i];
+    const dialog = page.getByRole('dialog', { name: step.title });
+    await expect(dialog).toBeVisible();
+    await expect(page).toHaveURL(new RegExp(`/${step.route}$`));
+    await alignedSpotlight(page, step.target);
+    for (let tab = 0; tab < 5; tab++) {
+      await page.keyboard.press('Tab');
+      expect(await page.evaluate(() => !!document.activeElement?.closest('dialog[open]'))).toBe(true);
+    }
+    if (i === 1) {
+      await dialog.getByRole('button', { name: 'Back', exact: true }).click();
+      await expect(page.getByRole('dialog', { name: guideSteps[0].title })).toBeVisible();
+      await page.getByRole('button', { name: 'Next', exact: true }).click();
+    }
+    await dialog.getByRole('button', { name: i === guideSteps.length - 1 ? 'Finish' : 'Next', exact: true }).click();
+  }
+  await expect(page.getByRole('dialog')).toHaveCount(0);
+  expect(writes).toEqual([]);
+  expect(await page.evaluate(key => localStorage.getItem(key), guideStorageKey(userID))).toBe('seen');
+  await page.reload();
+  await expect(page.getByRole('heading', { name: 'A little care goes a long way.', exact: true })).toBeVisible();
+  await expect(page.getByRole('dialog')).toHaveCount(0);
+});
+
+test('Vietnamese instructions fit narrow and landscape screens and tolerate a missing target', async ({ page }) => {
+  await fixture(page);
+  await page.addInitScript(() => { localStorage.setItem('dearly.language', 'vi'); localStorage.setItem('dearly.appearance', 'dark'); });
+  await page.setViewportSize({ width: 320, height: 568 });
+  await page.goto('/garden');
+  await expect(page.getByRole('dialog', { name: 'Cùng làm quen với Dearly' })).toBeVisible();
+  await page.getByRole('button', { name: 'Bắt đầu khám phá', exact: true }).click();
+  for (let i = 0; i < guideSteps.length; i++) {
+    await expect(page.locator('.guide-topline')).toContainText(`Bước ${i + 1} trên 6`);
+    await alignedSpotlight(page, guideSteps[i].target);
+    if (i === 0) {
+      await page.setViewportSize({ width: 568, height: 320 });
+      await alignedSpotlight(page, 'compose');
+      await page.evaluate(() => {
+        document.querySelector('[data-guide="compose"]')!.removeAttribute('data-guide');
+        dispatchEvent(new Event('resize'));
+      });
+      await expect(page.locator('[data-guide-hole]')).toHaveCount(0);
+      await expect(page.getByRole('button', { name: 'Tiếp', exact: true })).toBeVisible();
+      await page.setViewportSize({ width: 320, height: 568 });
+    }
+    await page.getByRole('button', { name: i === guideSteps.length - 1 ? 'Hoàn tất' : 'Tiếp', exact: true }).click();
+  }
+  await expect(page.getByRole('dialog')).toHaveCount(0);
+});
