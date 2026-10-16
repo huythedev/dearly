@@ -147,10 +147,12 @@ def test_english_catalog_and_error_templates_have_complete_vietnamese_translatio
         for raw in source_keys:
             key = json.loads('"' + raw + '"')
             assert key in catalog['strings'], (path, key)
-    source = ast.parse((root / 'backend/server.py').read_text())
-    messages = {node.args[0].value for node in ast.walk(source) if isinstance(node, ast.Call)
+    runtime_sources = [*(root / 'backend').glob('*.py'), *(root / 'backend/dearly').glob('*.py')]
+    messages = {node.args[0].value for path in runtime_sources
+                for node in ast.walk(ast.parse(path.read_text())) if isinstance(node, ast.Call)
                 and isinstance(node.func, ast.Name) and node.func.id in ('fail', 'error_response')
                 and node.args and isinstance(node.args[0], ast.Constant)}
+    assert messages  # Moving runtime code must not silently disable catalog coverage.
     assert messages <= VIETNAMESE.keys()
     for message in messages:
         fields = lambda template: {name for _, name, _, _ in Formatter().parse(template) if name}

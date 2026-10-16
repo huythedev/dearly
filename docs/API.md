@@ -19,6 +19,8 @@ The web client uses the frontend origin with relative `/v1/...` paths. In split 
 | GET `/v1/staff/users` | q: username/nickname prefix, before UUID, limit 1–50 | Account page; requires users.read |
 | GET `/v1/staff/audit` | before: integer event ID, limit 1–50 | Audit page; requires audit.read |
 
+Browser mutations also send `X-Dearly-User` with the `currentUserID` from their originating snapshot. On `/v1/actions`, a supplied ID must exactly match the authenticated account; a mismatch returns 409 before writing or recording the request ID. This prevents a retry from executing under a different account after another tab changes the shared cookie. It does not replace authentication. Existing bearer clients may omit the header.
+
 JSON dates are **seconds since 2001-01-01 UTC**, matching the default Swift JSONEncoder/JSONDecoder Date representation. Native DTOs do not use the Unix epoch. `birthDate` is a Gregorian date string rather than a timestamp. IDs are UUIDs. Check-in days use YYYY-MM-DD in server UTC.
 
 ## WebSocket chat

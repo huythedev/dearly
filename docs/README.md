@@ -20,4 +20,5 @@
 - [Performance notes](PERFORMANCE.md)
 - [Roadmap and responsibilities](ROADMAP.md)
 - [Manual device checklist](MANUAL-TESTS.md)
+- [Source audit and module guide](SOURCE-AUDIT.md)
 - [Validation history](VALIDATION.md)

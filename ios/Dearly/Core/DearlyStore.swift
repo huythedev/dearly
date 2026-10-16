@@ -22,7 +22,8 @@ final class DearlyStore: ObservableObject {
     private var api: APIClient?
     private var generation = UUID()
     private var etag: String?
-    private var refreshing = false
+    private let synchronizer = StateSynchronizer()
+    private var chatGeneration = UUID()
     private var chatTask: Task<Void, Never>?
     private var serverClockOffset: TimeInterval = 0
     var now: Date {
@@ -57,6 +58,7 @@ final class DearlyStore: ObservableObject {
                 throw DearlyError.invalid(L("The sign-in data is invalid."))
             }
             try SessionKeychain.save(record)
+            synchronizer.invalidate()
             generation = UUID(); api = client; etag = tag
             state = envelope.state; isOnline = true; serverAddress = record.baseURL
             serverClockOffset = envelope.serverNow.timeIntervalSinceNow
@@ -75,6 +77,7 @@ final class DearlyStore: ObservableObject {
             let client = APIClient(baseURL: try APIClient.validatedURL(record.baseURL), token: record.token)
             let (envelope, tag) = try await client.fetchState(etag: nil)
             guard let envelope, envelope.state.currentUserID == record.userID, envelope.state.profile(record.userID) != nil else { throw DearlyError.invalid(L("This session is invalid.")) }
+            synchronizer.invalidate()
             generation = UUID(); api = client; etag = tag; state = envelope.state
             isOnline = true; serverAddress = record.baseURL; lastSync = Date()
             serverClockOffset = envelope.serverNow.timeIntervalSinceNow
@@ -101,17 +104,22 @@ final class DearlyStore: ObservableObject {
 
     private func disconnect() {
         stopChat()
-        generation = UUID(); api = nil; etag = nil; refreshing = false
-        SessionKeychain.clear(); state = .signedOut(); isOnline = false
+        generation = UUID(); api = nil; etag = nil; synchronizer.invalidate()
+        SessionKeychain.clear(); state = .signedOut(); isOnline = false; isBusy = false
         serverAddress = ""; syncError = nil; lastSync = nil; serverClockOffset = 0
     }
 
     @discardableResult
     func refresh(force: Bool = false) async -> Bool {
-        guard let client = api, !refreshing else { return false }
+        await synchronizer.refresh(force: force) { [weak self] force in
+            guard let self else { return false }
+            return await self.readSnapshot(force: force)
+        }
+    }
+
+    private func readSnapshot(force: Bool) async -> Bool {
+        guard let client = api else { return false }
         let expected = generation
-        refreshing = true
-        defer { if expected == generation { refreshing = false } }
         do {
             let (envelope, tag) = try await client.fetchState(etag: force ? nil : etag)
             guard expected == generation else { return false }
@@ -155,6 +163,7 @@ final class DearlyStore: ObservableObject {
     }
 
     private func stopChat() {
+        chatGeneration = UUID()
         chatTask?.cancel(); chatTask = nil; isChatConnected = false
     }
 
@@ -162,29 +171,30 @@ final class DearlyStore: ObservableObject {
         stopChat()
         guard foreground, isOnline, let client = api else { return }
         let expected = generation
+        let socketID = chatGeneration
         chatTask = Task { [weak self] in
             var delay: UInt64 = 1
-            while !Task.isCancelled, self?.generation == expected, self?.foreground == true {
+            while !Task.isCancelled, self?.generation == expected, self?.chatGeneration == socketID, self?.foreground == true {
                 do {
                     try await client.listenForChat { [weak self] event in
-                        await self?.receiveChat(event, generation: expected)
+                        await self?.receiveChat(event, generation: expected, socketID: socketID)
                     }
                 } catch {
-                    guard !Task.isCancelled, let self, self.generation == expected else { return }
+                    guard !Task.isCancelled, let self, self.generation == expected, self.chatGeneration == socketID else { return }
                     if self.isChatConnected { delay = 1 }
                     self.isChatConnected = false
                     // REST checks expiry/suspension and remains the compatibility fallback.
                     _ = await self.refresh(force: true)
                 }
-                guard !Task.isCancelled, self?.generation == expected else { return }
+                guard !Task.isCancelled, self?.generation == expected, self?.chatGeneration == socketID else { return }
                 do { try await Task.sleep(nanoseconds: delay * 1_000_000_000) } catch { return }
                 delay = min(delay * 2, 30)
             }
         }
     }
 
-    private func receiveChat(_ event: ChatEvent, generation expected: UUID) async {
-        guard generation == expected, isOnline, foreground else { return }
+    private func receiveChat(_ event: ChatEvent, generation expected: UUID, socketID: UUID) async {
+        guard generation == expected, chatGeneration == socketID, !Task.isCancelled, isOnline, foreground else { return }
         switch event.type {
         case "ready":
             isChatConnected = true
@@ -192,13 +202,13 @@ final class DearlyStore: ObservableObject {
         case "message":
             if let message = event.message { state.receiveLiveMessage(message) }
         case "state.changed":
-            _ = await refresh()
+            _ = await refresh(force: true)
         default: break
         }
     }
 
     @discardableResult
-    private func execute(_ kind: String, _ payload: CommandPayload, local: (inout AppState) throws -> Void) async -> Bool {
+    private func execute(_ kind: String, _ payload: CommandPayload) async -> Bool {
         guard !isBusy, !isAuthenticating else { return false }
         guard let client = api, isOnline else {
             errorMessage = L("Please log in to continue.")
@@ -206,15 +216,13 @@ final class DearlyStore: ObservableObject {
         }
         isBusy = true
         let expected = generation
-        defer { isBusy = false }
+        defer { if expected == generation { isBusy = false } }
         do {
             try await client.command(kind: kind, payload: payload)
             guard expected == generation else { return false }
             errorMessage = nil
-            // If a background read is already in flight, wait for it before requesting the committed state.
-            while refreshing && expected == generation { try await Task.sleep(nanoseconds: 50_000_000) }
-            guard expected == generation else { return false }
             let synced = await refresh(force: true)
+            guard expected == generation else { return false }
             if !synced && isOnline { notice = L("Your changes are saved on the server. The app will sync when the connection improves.") }
             return true
         } catch {
@@ -228,115 +236,98 @@ final class DearlyStore: ObservableObject {
 
     func saveJournal(id: UUID?, title: String, body: String, sharedText: String, audience: Audience,
                      anonymous: Bool, commentsEnabled: Bool, support: SupportStyle) async -> Bool {
-        let date = now
-        return await execute("journal.save", CommandPayload(id: id, title: title, body: body, sharedText: sharedText,
-            audience: audience.rawValue, anonymous: anonymous, commentsEnabled: commentsEnabled, support: support.rawValue)) {
-            try $0.saveJournal(id: id, title: title, body: body, sharedText: sharedText, audience: audience,
-                anonymous: anonymous, commentsEnabled: commentsEnabled, support: support, now: date)
-        }
+        await execute("journal.save", CommandPayload(id: id, title: title, body: body, sharedText: sharedText,
+            audience: audience.rawValue, anonymous: anonymous, commentsEnabled: commentsEnabled, support: support.rawValue))
     }
     func deleteJournal(_ id: UUID) async -> Bool {
-        await execute("journal.delete", CommandPayload(id: id)) { $0.deleteJournal(id) }
+        await execute("journal.delete", CommandPayload(id: id))
     }
     func toggleListening(_ journal: Journal) async {
-        let enabled = !journal.listeners.contains(me.id)
-        _ = await execute("journal.listen", CommandPayload(id: journal.id, enabled: enabled)) { $0.toggleListening(journal.id) }
+        _ = await execute("journal.listen", CommandPayload(id: journal.id, enabled: !journal.listeners.contains(me.id)))
     }
     func comment(on id: UUID, text: String) async -> Bool {
-        let date = now
-        return await execute("journal.comment", CommandPayload(id: id, text: text)) { try $0.comment(on: id, text: text, now: date) }
+        await execute("journal.comment", CommandPayload(id: id, text: text))
     }
     func canInvitePost(_ journal: Journal) -> Bool {
         !journal.anonymous && (isOnline ? journal.canInviteAuthor == true : state.canInvite(journal.authorID))
     }
     func invite(_ userID: UUID, journalID: UUID? = nil) async -> Bool {
-        let date = now
-        return await execute("invitation.send", CommandPayload(userID: journalID == nil ? userID : nil, journalID: journalID)) { try $0.invite(userID, now: date) }
+        await execute("invitation.send", CommandPayload(userID: journalID == nil ? userID : nil, journalID: journalID))
     }
     func accept(_ id: UUID) async {
-        let date = now
-        _ = await execute("invitation.accept", CommandPayload(id: id)) { try $0.accept(id, now: date) }
+        _ = await execute("invitation.accept", CommandPayload(id: id))
     }
     func dismissInvitation(_ id: UUID) async {
-        _ = await execute("invitation.dismiss", CommandPayload(id: id)) { $0.dismissInvitation(id) }
+        _ = await execute("invitation.dismiss", CommandPayload(id: id))
     }
     func send(_ text: String, connectionID: UUID) async -> Bool {
-        let date = now
-        return await execute("message.send", CommandPayload(connectionID: connectionID, text: text)) { try $0.send(text, now: date) }
+        await execute("message.send", CommandPayload(connectionID: connectionID, text: text))
     }
     func checkIn() async {
         guard let connection else { return }
-        let date = now; let cal = calendar
-        _ = await execute("connection.checkin", CommandPayload(connectionID: connection.id)) { try $0.checkIn(now: date, calendar: cal) }
+        _ = await execute("connection.checkin", CommandPayload(connectionID: connection.id))
     }
     func togglePause() async {
         guard let connection else { return }
-        _ = await execute("connection.pause", CommandPayload(connectionID: connection.id, paused: !connection.paused)) { $0.togglePause() }
+        _ = await execute("connection.pause", CommandPayload(connectionID: connection.id, paused: !connection.paused))
     }
     func leave() async -> Bool {
         guard let connection else { return false }
-        let date = now
-        return await execute("connection.leave", CommandPayload(connectionID: connection.id)) { $0.leave(now: date) }
+        return await execute("connection.leave", CommandPayload(connectionID: connection.id))
     }
     func block(_ id: UUID, journalID: UUID? = nil) async -> Bool {
-        let date = now
-        return await execute("user.block", CommandPayload(userID: journalID == nil ? id : nil, journalID: journalID)) { $0.block(id, now: date) }
+        await execute("user.block", CommandPayload(userID: journalID == nil ? id : nil, journalID: journalID))
     }
     func hidePost(_ id: UUID) async -> Bool {
-        await execute("journal.hide", CommandPayload(id: id)) { state in
-            state.journals.removeAll { $0.id == id }
-            state.comments.removeAll { $0.journalID == id }
-        }
+        await execute("journal.hide", CommandPayload(id: id))
     }
     func report(_ id: UUID, journalID: UUID? = nil, reason: String) async -> Bool {
-        let date = now; let reporter = me.id
-        let success = await execute("report.create", CommandPayload(userID: journalID == nil ? id : nil, journalID: journalID, reason: reason)) {
-            $0.reports.append(LocalReport(reporterID: reporter, reportedID: id, reason: reason, date: date))
-        }
+        let success = await execute("report.create", CommandPayload(userID: journalID == nil ? id : nil, journalID: journalID, reason: reason))
         if success { notice = L("Your report has been sent for an administrator to review.") }
         return success
     }
     func loadOlderMessages(connectionID: UUID, before: UUID?) async -> Bool {
-        guard let client = api, !isBusy else { return false }
+        guard api != nil, !isBusy else { return false }
         let expected = generation
         isBusy = true
-        defer { isBusy = false }
+        defer { if expected == generation { isBusy = false } }
         do {
-            let page = try await client.messages(connectionID: connectionID, before: before)
+            let page = try await accountRead { try await $0.messages(connectionID: connectionID, before: before) }
             guard expected == generation, connection?.id == connectionID else { return false }
             let existing = Set(state.messages.map(\.id))
             state.messages.insert(contentsOf: page.items.filter { !existing.contains($0.id) }, at: 0)
             if state.messages.count > 500 { state.messages = Array(state.messages.suffix(500)) }
             return page.nextCursor != nil && state.messages.count < 500
-        } catch { errorMessage = error.localizedDescription; return true }
+        } catch {
+            guard expected == generation, connection?.id == connectionID else { return false }
+            errorMessage = error.localizedDescription
+            return true
+        }
     }
     func updateProfile(nickname: String, bio: String, interests: [String], support: SupportStyle, pace: String) async -> Bool {
-        await execute("profile.update", CommandPayload(support: support.rawValue, nickname: nickname, bio: bio, interests: interests, pace: pace)) { state in
-            guard let index = state.profiles.firstIndex(where: { $0.id == state.currentUserID }) else { return }
-            state.profiles[index].nickname = nickname; state.profiles[index].bio = bio
-            state.profiles[index].interests = interests; state.profiles[index].support = support; state.profiles[index].pace = pace
+        await execute("profile.update", CommandPayload(support: support.rawValue, nickname: nickname, bio: bio, interests: interests, pace: pace))
+    }
+
+    private func accountRead<T>(_ operation: (APIClient) async throws -> T) async throws -> T {
+        guard let client = api, isOnline else { throw APIError(status: 401, message: L("Please log in.")) }
+        let expected = generation
+        do {
+            let page = try await operation(client)
+            guard expected == generation else { throw CancellationError() }
+            return page
+        } catch {
+            guard expected == generation else { throw CancellationError() }
+            if (error as? APIError)?.status == 401 { disconnect() }
+            throw error
         }
     }
 
     func journalPage(before: UUID?) async throws -> JournalPage {
-        guard let client = api else { throw DearlyError.invalid(L("Connect to the server to browse earlier entries.")) }
-        let expected = generation
-        let result = try await client.journals(before: before)
-        guard expected == generation else { throw CancellationError() }
-        return result
+        try await accountRead { try await $0.journals(before: before) }
     }
 
     func connectionPage(before: UUID?) async throws -> ConnectionPage {
-        guard let client = api, isOnline else { throw APIError(status: 401, message: L("Please log in.")) }
-        let expected = generation
-        do {
-            let page = try await client.archivedConnections(before: before)
-            guard expected == generation else { throw CancellationError() }
-            return page
-        } catch {
-            if expected == generation, (error as? APIError)?.status == 401 { disconnect() }
-            throw error
-        }
+        try await accountRead { try await $0.archivedConnections(before: before) }
     }
 
     // Staff payloads live only in the presented screen; never in the personal snapshot/cache.
@@ -368,7 +359,7 @@ final class DearlyStore: ObservableObject {
         try await staffRead("audit.read") { try await $0.staffAudit(before: before) }
     }
     func staffCommand(_ kind: String, payload: CommandPayload) async -> Bool {
-        let success = await execute(kind, payload) { _ in }
+        let success = await execute(kind, payload)
         if !success, isOnline { _ = await refresh(force: true) }
         return success
     }

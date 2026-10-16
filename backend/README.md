@@ -4,6 +4,8 @@ For guided setup and everyday use, start with the [setup guide](../docs/SETUP.md
 
 A Python 3.11+ / FastAPI / SQLite backend shared by the Dearly iOS and web apps. It runs as a single server on macOS, Linux, or Windows. No separate database server, Redis, Node.js runtime, or Docker is required. Building the optional web frontend requires Node.js 24 or the Docker multi-stage build.
 
+Implementation is organized in `dearly/`; `server.py` preserves the app factory and CLI imports. See the [module guide](../docs/SOURCE-AUDIT.md#backend) for responsibilities.
+
 ## Setup and run
 
 Open a terminal in the repository’s `backend` directory.

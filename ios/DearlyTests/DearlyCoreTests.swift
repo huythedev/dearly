@@ -2,6 +2,74 @@ import XCTest
 @testable import Dearly
 
 final class DearlyCoreTests: XCTestCase {
+    @MainActor
+    func testSnapshotsSerializeAndRetainInvalidationsDuringARead() async {
+        let synchronizer = StateSynchronizer()
+        let started = expectation(description: "Initial snapshot started")
+        let joined = expectation(description: "Invalidations queued")
+        joined.expectedFulfillmentCount = 2
+        var release: CheckedContinuation<Void, Never>?
+        var reads: [Bool] = []
+        var active = 0
+        var peak = 0
+        let initial = Task {
+            await synchronizer.refresh { force in
+                active += 1; peak = max(peak, active)
+                reads.append(force)
+                if reads.count == 1 {
+                    await withCheckedContinuation { continuation in
+                        release = continuation; started.fulfill()
+                    }
+                }
+                active -= 1
+                return true
+            }
+        }
+        await fulfillment(of: [started], timeout: 2)
+        let second = Task {
+            joined.fulfill()
+            return await synchronizer.refresh(force: true) { _ in XCTFail("Use the active reader"); return false }
+        }
+        let third = Task {
+            joined.fulfill()
+            return await synchronizer.refresh(force: true) { _ in XCTFail("Use the active reader"); return false }
+        }
+        await fulfillment(of: [joined], timeout: 2)
+        XCTAssertEqual(reads, [false])
+        release?.resume()
+        let results = await [initial.value, second.value, third.value]
+        XCTAssertEqual(results, [true, true, true])
+        XCTAssertEqual(reads, [false, true])
+        XCTAssertEqual(peak, 1)
+    }
+
+    @MainActor
+    func testSessionInvalidationCancelsOldSnapshotWithoutClearingNewWork() async {
+        let synchronizer = StateSynchronizer()
+        let started = expectation(description: "Old session read started")
+        var release: CheckedContinuation<Void, Never>?
+        let old = Task {
+            await synchronizer.refresh { _ in
+                await withCheckedContinuation { continuation in release = continuation; started.fulfill() }
+                return !Task.isCancelled
+            }
+        }
+        await fulfillment(of: [started], timeout: 2)
+        synchronizer.invalidate()
+        let fresh = await synchronizer.refresh(force: true) { force in force }
+        XCTAssertTrue(fresh)
+        release?.resume()
+        let cancelled = await old.value
+        XCTAssertFalse(cancelled)
+        let next = await synchronizer.refresh { force in !force }
+        XCTAssertTrue(next)
+    }
+
+    func testLocalNetworkPermissionExplainsWhyTheServerIsContacted() {
+        let description = Bundle.main.object(forInfoDictionaryKey: "NSLocalNetworkUsageDescription") as? String
+        XCTAssertTrue(description?.contains("server") == true)
+    }
+
     func testNativeSocketURLUsesSameHostWithoutCredentialsInURL() throws {
         let server = try APIClient.validatedURL(APIClient.defaultServerAddress)
         XCTAssertEqual(server.absoluteString, "https://dearly.huythedev.com")

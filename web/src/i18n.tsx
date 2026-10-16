@@ -6,6 +6,7 @@ type Appearance = 'system' | 'light' | 'dark';
 const Context = createContext({
   language: 'en' as Language, setLanguage: (_value: Language) => {},
   appearance: 'system' as Appearance, setAppearance: (_value: Appearance) => {},
+  isDark: false,
   t: (source: string) => source, date: (seconds: number) => String(seconds),
 });
 export const useI18n = () => useContext(Context);
@@ -16,17 +17,22 @@ export function Preferences({ children }: { children: ReactNode }) {
     const saved = localStorage.getItem('dearly.appearance');
     return saved === 'light' || saved === 'dark' ? saved : 'system';
   });
+  const [systemDark, setSystemDark] = useState(() => matchMedia('(prefers-color-scheme: dark)').matches);
+  const isDark = appearance === 'dark' || (appearance === 'system' && systemDark);
   useEffect(() => {
     localStorage.setItem('dearly.language', language); document.documentElement.lang = language;
   }, [language]);
   useEffect(() => {
-    localStorage.setItem('dearly.appearance', appearance);
     const media = matchMedia('(prefers-color-scheme: dark)');
-    const update = () => { document.documentElement.dataset.theme = appearance === 'system' ? (media.matches ? 'dark' : 'light') : appearance; };
+    const update = () => setSystemDark(media.matches);
     update(); media.addEventListener('change', update);
     return () => media.removeEventListener('change', update);
-  }, [appearance]);
+  }, []);
+  useEffect(() => {
+    localStorage.setItem('dearly.appearance', appearance);
+    document.documentElement.dataset.theme = isDark ? 'dark' : 'light';
+  }, [appearance, isDark]);
   const t = (source: string) => language === 'vi' ? (vi as Record<string, string>)[source] ?? source : source;
   const date = (seconds: number) => new Date((seconds + 978307200) * 1000).toLocaleDateString(language === 'vi' ? 'vi-VN' : 'en-US', { month: 'short', day: 'numeric', year: 'numeric' });
-  return <Context value={{ language, setLanguage, appearance, setAppearance, t, date }}>{children}</Context>;
+  return <Context value={{ language, setLanguage, appearance, setAppearance, isDark, t, date }}>{children}</Context>;
 }

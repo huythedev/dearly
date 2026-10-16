@@ -187,3 +187,61 @@ def test_chat_has_a_per_account_connection_budget_and_releases_slots(env):
             assert disconnected.value.code == 4429
     with client.websocket_connect('/ws/chat') as available:
         socket_auth(available, a['token'])
+
+
+def test_browser_mutation_is_bound_to_the_account_that_created_it(env):
+    client, _, _ = env
+    first, _ = register(env, 'first_tab')
+    second, _ = register(env, 'second_tab')
+    fields = {'password': 'test-password-123'}
+    assert client.post('/v1/auth/login', headers=WEB, json={**fields, 'username': 'first_tab'}).status_code == 200
+    payload = {'requestID': str(uuid.uuid4()), 'kind': 'profile.update', 'payload': {'nickname': 'First account only'}}
+    headers = {**WEB, 'X-Dearly-User': first['userID']}
+    assert client.post('/v1/actions', headers=headers, json=payload).status_code == 200
+    # Another tab switches the shared cookie before a lost reply is retried.
+    assert client.post('/v1/auth/login', headers=WEB, json={**fields, 'username': 'second_tab'}).status_code == 200
+    retry = client.post('/v1/actions', headers=headers, json=payload)
+    assert retry.status_code == 409
+    assert 'account changed' in retry.json()['detail']
+    state = client.get('/v1/state').json()['state']
+    assert state['currentUserID'] == second['userID']
+    assert next(p for p in state['profiles'] if p['id'] == second['userID'])['nickname'] != 'First account only'
+    # Reject before recording the request ID for the new account.
+    assert client.post('/v1/actions', headers={**WEB, 'X-Dearly-User': second['userID']}, json=payload).status_code == 200
+
+
+def test_socket_revocation_handles_a_client_that_already_disconnected(env):
+    import asyncio
+    import json
+
+    import anyio
+
+    _, app, _ = env
+    session, _ = register(env, 'disconnecting')
+
+    async def exercise():
+        incoming = asyncio.Queue()
+        incoming.put_nowait({'type': 'websocket.connect'})
+        incoming.put_nowait({'type': 'websocket.receive', 'text': json.dumps({'type': 'authenticate', 'token': session['token']})})
+        sent = []
+
+        async def send(message):
+            sent.append(message)
+            if message['type'] == 'websocket.send':
+                assert json.loads(message['text'])['type'] == 'ready'
+                # Logout revokes the session as the browser closes its socket.
+                with app.state.database.connect(write=True) as db:
+                    db.execute('DELETE FROM sessions WHERE user_id=?', (session['userID'],))
+                incoming.put_nowait({'type': 'websocket.disconnect', 'code': 1000})
+            elif message['type'] == 'websocket.close':
+                raise OSError('The browser already disconnected.')
+
+        scope = {'type': 'websocket', 'path': '/ws/chat', 'raw_path': b'/ws/chat',
+                 'root_path': '', 'scheme': 'ws', 'query_string': b'',
+                 'headers': [(b'host', b'testserver')], 'client': ('127.0.0.1', 12345),
+                 'server': ('testserver', 80), 'subprotocols': [], 'state': {},
+                 'asgi': {'version': '3.0', 'spec_version': '2.4'}}
+        await asyncio.wait_for(app(scope, incoming.get, send), timeout=2)
+        assert sent[-1] == {'type': 'websocket.close', 'code': 4401, 'reason': ''}
+
+    anyio.run(exercise)

@@ -21,10 +21,13 @@ export class ChatTransport {
     this.callbacks.status(this.attempts ? 'reconnecting' : 'connecting');
     const protocol = location.protocol === 'https:' ? 'wss:' : 'ws:';
     const socket = this.socket = new WebSocket(`${protocol}//${location.host}/ws/chat`);
-    socket.onopen = () => socket.send(JSON.stringify({ type: 'authenticate' }));
+    const current = () => !this.stopped && this.socket === socket;
+    socket.onopen = () => { if (current()) socket.send(JSON.stringify({ type: 'authenticate' })); };
     socket.onmessage = event => {
+      if (!current()) return;
       let frame;
       try { frame = JSON.parse(event.data); } catch { return; }
+      if (!frame || typeof frame !== 'object') return;
       if (frame.type === 'ready') {
         this.ready = true; this.attempts = 0;
         this.callbacks.status('connected'); this.callbacks.changed();
@@ -40,23 +43,28 @@ export class ChatTransport {
       }
     };
     socket.onclose = event => {
+      if (!current()) return;
       this.ready = false;
       this.failPending();
-      if (this.stopped) return;
       if (event.code === 4401) { this.callbacks.expired(); return; }
       this.callbacks.status('reconnecting');
       const delay = Math.min(30000, 1000 * 2 ** Math.min(this.attempts++, 5));
       this.timer = setTimeout(() => this.connect(), delay + Math.random() * 400);
     };
-    socket.onerror = () => socket.close();
+    socket.onerror = () => { if (current()) socket.close(); };
   }
 
   send(value: Command): Promise<{ ok: boolean; id?: string }> {
     if (!this.ready || this.socket?.readyState !== WebSocket.OPEN) return Promise.reject(new Error('Chat reconnecting.'));
+    if (this.pending.has(value.requestID)) return Promise.reject(new Error('Chat request already pending.'));
     return new Promise((resolve, reject) => {
       const timer = setTimeout(() => { this.pending.delete(value.requestID); reject(new Error('Chat reply timed out.')); }, 10000);
       this.pending.set(value.requestID, { resolve, reject, timer });
-      this.socket!.send(JSON.stringify({ type: 'message.send', requestID: value.requestID, ...value.payload }));
+      try { this.socket!.send(JSON.stringify({ type: 'message.send', requestID: value.requestID, ...value.payload })); }
+      catch (error) {
+        clearTimeout(timer); this.pending.delete(value.requestID);
+        reject(error);
+      }
     });
   }
 

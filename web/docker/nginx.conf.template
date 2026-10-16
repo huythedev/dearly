@@ -46,7 +46,7 @@ http {
         location ~ ^/(v1|ws)(/|$) { proxy_pass $dearly_backend; }
         location ~ ^/(health|docs|openapi\.json)(/|$) { proxy_pass $dearly_backend; }
         location ~ /\. { return 404; }
-        location /assets/ { try_files $uri =404; expires 7d; add_header X-Content-Type-Options nosniff always; }
+        location ~ ^/assets/ { try_files $uri =404; expires 7d; add_header X-Content-Type-Options nosniff always; }
         location = /index.html {
             add_header Cache-Control no-cache always;
             add_header X-Content-Type-Options nosniff always;

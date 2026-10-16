@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { APIError, command, fetchState, request, sendCommand } from './api';
 import { ChatTransport, type ChatStatus } from './chat';
+import { RefreshQueue } from './synchronization';
 import { activeConnection, mergeByID, type Envelope } from './types';
 
 export function useDearly() {
@@ -12,97 +13,133 @@ export function useDearly() {
   const [chatStatus, setChatStatus] = useState<ChatStatus>('connecting');
   const generation = useRef(0);
   const etag = useRef<string | null>(null);
-  const inflight = useRef<Promise<void> | null>(null);
+  const queue = useRef<RefreshQueue | null>(null);
+  const operation = useRef<AbortController | null>(null);
   const chat = useRef<ChatTransport | null>(null);
 
   const expire = useCallback(() => {
-    generation.current++; etag.current = null; setEnvelope(null); setBusy(false);
+    generation.current++;
+    etag.current = null;
+    queue.current?.invalidate();
+    operation.current?.abort();
+    operation.current = null;
+    chat.current?.close();
+    chat.current = null;
+    setEnvelope(null);
+    setBusy(false);
+    setLoading(false);
+    setSyncError(false);
   }, []);
 
-  const refresh = useCallback(async (force = false) => {
-    if (inflight.current) {
-      await inflight.current;
-      if (!force) return;
-    }
+  if (!queue.current) queue.current = new RefreshQueue(async (force, signal) => {
     const expected = generation.current;
-    const operation = (async () => {
-      try {
-        const result = await fetchState(force ? null : etag.current);
-        if (expected !== generation.current) return;
-        etag.current = result.etag;
-        if (result.envelope) {
-          const updated = result.envelope;
-          setEnvelope(previous => {
-            const connection = activeConnection(updated.state);
-            if (connection && previous?.state.currentUserID === updated.state.currentUserID) {
-              updated.state.messages = mergeByID(previous.state.messages.filter(m => m.connectionID === connection.id), updated.state.messages)
-                .sort((a, b) => a.date - b.date || a.id.localeCompare(b.id)).slice(-500);
-            }
-            return updated;
-          });
-        }
-        setSyncError(false);
-      } catch (error) {
-        if (expected !== generation.current) return;
-        if (error instanceof APIError && error.status === 401) expire();
-        else setSyncError(true);
-      } finally { setLoading(false); }
-    })();
-    inflight.current = operation;
-    await operation;
-    if (inflight.current === operation) inflight.current = null;
-  }, [expire]);
+    const current = () => expected === generation.current && !signal.aborted;
+    try {
+      const result = await fetchState(force ? null : etag.current, signal);
+      if (!current()) return;
+      etag.current = result.etag;
+      if (result.envelope) {
+        const updated = result.envelope;
+        setEnvelope(previous => {
+          if (!current()) return previous;
+          const connection = activeConnection(updated.state);
+          const messages = connection && previous?.state.currentUserID === updated.state.currentUserID
+            ? mergeByID(previous.state.messages.filter(m => m.connectionID === connection.id), updated.state.messages)
+              .sort((a, b) => a.date - b.date || a.id.localeCompare(b.id)).slice(-500)
+            : updated.state.messages;
+          return { ...updated, state: { ...updated.state, messages } };
+        });
+      }
+      setSyncError(false);
+    } catch (error) {
+      if (!current()) return;
+      if (error instanceof APIError && error.status === 401) expire();
+      else setSyncError(true);
+    } finally { if (current()) setLoading(false); }
+  });
 
-  useEffect(() => { void refresh(); }, [refresh]);
+  const refresh = useCallback((force = false) => queue.current!.request(force), []);
+  useEffect(() => {
+    void refresh(true);
+    return () => { queue.current?.invalidate(); operation.current?.abort(); };
+  }, [refresh]);
+
   const userID = envelope?.state.currentUserID;
   useEffect(() => {
     if (!userID) return;
+    const expected = generation.current;
+    let active = true;
+    const current = () => active && expected === generation.current;
     const transport = new ChatTransport({
-      status: setChatStatus, changed: () => { void refresh(); }, expired: expire,
+      status: status => { if (current()) setChatStatus(status); },
+      changed: () => { if (current()) void refresh(true); },
+      expired: () => { if (current()) expire(); },
       message: message => setEnvelope(previous => {
-        if (!previous || activeConnection(previous.state)?.id !== message.connectionID) return previous;
+        if (!current() || !previous || activeConnection(previous.state)?.id !== message.connectionID) return previous;
         return { ...previous, state: { ...previous.state, messages: mergeByID(previous.state.messages, [message])
           .sort((a, b) => a.date - b.date || a.id.localeCompare(b.id)).slice(-500) } };
       }),
     });
     chat.current = transport;
-    const sync = () => { if (document.visibilityState === 'visible') void refresh(); };
+    setChatStatus('connecting');
+    const sync = () => { if (current() && document.visibilityState === 'visible') void refresh(); };
     const interval = setInterval(sync, 15000);
     document.addEventListener('visibilitychange', sync);
     window.addEventListener('online', sync);
     return () => {
-      transport.close(); chat.current = null; clearInterval(interval);
-      document.removeEventListener('visibilitychange', sync); window.removeEventListener('online', sync);
+      active = false;
+      transport.close();
+      if (chat.current === transport) chat.current = null;
+      clearInterval(interval);
+      document.removeEventListener('visibilitychange', sync);
+      window.removeEventListener('online', sync);
     };
   }, [userID, refresh, expire]);
 
-  const run = async (operation: () => Promise<unknown>) => {
+  const run = async (perform: (signal: AbortSignal) => Promise<unknown>) => {
+    if (operation.current) return false;
+    const controller = operation.current = new AbortController();
+    const expected = generation.current;
+    const current = () => expected === generation.current && !controller.signal.aborted;
     setBusy(true); setError('');
-    try { await operation(); return true; }
+    try { await perform(controller.signal); return current(); }
     catch (error) {
+      if (!current()) return false;
       if (error instanceof APIError && error.status === 401) expire();
       setError(error instanceof Error ? error.message : 'Something went wrong. Please try again.');
       return false;
-    } finally { setBusy(false); }
+    } finally {
+      if (operation.current === controller) { operation.current = null; setBusy(false); }
+    }
   };
 
   return {
     envelope, loading, busy, error, syncError, chatStatus, refresh, setError,
-    authenticate: (signup: boolean, fields: Record<string, string>) => run(async () => {
-      await request(`auth/${signup ? 'register' : 'login'}`, { method: 'POST', body: JSON.stringify(fields) });
-      generation.current++; etag.current = null; await refresh(true);
-    }),
-    logout: () => run(async () => { await request('auth/logout', { method: 'POST' }); expire(); }),
-    act: (kind: string, payload: Record<string, unknown>) => run(async () => {
+    authenticate: (signup: boolean, fields: Record<string, string>) => {
+      if (operation.current) return Promise.resolve(false);
+      expire();
+      return run(async signal => {
+        await request(`auth/${signup ? 'register' : 'login'}`, { method: 'POST', body: JSON.stringify(fields), signal });
+        if (!signal.aborted) await refresh(true);
+      });
+    },
+    logout: async () => {
+      const okay = await run(signal => request('auth/logout', { method: 'POST', signal }));
+      if (okay) expire();
+      return okay;
+    },
+    act: (kind: string, payload: Record<string, unknown>) => run(async signal => {
+      const userID = envelope?.state.currentUserID;
+      if (!userID) throw new APIError(401, 'Please log in.');
       const value = command(kind, payload);
       if (kind === 'message.send' && chat.current) {
         try { await chat.current.send(value); }
         catch (error) {
-          if (error instanceof APIError && error.status !== 503) throw error;
-          await sendCommand(value);
+          if (signal.aborted || (error instanceof APIError && error.status !== 503)) throw error;
+          await sendCommand(value, signal, userID);
         }
-      } else await sendCommand(value);
-      await refresh(true);
+      } else await sendCommand(value, signal, userID);
+      if (!signal.aborted) await refresh(true);
     }),
   };
 }

@@ -7,3 +7,5 @@
 !translations.vi.json
 !realtime.py
 !web_support.py
+!dearly/
+!dearly/*.py

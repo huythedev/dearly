@@ -54,6 +54,7 @@ struct JournalArchiveView: View {
     @Environment(\.dismiss) private var dismiss
     @State private var page: JournalPage?
     @State private var cursors: [UUID?] = [nil]
+    @State private var requestID = UUID()
     @State private var loading = false
     @State private var error: String?
     @State private var editing: Journal?
@@ -82,14 +83,22 @@ struct JournalArchiveView: View {
                 .toolbar { ToolbarItem(placement: .confirmationAction) { Button(L("Done")) { dismiss() } } }
                 .sheet(item: $editing, onDismiss: { Task { await load() } }) { JournalEditor(entry: $0) }
                 .task { await load() }
-                .onChange(of: store.state.currentUserID) { _, _ in dismiss() }
+                .onChange(of: store.state.currentUserID) { _, _ in requestID = UUID(); page = nil; editing = nil; dismiss() }
+                .onDisappear { requestID = UUID(); page = nil }
         }
     }
     private func load() async {
-        loading = true
-        defer { loading = false }
-        do { page = try await store.journalPage(before: cursors.last ?? nil); error = nil }
-        catch { self.error = error.localizedDescription }
+        let expected = UUID()
+        requestID = expected; loading = true; page = nil; error = nil
+        defer { if requestID == expected { loading = false } }
+        do {
+            let result = try await store.journalPage(before: cursors.last ?? nil)
+            guard requestID == expected, !Task.isCancelled else { return }
+            page = result
+        } catch {
+            guard requestID == expected, !Task.isCancelled, !(error is CancellationError) else { return }
+            self.error = error.localizedDescription
+        }
     }
 }
 
