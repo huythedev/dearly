@@ -14,7 +14,7 @@ export function CompanionPage({ store }: { store: Dearly }) {
   const connection = activeConnection(state);
   const profile = (id: string) => state.profiles.find(p => p.id === id);
   const suggestions = (state.suggestedUserIDs ?? []).map(profile).filter((p): p is Profile => Boolean(p));
-  return <><div data-guide="companion" className="page-heading"><span className="eyebrow">{t('SOMEONE TO LISTEN')}</span><h1>{t(connection ? 'A conversation, at your pace.' : 'Good things begin with hello.')}</h1><p>{t('No perfect words needed. Just a little curiosity and a little kindness.')}</p></div>
+  return <><div className="page-heading"><span className="eyebrow">{t('SOMEONE TO LISTEN')}</span><h1 data-guide="companion">{t(connection ? 'A conversation, at your pace.' : 'Good things begin with hello.')}</h1><p>{t('No perfect words needed. Just a little curiosity and a little kindness.')}</p></div>
     {connection ? <ChatView key={connection.id} store={store} connection={connection} /> : <>
       {!me.ageVerified && <div className="notice"><ShieldCheck size={23} /><div><strong>{t('One small step before connecting.')}</strong><p>{t('Age verification is required for companion matching. Ask your Dearly administrator to review your date of birth.')}</p></div></div>}
       {state.invitations.length > 0 && <section className="card invitations"><h2>{t('A hello is waiting')}</h2>{state.invitations.map(invitation => {

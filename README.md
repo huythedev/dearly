@@ -29,6 +29,8 @@ The default ports are **8003 for web** and **8002 for the backend**. To change t
 
 ## Your first few minutes
 
+On your first login, choose **Show me around** for a short interactive tour on web or iOS. You can skip it and open **Take a guided tour** in account settings whenever you like.
+
 1. Open **My journal** and write an entry. New entries are private by default.
 2. To share, choose **Companion** or **Community** and review the sharing preview before saving.
 3. Visit **Companion** to find someone to connect with. An administrator must review your date of birth before matching is available.

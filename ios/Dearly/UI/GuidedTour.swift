@@ -46,7 +46,7 @@ struct GuideScrollView<Content: View>: View {
                     guard let step = guide.currentStep else { return }
                     await Task.yield()
                     guard !Task.isCancelled else { return }
-                    reader.scrollTo(step, anchor: .center)
+                    reader.scrollTo(step, anchor: .top)
                 }
         }
     }

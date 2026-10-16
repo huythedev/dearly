@@ -72,7 +72,19 @@ function GuideDialog({ index, next, back, dismiss }: { index: number; next: () =
         observed = element;
         if (element) { element.scrollIntoView({ block: 'center', inline: 'nearest', behavior: 'instant' }); resize.observe(element); }
       }
-      const box = element?.getBoundingClientRect();
+      let box = element?.getBoundingClientRect();
+      if (box) {
+        const above = box.top - 39, below = size.height - box.bottom - 39;
+        const copy = card.current!.querySelector<HTMLElement>('.guide-copy')!;
+        const naturalHeight = card.current!.getBoundingClientRect().height + Math.max(0, copy.scrollHeight - copy.clientHeight);
+        const room = Math.min(naturalHeight, Math.max(200, size.height - box.height - 62));
+        // Chat autoscroll and rotation can move the target after the route mounts.
+        // On short screens put the control near the top, leaving room for the card.
+        if (box.top < 7 || box.bottom > size.height - 7 || (above + 1 < room && below + 1 < room)) {
+          window.scrollBy({ top: box.top - 23, behavior: 'instant' });
+          box = element!.getBoundingClientRect();
+        }
+      }
       const hole = box ? spotlight({ x: box.x - bounds.x, y: box.y - bounds.y, width: box.width, height: box.height }, size) : null;
       setTarget(previous => JSON.stringify(previous) === JSON.stringify(hole) ? previous : hole);
       const height = card.current!.getBoundingClientRect().height;
