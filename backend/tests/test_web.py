@@ -208,3 +208,40 @@ def test_browser_mutation_is_bound_to_the_account_that_created_it(env):
     assert next(p for p in state['profiles'] if p['id'] == second['userID'])['nickname'] != 'First account only'
     # Reject before recording the request ID for the new account.
     assert client.post('/v1/actions', headers={**WEB, 'X-Dearly-User': second['userID']}, json=payload).status_code == 200
+
+
+def test_socket_revocation_handles_a_client_that_already_disconnected(env):
+    import asyncio
+    import json
+
+    import anyio
+
+    _, app, _ = env
+    session, _ = register(env, 'disconnecting')
+
+    async def exercise():
+        incoming = asyncio.Queue()
+        incoming.put_nowait({'type': 'websocket.connect'})
+        incoming.put_nowait({'type': 'websocket.receive', 'text': json.dumps({'type': 'authenticate', 'token': session['token']})})
+        sent = []
+
+        async def send(message):
+            sent.append(message)
+            if message['type'] == 'websocket.send':
+                assert json.loads(message['text'])['type'] == 'ready'
+                # Logout revokes the session as the browser closes its socket.
+                with app.state.database.connect(write=True) as db:
+                    db.execute('DELETE FROM sessions WHERE user_id=?', (session['userID'],))
+                incoming.put_nowait({'type': 'websocket.disconnect', 'code': 1000})
+            elif message['type'] == 'websocket.close':
+                raise OSError('The browser already disconnected.')
+
+        scope = {'type': 'websocket', 'path': '/ws/chat', 'raw_path': b'/ws/chat',
+                 'root_path': '', 'scheme': 'ws', 'query_string': b'',
+                 'headers': [(b'host', b'testserver')], 'client': ('127.0.0.1', 12345),
+                 'server': ('testserver', 80), 'subprotocols': [], 'state': {},
+                 'asgi': {'version': '3.0', 'spec_version': '2.4'}}
+        await asyncio.wait_for(app(scope, incoming.get, send), timeout=2)
+        assert sent[-1] == {'type': 'websocket.close', 'code': 4401, 'reason': ''}
+
+    anyio.run(exercise)

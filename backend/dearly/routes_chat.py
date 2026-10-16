@@ -5,6 +5,7 @@ from __future__ import annotations
 import asyncio
 import json
 import sqlite3
+from contextlib import suppress
 
 import anyio
 from fastapi import WebSocket, WebSocketDisconnect
@@ -13,6 +14,12 @@ from pydantic import ValidationError
 from web_support import COOKIE, same_origin
 
 from .validation import Action, fail
+
+
+async def close_socket(websocket: WebSocket, code: int) -> None:
+    # The browser can leave while an expiry, validation or quota check is running.
+    with suppress(WebSocketDisconnect, OSError):
+        await websocket.close(code=code)
 
 
 def register_routes(app, services):
@@ -27,28 +34,28 @@ def register_routes(app, services):
         if not same_origin(websocket) or (
             websocket.cookies.get(COOKIE) and not websocket.headers.get("origin")
         ):
-            await websocket.close(code=4403)
+            await close_socket(websocket, 4403)
             return
         try:
             ip = websocket.client.host if websocket.client else "unknown"
             limiter.check("socket-ip:" + ip, 12, 1 / 10)
         except RequestError:
-            await websocket.close(code=4429)
+            await close_socket(websocket, 4429)
             return
-        await websocket.accept()
         tasks = []
         try:
+            await websocket.accept()
             raw = await asyncio.wait_for(websocket.receive_text(), timeout=5)
             if len(raw.encode()) > 16384:
-                await websocket.close(code=1009)
+                await close_socket(websocket, 1009)
                 return
             frame = json.loads(raw)
             if not isinstance(frame, dict) or frame.get("type") != "authenticate":
-                await websocket.close(code=4401)
+                await close_socket(websocket, 4401)
                 return
             token = websocket.cookies.get(COOKIE) or frame.get("token")
             if not isinstance(token, str) or len(token) > 128:
-                await websocket.close(code=4401)
+                await close_socket(websocket, 4401)
                 return
             authorization = "Bearer " + token
             uid, _ = await anyio.to_thread.run_sync(socket_user, authorization)
@@ -69,7 +76,7 @@ def register_routes(app, services):
                     if incoming in done:
                         raw = incoming.result()
                         if len(raw.encode()) > 16384:
-                            await websocket.close(code=1009)
+                            await close_socket(websocket, 1009)
                             return
                         frame = json.loads(raw)
                         request_id = (
@@ -124,7 +131,7 @@ def register_routes(app, services):
                                 }
                             )
                             if status == 429:
-                                await websocket.close(code=4429)
+                                await close_socket(websocket, 4429)
                                 return
                         incoming = asyncio.create_task(websocket.receive_text())
                         tasks = [incoming, outgoing]
@@ -142,9 +149,9 @@ def register_routes(app, services):
                         outgoing = asyncio.create_task(queue.get())
                     tasks = [incoming, outgoing]
         except RequestError as exc:
-            await websocket.close(code=4401 if exc.status_code == 401 else 4403)
+            await close_socket(websocket, 4401 if exc.status_code == 401 else 4403)
         except OverflowError:
-            await websocket.close(code=4429)
+            await close_socket(websocket, 4429)
         except (
             asyncio.TimeoutError,
             json.JSONDecodeError,
@@ -152,9 +159,9 @@ def register_routes(app, services):
             KeyError,
             TypeError,
         ):
-            await websocket.close(code=1008)
+            await close_socket(websocket, 1008)
         except sqlite3.OperationalError:
-            await websocket.close(code=1013)
+            await close_socket(websocket, 1013)
         except WebSocketDisconnect:
             pass
         except asyncio.CancelledError:
