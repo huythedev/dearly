@@ -22,14 +22,14 @@ py -3 setup.py
 
 `setup.py` creates a local `.venv` and installs the pinned packages in `requirements.txt`. You do not need to activate the environment. On Linux, install your distribution’s `python3-venv` package if environment creation reports that it is missing.
 
-`run.py serve` listens on **`127.0.0.1:8000`** by default. Stop it with **Ctrl+C**.
+`run.py serve` listens on **`127.0.0.1:8002`** by default. Stop it with **Ctrl+C**.
 
-- Health: `http://127.0.0.1:8000/health`
-- Interactive API docs: `http://127.0.0.1:8000/docs`
+- Health: `http://127.0.0.1:8002/health`
+- Interactive API docs: `http://127.0.0.1:8002/docs`
 
 ### Port conflicts and LAN access
 
-The launcher uses the requested port and **does not automatically switch ports**. If port 8000 is already occupied, stop the other service or choose a different port:
+The launcher uses the requested port and **does not automatically switch ports**. If port 8002 is already occupied, stop the other service or choose a different port:
 
 ```bash
 .venv/bin/python run.py serve --port 8001
@@ -38,7 +38,7 @@ The launcher uses the requested port and **does not automatically switch ports**
 To allow a physical iPhone or another computer on your LAN to connect:
 
 ```bash
-.venv/bin/python run.py serve --host 0.0.0.0 --port 8000
+.venv/bin/python run.py serve --host 0.0.0.0 --port 8002
 ```
 
 On Windows, use `.\.venv\Scripts\python.exe` in place of `.venv/bin/python` in these and subsequent commands. When changing the port, also update the app’s server URL and any reverse proxy configuration.
@@ -50,7 +50,7 @@ SQLite is created automatically at `data/dearly.sqlite3`, relative to the workin
 For a service, use an absolute path through `--db` or the `DEARLY_DB` environment variable. Global `--db` must appear **before** the subcommand:
 
 ```bash
-.venv/bin/python run.py --db /absolute/path/dearly.sqlite3 serve --port 8000
+.venv/bin/python run.py --db /absolute/path/dearly.sqlite3 serve --port 8002
 ```
 
 Administration commands must use the same database path as the running server. Virtual environments, local databases, and backups are excluded by the repository’s `.gitignore`.
@@ -61,8 +61,8 @@ The app’s default server is **`https://dearly.huythedev.com`**. This is a clie
 
 1. Open `ios/Dearly.xcodeproj` from the repository root, select the **Dearly** scheme, and run a **Debug** build on a simulator or iPhone.
 2. On the login screen, expand **Server connection / Kết nối server** to choose your backend.
-3. For a simulator on the same Mac, enter `http://localhost:8000`.
-4. For a physical iPhone, use the computer’s LAN IP, such as `http://192.168.1.10:8000`. Bind the backend to `0.0.0.0`, connect both devices to the same Wi-Fi, and allow Local Network access if prompted. Do not use `localhost` to reach your computer from an iPhone.
+3. For a simulator on the same Mac, enter `http://localhost:8002`.
+4. For a physical iPhone, use the computer’s LAN IP, such as `http://192.168.1.10:8002`. Bind the backend to `0.0.0.0`, connect both devices to the same Wi-Fi, and allow Local Network access if prompted. Do not use `localhost` to reach your computer from an iPhone.
 5. Register or log in. Usernames use 3–64 characters from `a-z A-Z 0-9 _ . -`; passwords use 10–128 characters; nicknames allow up to 40 characters.
 6. To test matching and chat, create two accounts on separate devices or simulators and verify their birth dates with the administration CLI below.
 
@@ -142,7 +142,7 @@ Keep SQLite on a local disk, not SMB/NFS. Do not run multiple replicas writing t
 
 ## HTTPS hosting
 
-Docker deployment uses a separate frontend container. Point the public **dearly.huythedev.com** Cloudflare Tunnel at that frontend's published port (8080 by default). It serves React and proxies API, WebSocket, and documentation routes to this backend, preserving the browser's Host **including its port** and Origin. Native iOS can use that same public origin or connect to a separately secured backend endpoint.
+Docker deployment uses a separate frontend container. Point the public **dearly.huythedev.com** Cloudflare Tunnel at that frontend's published port (8003 by default). It serves React and proxies API, WebSocket, and documentation routes to this backend, preserving the browser's Host **including its port** and Origin. Native iOS can use that same public origin or connect to a separately secured backend endpoint.
 
 The frontend accepts an HTTP backend IP/hostname:port or an HTTPS origin with a trusted certificate. Configure `DEARLY_BACKEND_ADDRESS` on the frontend, not in browser JavaScript. It must be reachable from that container; `localhost` refers to the frontend itself. No browser CORS allowlist is needed.
 
@@ -164,7 +164,7 @@ docker compose ps
 docker compose logs -f backend
 ```
 
-Set `DEARLY_BACKEND_PORT=9100` to publish the API on a different host port. `DEARLY_BACKEND_BIND` defaults to 127.0.0.1; set 0.0.0.0 or the host's LAN interface to allow a frontend on another machine. `DEARLY_BACKEND_LISTEN_PORT` sets the container's internal port (default 8000); health checks and Compose port mappings follow it. When changing that internal port, update the frontend's backend address too. Legacy `DEARLY_PORT` / `DEARLY_BIND` in a root `.env` still provide host-port/bind defaults, but the new names are preferred.
+Set `DEARLY_BACKEND_PORT=9100` to publish the API on a different host port. `DEARLY_BACKEND_BIND` defaults to 127.0.0.1; set 0.0.0.0 or the host's LAN interface to allow a frontend on another machine. `DEARLY_BACKEND_LISTEN_PORT` sets the container's internal port (default 8002); health checks and Compose port mappings follow it. When changing that internal port, update the frontend's backend address too. Legacy `DEARLY_PORT` / `DEARLY_BIND` in a root `.env` still provide host-port/bind defaults, but the new names are preferred.
 
 Start both services with `docker compose up -d --build`, or start only the frontend with `docker compose up -d --build frontend` and a reachable `DEARLY_BACKEND_ADDRESS`. The frontend and backend have no forced startup dependency and can be deployed to different machines.
 
@@ -182,7 +182,7 @@ docker compose down
 
 ```bash
 docker build -t dearly-api:latest backend
-docker run -d --name dearly-api --restart unless-stopped --init -p 127.0.0.1:9100:8000 -v dearly-data:/data dearly-api:latest
+docker run -d --name dearly-api --restart unless-stopped --init -p 127.0.0.1:9100:8002 -v dearly-data:/data dearly-api:latest
 ```
 
 For a custom internal port as well:

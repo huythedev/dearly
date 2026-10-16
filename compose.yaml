@@ -6,12 +6,12 @@ services:
     restart: unless-stopped
     init: true
     ports:
-      - "${DEARLY_BACKEND_BIND:-${DEARLY_BIND:-127.0.0.1}}:${DEARLY_BACKEND_PORT:-${DEARLY_PORT:-8000}}:${DEARLY_BACKEND_LISTEN_PORT:-8000}"
+      - "${DEARLY_BACKEND_BIND:-${DEARLY_BIND:-127.0.0.1}}:${DEARLY_BACKEND_PORT:-${DEARLY_PORT:-8002}}:${DEARLY_BACKEND_LISTEN_PORT:-8002}"
     volumes:
       - dearly-data:/data
     environment:
       DEARLY_DB: /data/dearly.sqlite3
-      DEARLY_PORT: ${DEARLY_BACKEND_LISTEN_PORT:-8000}
+      DEARLY_PORT: ${DEARLY_BACKEND_LISTEN_PORT:-8002}
       DEARLY_PROXY_IPS: ${DEARLY_PROXY_IPS:-}
 
   frontend:
@@ -21,10 +21,10 @@ services:
     restart: unless-stopped
     init: true
     ports:
-      - "${DEARLY_FRONTEND_BIND:-127.0.0.1}:${DEARLY_FRONTEND_PORT:-8080}:${DEARLY_FRONTEND_LISTEN_PORT:-8080}"
+      - "${DEARLY_FRONTEND_BIND:-127.0.0.1}:${DEARLY_FRONTEND_PORT:-8003}:${DEARLY_FRONTEND_LISTEN_PORT:-8003}"
     environment:
-      DEARLY_BACKEND_ADDRESS: ${DEARLY_BACKEND_ADDRESS:-backend:${DEARLY_BACKEND_LISTEN_PORT:-8000}}
-      DEARLY_FRONTEND_LISTEN_PORT: ${DEARLY_FRONTEND_LISTEN_PORT:-8080}
+      DEARLY_BACKEND_ADDRESS: ${DEARLY_BACKEND_ADDRESS:-backend:${DEARLY_BACKEND_LISTEN_PORT:-8002}}
+      DEARLY_FRONTEND_LISTEN_PORT: ${DEARLY_FRONTEND_LISTEN_PORT:-8003}
     extra_hosts:
       - "host.docker.internal:host-gateway"
 

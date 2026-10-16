@@ -60,12 +60,12 @@ def main():
     text = args.env_file.read_text(encoding='utf-8') if args.env_file.exists() else ''
     previous = read_values(text)
     print('Frontend and backend are separate containers. Enter the backend address reachable from the frontend container.')
-    print('Compose: backend:8000. Another host: 192.168.1.20:9000. Docker host: host.docker.internal:9000.')
+    print('Compose: backend:8002. Another host: 192.168.1.20:9000. Docker host: host.docker.internal:9000.')
     try:
         values = {
-            'DEARLY_FRONTEND_PORT': ask('Frontend published port', previous.get('DEARLY_FRONTEND_PORT', '8080'), port),
-            'DEARLY_BACKEND_PORT': ask('Backend published port', previous.get('DEARLY_BACKEND_PORT', previous.get('DEARLY_PORT', '8000')), port),
-            'DEARLY_BACKEND_ADDRESS': ask('Backend IP/hostname:port', previous.get('DEARLY_BACKEND_ADDRESS', 'backend:' + previous.get('DEARLY_BACKEND_LISTEN_PORT', '8000')), backend_address),
+            'DEARLY_FRONTEND_PORT': ask('Frontend published port', previous.get('DEARLY_FRONTEND_PORT', '8003'), port),
+            'DEARLY_BACKEND_PORT': ask('Backend published port', previous.get('DEARLY_BACKEND_PORT', previous.get('DEARLY_PORT', '8002')), port),
+            'DEARLY_BACKEND_ADDRESS': ask('Backend IP/hostname:port', previous.get('DEARLY_BACKEND_ADDRESS', 'backend:' + previous.get('DEARLY_BACKEND_LISTEN_PORT', '8002')), backend_address),
         }
     except (EOFError, KeyboardInterrupt):
         print('\nConfiguration cancelled; no file was changed.')

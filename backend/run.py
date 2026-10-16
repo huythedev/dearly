@@ -17,7 +17,7 @@ def main():
     sub=parser.add_subparsers(dest='command',required=True)
     serve=sub.add_parser('serve')
     serve.add_argument('--host',default='127.0.0.1')
-    serve.add_argument('--port',type=int,default=os.environ.get('DEARLY_PORT','8000'))
+    serve.add_argument('--port',type=int,default=os.environ.get('DEARLY_PORT','8002'))
     serve.add_argument('--body-idle-timeout',type=float,default=5.0,help='Maximum seconds between request body chunks')
     serve.add_argument('--body-total-timeout',type=float,default=15.0,help='Maximum total seconds to read a request body')
     serve.add_argument('--proxy-ips',default=os.environ.get('DEARLY_PROXY_IPS',''),help='Trusted reverse-proxy IPs only (e.g. 127.0.0.1). Empty disables forwarded headers.')

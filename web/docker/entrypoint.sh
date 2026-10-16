@@ -30,7 +30,7 @@ if [ -n "$mapped" ]; then
     case "$mapped" in *:*) authority="[$mapped]:$backend_port" ;; *) authority="$mapped:$backend_port" ;; esac
 fi
 DEARLY_BACKEND_URL="$scheme://$authority"
-DEARLY_FRONTEND_LISTEN_PORT=${DEARLY_FRONTEND_LISTEN_PORT:-8080}
+DEARLY_FRONTEND_LISTEN_PORT=${DEARLY_FRONTEND_LISTEN_PORT:-8003}
 printf '%s\n' "$DEARLY_FRONTEND_LISTEN_PORT" | LC_ALL=C grep -Eq '^[0-9]{1,5}$' || fail 'Frontend listen port must be numeric.'
 [ "$DEARLY_FRONTEND_LISTEN_PORT" -ge 1 ] && [ "$DEARLY_FRONTEND_LISTEN_PORT" -le 65535 ] || fail 'Frontend listen port must be between 1 and 65535.'
 DEARLY_DNS_RESOLVER=$(awk '$1=="nameserver" { print $2; exit }' /etc/resolv.conf)

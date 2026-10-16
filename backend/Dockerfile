@@ -3,7 +3,7 @@ FROM python:3.12-slim
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
     DEARLY_DB=/data/dearly.sqlite3 \
-    DEARLY_PORT=8000
+    DEARLY_PORT=8002
 
 WORKDIR /app
 
@@ -17,7 +17,7 @@ COPY server.py run.py localization.py translations.vi.json realtime.py web_suppo
 USER dearly
 
 VOLUME ["/data"]
-EXPOSE 8000
+EXPOSE 8002
 
 HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
     CMD python -c "import os, urllib.request; urllib.request.urlopen('http://127.0.0.1:' + os.environ['DEARLY_PORT'] + '/health', timeout=3).close()"

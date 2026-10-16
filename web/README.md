@@ -14,7 +14,7 @@ python3 configure-docker.py  # Windows: py -3 configure-docker.py
 docker compose up -d --build
 ```
 
-The wizard asks for both published ports and the backend address. By default, web is at **http://127.0.0.1:8080** and API at **http://127.0.0.1:8000**. The frontend's `DEARLY_BACKEND_ADDRESS` defaults to `backend:8000` (the Compose service and internal API port). To use another backend, set the reachable IP/hostname:port, optionally with `http://` or `https://`:
+The wizard asks for both published ports and the backend address. By default, web is at **http://127.0.0.1:8003** and API at **http://127.0.0.1:8002**. The frontend's `DEARLY_BACKEND_ADDRESS` defaults to `backend:8002` (the Compose service and internal API port). To use another backend, set the reachable IP/hostname:port, optionally with `http://` or `https://`:
 
 ```dotenv
 DEARLY_FRONTEND_PORT=9080
@@ -22,7 +22,7 @@ DEARLY_BACKEND_PORT=9100
 DEARLY_BACKEND_ADDRESS=192.168.1.20:9100
 ```
 
-This example connects to a backend on another machine. Publish that backend on its LAN interface using `DEARLY_BACKEND_BIND=0.0.0.0` (or a specific LAN IP). For the Compose backend on the same Docker network, use `backend:8000`, regardless of its published host port. For the Docker host, use `host.docker.internal:9100`; Compose configures the Linux host-gateway mapping, and Docker Desktop supports this host as well. `localhost` inside the frontend container refers to that container.
+This example connects to a backend on another machine. Publish that backend on its LAN interface using `DEARLY_BACKEND_BIND=0.0.0.0` (or a specific LAN IP). For the Compose backend on the same Docker network, use `backend:8002`, regardless of its published host port. For the Docker host, use `host.docker.internal:9100`; Compose configures the Linux host-gateway mapping, and Docker Desktop supports this host as well. `localhost` inside the frontend container refers to that container.
 
 Both published ports and internal listen ports can be customized independently through `.env.example`. After changing settings, run `docker compose up -d frontend` or `docker compose up -d backend` for the affected service; Compose recreates it with the new configuration. Changing the backend address does **not** require rebuilding the frontend image.
 
@@ -34,20 +34,20 @@ Run only one service with `docker compose up -d --build frontend` or `docker com
 # Repository root
 docker build -t dearly-web:latest web
 # Prompts for the backend IP/hostname:port:
-docker run --rm -it -p 127.0.0.1:9080:8080 dearly-web:latest
+docker run --rm -it -p 127.0.0.1:9080:8003 dearly-web:latest
 ```
 
 For detached startup, supply the address explicitly:
 
 ```bash
-docker run -d --name dearly-web --restart unless-stopped --init -p 127.0.0.1:9080:8080 -e DEARLY_BACKEND_ADDRESS=192.168.1.20:9100 dearly-web:latest
+docker run -d --name dearly-web --restart unless-stopped --init -p 127.0.0.1:9080:8003 -e DEARLY_BACKEND_ADDRESS=192.168.1.20:9100 dearly-web:latest
 ```
 
 For a custom internal frontend port, also set `-e DEARLY_FRONTEND_LISTEN_PORT=8181` and publish `-p 127.0.0.1:9080:8181`. For a host-native backend on Linux, add `--add-host host.docker.internal:host-gateway` and use that hostname. Backend URLs reject credentials, paths, queries, whitespace, and invalid ports. HTTPS upstreams require trusted certificates; their configured hostname is preserved for TLS validation even when a Linux hosts mapping supplies an IP.
 
 ### Public domain and routes
 
-Point the **dearly.huythedev.com** Cloudflare Tunnel at the **frontend** published port. An old tunnel targeting backend port 8000 will serve only API routes after this split. No Caddy is required.
+The **Oracle_VPS** Cloudflare Tunnel route for **dearly.huythedev.com** uses `http://127.0.0.1:8003`, the frontend published port. The frontend proxies API and WebSocket requests to `backend:8002` by default. Update the tunnel origin if you customize the frontend published port. iOS uses `https://dearly.huythedev.com` through this same route. No Caddy is required.
 
 | Route | Handler |
 |---|---|
@@ -63,14 +63,14 @@ Missing API/asset routes return 404 rather than SPA HTML. Authenticated response
 
 ## Local development
 
-Start the backend at `127.0.0.1:8000` using [its setup instructions](../backend/README.md), then from `web/`:
+Start the backend at `127.0.0.1:8002` using [its setup instructions](../backend/README.md), then from `web/`:
 
 ```bash
 npm ci
 npm run dev
 ```
 
-Open **http://127.0.0.1:5173**. Vite proxies `/v1`, `/ws` (with WebSocket upgrades), and `/health` to the backend, preserving Host/Origin for the same-origin checks. Use one consistent hostname throughout login. When changing the backend port, update `vite.config.ts`'s development proxy. Production uses the independently configured Nginx frontend and FastAPI backend.
+Open **http://127.0.0.1:8003**. Vite proxies `/v1`, `/ws` (with WebSocket upgrades), and `/health` to the backend, preserving Host/Origin for the same-origin checks. Use one consistent hostname throughout login. When changing the backend port, update `vite.config.ts`'s development proxy. Production uses the independently configured Nginx frontend and FastAPI backend.
 
 ## Browser sessions and chat
 

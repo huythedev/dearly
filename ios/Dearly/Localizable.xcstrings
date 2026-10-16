@@ -2115,19 +2115,19 @@
         }
       }
     },
-    "Enter the server address, such as https://dearly.example.com or http://192.168.1.10:8000 for development." : {
+    "Enter the server address, such as https://dearly.huythedev.com or http://192.168.1.10:8002 for development." : {
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Enter the server address, such as https://dearly.example.com or http://192.168.1.10:8000 for development."
+            "value" : "Enter the server address, such as https://dearly.huythedev.com or http://192.168.1.10:8002 for development."
           }
         },
         "vi" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Nhập địa chỉ gốc, ví dụ https://dearly.example.com hoặc http://192.168.1.10:8000 khi phát triển."
+            "value" : "Nhập địa chỉ gốc, ví dụ https://dearly.huythedev.com hoặc http://192.168.1.10:8002 khi phát triển."
           }
         }
       }
@@ -6949,7 +6949,7 @@
     "dearly" : {
       "shouldTranslate" : false
     },
-    "http://localhost:8000" : {
+    "http://localhost:8002" : {
       "shouldTranslate" : false
     },
     "limit must be between 1 and 50." : {

@@ -3,8 +3,8 @@ import assert from 'node:assert/strict';
 import { randomUUID } from 'node:crypto';
 import { execFileSync } from 'node:child_process';
 
-const origin = process.env.DEARLY_TEST_FRONTEND_URL ?? 'http://127.0.0.1:8080';
-const backend = process.env.DEARLY_TEST_BACKEND_URL ?? 'http://127.0.0.1:8000';
+const origin = process.env.DEARLY_TEST_FRONTEND_URL ?? 'http://127.0.0.1:8003';
+const backend = process.env.DEARLY_TEST_BACKEND_URL ?? 'http://127.0.0.1:8002';
 const options = () => ({ signal: AbortSignal.timeout(5000) });
 for (let attempt = 0; ; attempt++) {
   try {

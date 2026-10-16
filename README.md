@@ -16,15 +16,15 @@ python3 configure-docker.py
 docker compose up -d --build
 ```
 
-Or copy `.env.example` to `.env` and edit the settings directly. Defaults are **web http://127.0.0.1:8080** and **API http://127.0.0.1:8000**. Both published ports and both internal listen ports can be changed independently. For example:
+Or copy `.env.example` to `.env` and edit the settings directly. Existing `.env` values take precedence; update them when upgrading. Defaults are **web http://127.0.0.1:8003** and **API http://127.0.0.1:8002**. Both published ports and both internal listen ports can be changed independently. For example:
 
 ```dotenv
 DEARLY_FRONTEND_PORT=9080
 DEARLY_BACKEND_PORT=9100
-DEARLY_BACKEND_ADDRESS=backend:8000
+DEARLY_BACKEND_ADDRESS=backend:8002
 ```
 
-`backend:8000` is the Compose service's **internal** address, even when its published host port is 9100. For a backend on another machine, enter its reachable address instead, such as `192.168.1.20:9100`; publish that backend on its LAN interface. For a backend running on the Docker host, use `host.docker.internal:9100`. The frontend container can also prompt for this address when launched interactively without `DEARLY_BACKEND_ADDRESS`.
+`backend:8002` is the Compose service's **internal** address, even when its published host port is 9100. For a backend on another machine, enter its reachable address instead, such as `192.168.1.20:9100`; publish that backend on its LAN interface. For a backend running on the Docker host, use `host.docker.internal:9100`. The frontend container can also prompt for this address when launched interactively without `DEARLY_BACKEND_ADDRESS`.
 
 Each service can run alone:
 
@@ -35,7 +35,7 @@ docker compose up -d --build frontend
 
 The frontend serves React and forwards `/v1/*`, `/ws/*`, `/health`, and `/docs` to its configured backend. The browser keeps relative URLs and same-origin cookies; changing the backend address needs only a frontend restart/recreation, not a frontend rebuild. No Caddy or browser CORS configuration is required.
 
-For **dearly.huythedev.com**, point the Cloudflare Tunnel to the **frontend port** (8080 by default), which forwards API/chat internally. An older tunnel pointing at backend port 8000 will reach the API only after this split. The existing `dearly-data` SQLite volume is retained. This repository change does not deploy or edit the running tunnel.
+The **Oracle_VPS** Cloudflare Tunnel route for **dearly.huythedev.com** is configured as `http://127.0.0.1:8003`. The frontend forwards API/chat to `backend:8002`. iOS uses the same public HTTPS origin, including `wss://dearly.huythedev.com/ws/chat`. If you customize the frontend published port, update the tunnel origin too. The existing `dearly-data` SQLite volume is retained; start the containers separately to make the service available.
 
 See [web Docker configuration](web/README.md) for independent hosts, interactive startup, port mappings, and tests. For development without Docker, Vite can proxy to a local backend; FastAPI's optional built-web hosting remains available for local development.
 
@@ -43,7 +43,7 @@ See [web Docker configuration](web/README.md) for independent hosts, interactive
 
 1. Open `ios/Dearly.xcodeproj` in Xcode 26 or newer (deployment target: iOS 17+).
 2. Select the **Dearly** scheme and an iPhone Simulator, then press **⌘R**. For a physical device, configure your signing team first.
-3. Log in or create an account. The default backend address is **`https://dearly.huythedev.com`**. A previously saved server address takes precedence.
+3. Log in or create an account. The default server address is **`https://dearly.huythedev.com`**, through the frontend proxy to the shared backend. A previously saved server address takes precedence.
 4. To use a different backend, expand **Server connection / Kết nối server** on the login screen and enter its base URL.
 
 The app requires a backend account. It starts at login, restores a saved session when possible, and returns to login after logout or session expiry. There is no offline demo fallback. Journal entries, messages, and account changes are saved through the backend; session tokens are stored in Keychain.
@@ -72,9 +72,9 @@ py -3 setup.py
 .\.venv\Scripts\python.exe run.py serve
 ```
 
-Setup creates `backend/.venv` and installs the pinned dependencies. The server defaults to **`127.0.0.1:8000`**, with health status at `http://127.0.0.1:8000/health` and interactive API documentation at `http://127.0.0.1:8000/docs`.
+Setup creates `backend/.venv` and installs the pinned dependencies. The server defaults to **`127.0.0.1:8002`**, with health status at `http://127.0.0.1:8002/health` and interactive API documentation at `http://127.0.0.1:8002/docs`.
 
-**The launcher does not automatically select another port.** If port 8000 is occupied, choose one explicitly:
+**The launcher does not automatically select another port.** If port 8002 is occupied, choose one explicitly:
 
 ```bash
 .venv/bin/python run.py serve --port 8001
@@ -84,8 +84,8 @@ For local development, build the iOS app in **Debug** and change its server addr
 
 | Client | Server address | Backend binding |
 |---|---|---|
-| Simulator on the same Mac | `http://localhost:8000` | Default localhost binding |
-| Physical iPhone on the same Wi-Fi | `http://<computer-LAN-IP>:8000` | `serve --host 0.0.0.0 --port 8000` |
+| Simulator on the same Mac | `http://localhost:8002` | Default localhost binding |
+| Physical iPhone on the same Wi-Fi | `http://<computer-LAN-IP>:8002` | `serve --host 0.0.0.0 --port 8002` |
 
 If you change the backend port, update the app URL as well. `localhost` on an iPhone refers to the phone itself. Release builds require HTTPS with a trusted certificate.
 
@@ -95,7 +95,7 @@ Alternatively, with Docker and Docker Compose installed, run from the repository
 docker compose up -d --build backend
 ```
 
-This builds the API-only `dearly-api:latest` image and runs it on `127.0.0.1:8000` with persistent SQLite storage. Set `DEARLY_BACKEND_PORT` in `.env` to change its published port. See the [Docker instructions](backend/README.md#docker) for logs, administration, backups, and stopping the service.
+This builds the API-only `dearly-api:latest` image and runs it on `127.0.0.1:8002` with persistent SQLite storage. Set `DEARLY_BACKEND_PORT` in `.env` to change its published port. See the [Docker instructions](backend/README.md#docker) for logs, administration, backups, and stopping the service.
 
 See the [backend README](backend/README.md) for database paths, LAN troubleshooting, HTTPS hosting, administration, Docker, and tests.
 
