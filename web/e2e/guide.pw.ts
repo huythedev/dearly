@@ -112,14 +112,15 @@ test('long instructions reset between steps and can be read with the keyboard', 
   await expect(page.getByRole('button', { name: 'Tiếp', exact: true })).toBeFocused();
   await page.keyboard.press('Enter');
   await expect(page.getByRole('dialog', { name: 'Tìm lại những trang viết' })).toBeVisible();
-  await expect.poll(() => copy.evaluate(element => element.scrollTop)).toBe(0);
+  // Layout/scroll anchoring can round by a pixel; the previous offset hid part of the title.
+  await expect.poll(() => copy.evaluate(element => element.scrollTop)).toBeLessThanOrEqual(1);
   await page.keyboard.press('Tab');
   await page.keyboard.press('Shift+Tab');
   await page.keyboard.press('Shift+Tab');
   await expect(page.getByRole('button', { name: 'Quay lại', exact: true })).toBeFocused();
   await page.keyboard.press('Enter');
   await expect(page.getByRole('dialog', { name: 'Một trang dành riêng cho bạn' })).toBeVisible();
-  await expect.poll(() => copy.evaluate(element => element.scrollTop)).toBe(0);
+  await expect.poll(() => copy.evaluate(element => element.scrollTop)).toBeLessThanOrEqual(1);
   await page.keyboard.press('Escape');
   await expect(page.getByRole('dialog')).toHaveCount(0);
 });
