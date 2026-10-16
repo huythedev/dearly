@@ -1,5 +1,7 @@
 # Dearly web
 
+For guided setup and everyday use, start with the [setup guide](../docs/SETUP.md) and [user guide](../docs/USAGE.md). This page contains the component reference.
+
 React + Vite + TypeScript, sharing the existing FastAPI backend and SQLite database with iOS. Includes signup/login, private journals with excerpt/full sharing previews, anonymous community stories and responses, listening/hiding/reporting, consent-based companions, live chat/history, shared gardens/check-ins/pauses/archives, profile editing, and permission-gated moderation/account/audit screens. Layouts adapt to phones and desktops. English is the source/default language; Vietnamese and System/Light/Dark preferences persist locally. User-written content is never translated.
 
 ## Separate frontend Docker image
