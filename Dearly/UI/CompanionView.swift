@@ -214,7 +214,7 @@ struct ChatView: View {
             if mine { Spacer(minLength: 44) }
             VStack(alignment: .leading, spacing: 6) {
                 Text(message.text).font(.subheadline).lineSpacing(3)
-                Text(message.date.formatted(Date.FormatStyle(date: .omitted, time: .shortened).locale(Locale(identifier: language)))).font(.system(size: 10)).opacity(0.6)
+                Text(message.date.formatted(Date.FormatStyle(date: .omitted, time: .shortened).locale(Locale(identifier: AppLanguage.code)))).font(.system(size: 10)).opacity(0.6)
             }.padding(15).foregroundStyle(mine ? DearlyTheme.onAccent : DearlyTheme.ink)
                 .background(mine ? DearlyTheme.forest : DearlyTheme.surface, in: RoundedRectangle(cornerRadius: 20))
             if !mine { Spacer(minLength: 44) }

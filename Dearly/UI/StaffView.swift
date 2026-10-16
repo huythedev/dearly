@@ -232,7 +232,7 @@ private struct StaffUserView: View {
                 Form {
                     Section {
                         LabeledContent(L("Nickname"), value: user.nickname)
-                        LabeledContent("Username", value: user.username)
+                        LabeledContent(L("Username"), value: user.username)
                         LabeledContent(L("Role"), value: user.role.title)
                         LabeledContent(L("Status"), value: user.suspended ? L("Suspended") : L("Active"))
                         LabeledContent(L("Age"), value: user.ageVerified ? L("Verified") : L("Unverified"))

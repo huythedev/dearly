@@ -52,7 +52,7 @@ struct CommunityCard: View {
                 VStack(alignment: .leading, spacing: 4) {
                     Text(entry.anonymous ? L("A friend") : store.state.profile(entry.authorID)?.nickname ?? L("Friend"))
                         .font(.subheadline.weight(.semibold)).foregroundStyle(DearlyTheme.ink)
-                    Text(entry.anonymous ? L("Shared anonymously") : entry.date.formatted(Date.FormatStyle(date: .abbreviated, time: .omitted).locale(Locale(identifier: language))))
+                    Text(entry.anonymous ? L("Shared anonymously") : entry.date.formatted(Date.FormatStyle(date: .abbreviated, time: .omitted).locale(Locale(identifier: AppLanguage.code))))
                         .font(.caption2).foregroundStyle(DearlyTheme.muted)
                 }
                 Spacer()

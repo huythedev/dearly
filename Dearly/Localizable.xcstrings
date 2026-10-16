@@ -1888,7 +1888,9 @@
         }
       }
     },
-    "Dearly" : {},
+    "Dearly" : {
+      "shouldTranslate" : false
+    },
     "Dearly is a space for companionship, not a therapy service." : {
       "extractionState" : "manual",
       "localizations" : {
@@ -2059,7 +2061,9 @@
         }
       }
     },
-    "EN" : {},
+    "EN" : {
+      "shouldTranslate" : false
+    },
     "Edit profile" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -3454,7 +3458,23 @@
         }
       }
     },
-    "ONLINE" : {},
+    "ONLINE" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ONLINE"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "TRỰC TUYẾN"
+          }
+        }
+      }
+    },
     "On a similar wavelength" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -4560,7 +4580,23 @@
         }
       }
     },
-    "Server" : {},
+    "Server" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Server"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Máy chủ"
+          }
+        }
+      }
+    },
     "Server connection" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -6040,7 +6076,9 @@
         }
       }
     },
-    "VI" : {},
+    "VI" : {
+      "shouldTranslate" : false
+    },
     "Verified" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -6891,8 +6929,12 @@
         }
       }
     },
-    "dearly" : {},
-    "http://localhost:8000" : {},
+    "dearly" : {
+      "shouldTranslate" : false
+    },
+    "http://localhost:8000" : {
+      "shouldTranslate" : false
+    },
     "limit must be between 1 and 50." : {
       "extractionState" : "manual",
       "localizations" : {

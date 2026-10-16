@@ -100,7 +100,7 @@ struct JournalRow: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 14) {
             HStack {
-                Text(entry.date.formatted(.dateTime.day().month(.wide).locale(Locale(identifier: language)))).font(.caption).foregroundStyle(DearlyTheme.muted)
+                Text(entry.date.formatted(.dateTime.day().month(.wide).locale(Locale(identifier: AppLanguage.code)))).font(.caption).foregroundStyle(DearlyTheme.muted)
                 Spacer()
                 Image(systemName: entry.audience.icon).foregroundStyle(DearlyTheme.forest)
             }

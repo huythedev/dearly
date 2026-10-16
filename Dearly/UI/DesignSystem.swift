@@ -132,7 +132,7 @@ struct RootView: View {
                 ServerConnectionView()
             }
         }
-        .environment(\.locale, Locale(identifier: language))
+        .environment(\.locale, Locale(identifier: AppLanguage.code))
         .task { await store.syncLoop() }
         .onChange(of: scenePhase) { _, phase in store.foreground = phase == .active }
     }
@@ -179,7 +179,7 @@ struct RootView: View {
                     ToolbarItem(placement: .topBarTrailing) {
                         Button { showSettings = true } label: {
                             HStack(spacing: 7) {
-                                Text("ONLINE").font(.system(size: 9, weight: .bold)).tracking(1)
+                                Text(L("ONLINE")).font(.system(size: 9, weight: .bold)).tracking(1)
                                 Avatar(symbol: store.me.symbol, size: 32)
                             }
                         }.accessibilityLabel(LF("Account settings for %1$@", String(describing: store.me.nickname)))
@@ -235,9 +235,9 @@ struct AccountSettingsView: View {
                     Section(L("Your account")) {
                         LabeledContent(L("Nickname"), value: store.me.nickname)
                         LabeledContent(L("Role"), value: store.role.title)
-                        LabeledContent("Server", value: store.serverAddress)
+                        LabeledContent(L("Server"), value: store.serverAddress)
                         LabeledContent(L("Age"), value: store.me.ageVerified ? L("Verified") : L("Awaiting administrator verification"))
-                        if let date = store.lastSync { LabeledContent(L("Last synced"), value: date.formatted(Date.FormatStyle(date: .omitted, time: .shortened).locale(Locale(identifier: language)))) }
+                        if let date = store.lastSync { LabeledContent(L("Last synced"), value: date.formatted(Date.FormatStyle(date: .omitted, time: .shortened).locale(Locale(identifier: AppLanguage.code)))) }
                         if let error = store.syncError { Text(error).font(.caption).foregroundStyle(.red) }
                         Button(L("Edit profile"), systemImage: "person.crop.circle") { editingProfile = true }
                         Button(L("Sync now"), systemImage: "arrow.clockwise") { Task { await store.refresh(force: true) } }
@@ -292,7 +292,7 @@ struct LanguageMenu: View {
         } label: {
             HStack(spacing: 6) {
                 Image(systemName: "globe")
-                Text(language == "en" ? "EN" : "VI")
+                Text(AppLanguage.code == "vi" ? "VI" : "EN")
                 Image(systemName: "chevron.down").font(.system(size: 8, weight: .bold))
             }.font(.caption.weight(.semibold)).foregroundStyle(DearlyTheme.forest)
                 .padding(.horizontal, 12).padding(.vertical, 10)
