@@ -1,0 +1,53 @@
+name: Tests and security checks
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: checks-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  backend:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: '3.12'
+      - run: python -m pip install -r backend/requirements-dev.txt ruff==0.17.1 pip-audit==2.10.1
+      - run: python -m pytest -q backend/tests
+      - run: ruff check backend --select F,E9
+      - run: pip-audit -r backend/requirements.txt
+
+  ios:
+    runs-on: macos-26
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Build and test on an available iPhone simulator
+        shell: bash
+        run: |
+          set -euo pipefail
+          xcodebuild -version
+          simulator_id=$(xcrun simctl list devices available -j | python3 -c '
+          import json, sys
+          devices = json.load(sys.stdin)["devices"]
+          phones = [d["udid"] for runtime, rows in devices.items() if ".iOS-" in runtime
+                    for d in rows if d.get("isAvailable") and "iPhone" in d["name"]]
+          if not phones:
+              raise SystemExit("No available iPhone simulator")
+          print(phones[0])')
+          xcodebuild -project Dearly.xcodeproj -scheme Dearly -configuration Debug \
+            -destination "platform=iOS Simulator,id=$simulator_id" \
+            CODE_SIGNING_ALLOWED=NO test

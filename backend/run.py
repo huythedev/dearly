@@ -18,6 +18,8 @@ def main():
     serve=sub.add_parser('serve')
     serve.add_argument('--host',default='127.0.0.1')
     serve.add_argument('--port',type=int,default=8000)
+    serve.add_argument('--body-idle-timeout',type=float,default=5.0,help='Maximum seconds between request body chunks')
+    serve.add_argument('--body-total-timeout',type=float,default=15.0,help='Maximum total seconds to read a request body')
     serve.add_argument('--proxy-ips',default='',help='Trusted reverse-proxy IPs only (e.g. 127.0.0.1). Empty disables forwarded headers.')
     serve.add_argument('--cert',help='TLS certificate PEM (optional behind an HTTPS reverse proxy)')
     serve.add_argument('--key',help='TLS private key PEM')
@@ -42,8 +44,11 @@ def main():
         if not 1 <= len(args.reason) <= 1000: parser.error('--reason must contain 1–1000 characters')
     if args.command=='serve':
         if bool(args.cert)!=bool(args.key): parser.error('--cert and --key must be used together')
+        if args.body_idle_timeout <= 0 or args.body_total_timeout <= 0:
+            parser.error('Request body timeouts must be positive.')
         import uvicorn
-        uvicorn.run(create_app(args.db),host=args.host,port=args.port,workers=1,loop='asyncio',http='h11',
+        uvicorn.run(create_app(args.db,body_idle_timeout=args.body_idle_timeout,body_total_timeout=args.body_total_timeout),
+                    host=args.host,port=args.port,workers=1,loop='asyncio',http='h11',
                     limit_concurrency=64,timeout_keep_alive=5,proxy_headers=bool(args.proxy_ips),forwarded_allow_ips=args.proxy_ips,
                     ssl_certfile=args.cert,ssl_keyfile=args.key)
         return
@@ -65,7 +70,6 @@ def main():
         else:
             user=db.execute('SELECT * FROM users WHERE username=?',(args.username.lower(),)).fetchone()
             if user is None: parser.error('User not found.')
-            uid=user['id']
             if args.command=='verify-age':
                 verify_age(db,user,args.birth_date,'server-cli',args.reason,time.time())
             if args.command in ('suspend','restore'):

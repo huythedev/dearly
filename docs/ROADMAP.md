@@ -26,4 +26,4 @@ Challenge tùy chọn; kỷ niệm phải hai người duyệt; push kín đáo;
 | Sản phẩm/nghiên cứu | Phỏng vấn, nội dung app, kịch bản test, tổng hợp feedback | Tài liệu ẩn danh, issues, thiết kế và báo cáo test |
 | Cả hai | Chốt scope, review thay đổi, trình bày đóng góp/giới hạn | Decision log, changelog, README credits |
 
-Issues phù hợp bạn không thiên tech: người thử có hiểu ba mức chia sẻ không; trải nghiệm lời mời từ bài ẩn danh; cảm giác áp lực streak; onboarding theo feedback. Dùng nội dung giả khi thử các luồng nhạy cảm.
+Issues phù hợp bạn không thiên tech: người thử có hiểu ba mức chia sẻ không; phân biệt ẩn câu chuyện ẩn danh và chặn hồ sơ; cảm giác áp lực streak; onboarding theo feedback. Dùng nội dung giả khi thử các luồng nhạy cảm.

@@ -4,6 +4,7 @@ import SwiftUI
 struct GardenView: View {
     @AppStorage("dearly.language") private var language = "vi"
     @EnvironmentObject private var store: DearlyStore
+    @State private var showingArchive = false
     private var archives: [Connection] { store.state.connections.filter { !$0.active && $0.members.contains(store.me.id) } }
     var body: some View {
         ScrollView {
@@ -25,8 +26,11 @@ struct GardenView: View {
                         }.padding(16).dearlyCard()
                     }
                 }
+                Button(L("Xem tất cả khu vườn đã lưu", "Browse all saved gardens"), systemImage: "books.vertical") { showingArchive = true }
+                    .font(.subheadline)
             }.padding(22).padding(.bottom, 20)
         }
+        .sheet(isPresented: $showingArchive) { GardenArchiveView() }
     }
 
     private func activeGarden(_ connection: Connection) -> some View {
@@ -102,6 +106,72 @@ struct GardenView: View {
             Spacer()
             Image(systemName: unlocked ? "checkmark" : "lock").font(.caption)
         }.foregroundStyle(unlocked ? DearlyTheme.forest : DearlyTheme.muted)
+    }
+}
+
+@MainActor
+private struct GardenArchiveView: View {
+    @EnvironmentObject private var store: DearlyStore
+    @Environment(\.dismiss) private var dismiss
+    @State private var page: ConnectionPage?
+    @State private var cursors: [UUID?] = [nil]
+    @State private var loading = false
+    @State private var failure: String?
+    @State private var requestID = UUID()
+
+    var body: some View {
+        NavigationStack {
+            ScrollView {
+                VStack(alignment: .leading, spacing: 18) {
+                    if loading { ProgressView() }
+                    if let failure { Text(failure).foregroundStyle(.red) }
+                    if let page {
+                        if page.items.isEmpty && !loading {
+                            EmptyCard(icon: "leaf", title: L("Chưa có vườn lưu trữ", "No saved gardens yet"), detail: L("Khu vườn sẽ được lưu khi kết nối kết thúc.", "Gardens are saved when a connection ends."))
+                        }
+                        ForEach(page.items) { connection in
+                            VStack(alignment: .leading, spacing: 12) {
+                                GardenIllustration(stage: connection.growth).frame(height: 190).clipShape(RoundedRectangle(cornerRadius: 20))
+                                Text(otherName(connection, profiles: page.profiles)).font(.system(size: 22, design: .serif))
+                                Text(L("\(connection.totalDays) ngày · Chuỗi dài nhất: \(connection.bestStreak)", "\(connection.totalDays) days · Best streak: \(connection.bestStreak)"))
+                                    .font(.caption).foregroundStyle(DearlyTheme.muted)
+                            }.padding(16).dearlyCard()
+                        }
+                    }
+                    HStack {
+                        if cursors.count > 1 {
+                            Button(L("Trang trước")) { cursors.removeLast(); Task { await load() } }.disabled(loading)
+                        }
+                        Spacer()
+                        if let next = page?.nextCursor {
+                            Button(L("Trang tiếp")) { cursors.append(next); Task { await load() } }.disabled(loading)
+                        }
+                    }
+                }.padding(22)
+            }.background(DearlyTheme.cream)
+                .navigationTitle(L("Khu vườn đã lưu", "Saved gardens")).navigationBarTitleDisplayMode(.inline)
+                .toolbar { ToolbarItem(placement: .confirmationAction) { Button(L("Xong")) { dismiss() } } }
+                .task { await load() }
+                .onDisappear { requestID = UUID() }
+                .onChange(of: store.state.currentUserID) { _, _ in page = nil; dismiss() }
+        }
+    }
+
+    private func otherName(_ connection: Connection, profiles: [Profile]) -> String {
+        connection.members.first { $0 != store.state.currentUserID }.flatMap { id in profiles.first { $0.id == id }?.nickname } ?? L("một người bạn")
+    }
+
+    private func load() async {
+        let expected = UUID(); requestID = expected
+        loading = true; failure = nil; page = nil
+        defer { if requestID == expected { loading = false } }
+        do {
+            let result = try await store.connectionPage(before: cursors.last ?? nil)
+            guard requestID == expected else { return }
+            page = result
+        } catch {
+            if requestID == expected { failure = error.localizedDescription }
+        }
     }
 }
 

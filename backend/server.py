@@ -4,7 +4,6 @@ from __future__ import annotations
 import hashlib
 import hmac
 import json
-import re
 import secrets
 import sqlite3
 import threading
@@ -31,6 +30,7 @@ ROLE_PERMISSIONS = {
                         'users.suspend', 'users.verify_age', 'roles.manage', 'audit.read'}),
 }
 STAFF_ACTIONS = {'staff.report.review': 'reports.review', 'staff.report.hide': 'reports.hide',
+                 'staff.report.restore': 'reports.hide',
                  'staff.user.suspend': 'users.suspend', 'staff.user.verify_age': 'users.verify_age',
                  'staff.user.role': 'roles.manage'}
 SCHEMA = '''
@@ -62,6 +62,12 @@ CREATE TABLE IF NOT EXISTS journals (
 CREATE INDEX IF NOT EXISTS journals_owner ON journals(author_id,created DESC,id DESC);
 CREATE INDEX IF NOT EXISTS journals_feed ON journals(audience,created DESC,id DESC);
 CREATE INDEX IF NOT EXISTS journals_connection ON journals(connection_id,audience);
+CREATE TABLE IF NOT EXISTS moderation_holds (
+ journal_id TEXT PRIMARY KEY REFERENCES journals(id) ON DELETE CASCADE,
+ actor_id TEXT NOT NULL, created REAL NOT NULL);
+CREATE TABLE IF NOT EXISTS hidden_posts (
+ user_id TEXT NOT NULL REFERENCES users(id), journal_id TEXT NOT NULL REFERENCES journals(id) ON DELETE CASCADE,
+ PRIMARY KEY(user_id,journal_id));
 CREATE TABLE IF NOT EXISTS invitations (
  id TEXT PRIMARY KEY, sender_id TEXT NOT NULL REFERENCES users(id), recipient_id TEXT NOT NULL REFERENCES users(id),
  source_journal_id TEXT REFERENCES journals(id) ON DELETE SET NULL, source_alias TEXT, created REAL NOT NULL,
@@ -167,7 +173,7 @@ class Database:
         # WAL configuration must precede any explicit transaction.
         with sqlite3.connect(str(self.path), timeout=5) as db:
             version = db.execute('PRAGMA user_version').fetchone()[0]
-            if version not in (0, 1, 2):
+            if version not in (0, 1, 2, 3):
                 raise RuntimeError('Unsupported database schema. Back up before upgrading.')
             db.execute('PRAGMA journal_mode=WAL')
             db.executescript(SCHEMA)
@@ -181,6 +187,20 @@ class Database:
                 db.execute('ALTER TABLE reports ADD COLUMN reviewer_id TEXT')
                 db.execute('ALTER TABLE reports ADD COLUMN reviewed_at REAL')
                 db.execute('PRAGMA user_version=2')
+            if db.execute('PRAGMA user_version').fetchone()[0] < 3:
+                # Legacy anonymous invitations linked an alias to named-account actions.
+                db.execute('''DELETE FROM invitations WHERE source_alias IS NOT NULL OR source_journal_id IN
+                              (SELECT id FROM journals WHERE anonymous=1)''')
+                # Preserve staff decisions made before durable moderation holds existed.
+                for actor, detail, created in db.execute("SELECT actor_id,detail,created FROM audit_log WHERE action='report.hide' ORDER BY id"):
+                    jid = json.loads(detail).get('journalID')
+                    db.execute('''INSERT OR IGNORE INTO moderation_holds SELECT id,?,? FROM journals WHERE id=?''',
+                               (actor, created, jid))
+                db.execute("UPDATE journals SET audience='privateOnly',shared_text='',connection_id=NULL WHERE id IN (SELECT journal_id FROM moderation_holds)")
+                db.execute('DELETE FROM comments WHERE journal_id IN (SELECT journal_id FROM moderation_holds)')
+                db.execute('DELETE FROM listening WHERE journal_id IN (SELECT journal_id FROM moderation_holds)')
+                db.execute('PRAGMA user_version=3')
+                changed(db)
         db.close()
 
     @contextmanager
@@ -235,10 +255,17 @@ def can_invite(db, a, b, now):
 def readable(db, journal, uid):
     if journal['author_id'] == uid:
         return True
-    if blocked(db,uid,journal['author_id']):
+    if db.execute('SELECT 1 FROM moderation_holds WHERE journal_id=?', (journal['id'],)).fetchone():
+        return False
+    if db.execute('SELECT suspended FROM users WHERE id=?', (journal['author_id'],)).fetchone()[0]:
         return False
     if journal['audience'] == 'community':
-        return True
+        if db.execute('SELECT 1 FROM hidden_posts WHERE user_id=? AND journal_id=?', (uid, journal['id'])).fetchone():
+            return False
+        # Account-level block effects must not identify an anonymous story's writer.
+        return bool(journal['anonymous']) or not blocked(db, uid, journal['author_id'])
+    if blocked(db,uid,journal['author_id']):
+        return False
     if journal['audience'] == 'companion':
         connection = active(db,uid)
         return connection is not None and connection['id'] == journal['connection_id']
@@ -263,12 +290,15 @@ def alias_profile(jid):
 
 def journal_dto(db, row, uid, now):
     own = row['author_id'] == uid
-    author = row['id'] if row['anonymous'] and not own else row['author_id']
+    anonymous = bool(row['anonymous']) and row['audience'] == 'community'
+    author = row['id'] if anonymous and not own else row['author_id']
     listening = db.execute('SELECT 1 FROM listening WHERE journal_id=? AND user_id=?',(row['id'],uid)).fetchone()
     return dict(id=row['id'],authorID=author,title=row['title'] if own else '',body=row['body'] if own else '',
-                sharedText=row['shared_text'],audience=row['audience'],connectionID=row['connection_id'],anonymous=bool(row['anonymous']),
+                sharedText=row['shared_text'],audience=row['audience'],connectionID=row['connection_id'],
+                anonymous=bool(row['anonymous']) if own else anonymous,
                 commentsEnabled=bool(row['comments_enabled']),support=row['support'],date=row['created']-SWIFT_EPOCH,
-                listeners=[uid] if listening else [],canInviteAuthor=can_invite(db,uid,row['author_id'],now))
+                listeners=[uid] if listening else [],canInviteAuthor=False if anonymous else can_invite(db,uid,row['author_id'],now),
+                moderationHidden=bool(db.execute('SELECT 1 FROM moderation_holds WHERE journal_id=?', (row['id'],)).fetchone()) if own else False)
 
 
 def connection_dto(db,row,now):
@@ -293,8 +323,10 @@ def snapshot(db, user, now, limit=60):
     own=db.execute('SELECT * FROM journals WHERE author_id=? ORDER BY created DESC,id DESC LIMIT ?', (uid,limit)).fetchall()
     feed=db.execute('''SELECT j.* FROM journals j JOIN users u ON u.id=j.author_id
        WHERE j.audience='community' AND u.suspended=0
-       AND NOT EXISTS(SELECT 1 FROM blocks b WHERE (b.blocker_id=? AND b.blocked_id=j.author_id) OR (b.blocker_id=j.author_id AND b.blocked_id=?))
-       ORDER BY j.created DESC,j.id DESC LIMIT ?''',(uid,uid,limit)).fetchall()
+       AND NOT EXISTS(SELECT 1 FROM moderation_holds h WHERE h.journal_id=j.id)
+       AND NOT EXISTS(SELECT 1 FROM hidden_posts h WHERE h.user_id=? AND h.journal_id=j.id)
+       AND (j.anonymous=1 OR NOT EXISTS(SELECT 1 FROM blocks b WHERE (b.blocker_id=? AND b.blocked_id=j.author_id) OR (b.blocker_id=j.author_id AND b.blocked_id=?)))
+       ORDER BY j.created DESC,j.id DESC LIMIT ?''',(uid,uid,uid,limit)).fetchall()
     conn=active(db,uid)
     shared=db.execute("SELECT * FROM journals WHERE connection_id=? AND audience='companion' ORDER BY created DESC,id DESC LIMIT ?",(conn['id'],limit)).fetchall() if conn else []
     journals={r['id']:r for r in own+feed+shared}
@@ -304,14 +336,16 @@ def snapshot(db, user, now, limit=60):
         if dto['authorID'] != row['author_id']: aliases[dto['authorID']]=alias_profile(dto['authorID'])
         else: profile_ids.add(row['author_id'])
     connections=db.execute('SELECT * FROM connections WHERE first_id=? OR second_id=? ORDER BY started DESC LIMIT 20',(uid,uid)).fetchall()
+    if conn is not None and all(c['id'] != conn['id'] for c in connections):
+        connections.append(conn)
     for c in connections: profile_ids.update([c['first_id'],c['second_id']])
     invitations=[]
     for row in db.execute('SELECT * FROM invitations WHERE sender_id=? OR recipient_id=? ORDER BY created DESC LIMIT 100',(uid,uid)):
         recipient=row['recipient_id']
         source=db.execute('SELECT * FROM journals WHERE id=?',(row['source_journal_id'],)).fetchone()
-        if row['sender_id']==uid and (row['source_alias'] or (source and source['anonymous'])):
-            recipient=row['source_alias'] or source['id']; aliases[recipient]=alias_profile(recipient)
-        else: profile_ids.add(recipient)
+        if row['source_alias'] or (source and source['anonymous']):
+            continue
+        profile_ids.add(recipient)
         profile_ids.add(row['sender_id'])
         invitations.append(dict(id=row['id'],senderID=row['sender_id'],recipientID=recipient,date=row['created']-SWIFT_EPOCH))
     # Candidate selection excludes active users and blocked edges before its bounded scan.
@@ -332,11 +366,12 @@ def snapshot(db, user, now, limit=60):
     public_ids=[r['id'] for r in journals.values() if r['audience']=='community']
     if public_ids:
         marks=','.join('?' for _ in public_ids)
-        rows=db.execute(f'SELECT * FROM comments WHERE journal_id IN ({marks}) ORDER BY created DESC,id DESC LIMIT 200',public_ids).fetchall()
+        rows=db.execute(f'''SELECT c.* FROM comments c JOIN users u ON u.id=c.author_id
+                            WHERE c.journal_id IN ({marks}) AND u.suspended=0 ORDER BY c.created DESC,c.id DESC LIMIT 200''',public_ids).fetchall()
         for row in reversed(rows):
-            if blocked(db,uid,row['author_id']): continue
             journal=journals[row['journal_id']]
             hide=journal['anonymous'] and row['author_id']==journal['author_id'] and uid!=row['author_id']
+            if not hide and blocked(db,uid,row['author_id']): continue
             author=journal['id'] if hide else row['author_id']
             if hide: aliases[author]=alias_profile(author)
             else: profile_ids.add(author)
@@ -387,19 +422,50 @@ class Limiter:
 
 
 class BodyLimit:
-    """Enforce bounds on actual streamed bytes, not only Content-Length."""
-    def __init__(self,app): self.app=app
+    """Bound bytes, upload time, and concurrent readers before parsing/authentication."""
+    def __init__(self, app, idle_timeout=5.0, total_timeout=15.0, max_uploads=32, per_ip=8):
+        self.app = app
+        self.idle_timeout = idle_timeout
+        self.total_timeout = total_timeout
+        self.max_uploads = max_uploads
+        self.per_ip = per_ip
+        self.uploads = 0
+        self.clients = {}
+
     async def __call__(self,scope,receive,send):
         if scope['type']!='http': return await self.app(scope,receive,send)
+        has_body = any(k.lower() == b'transfer-encoding' or
+                       (k.lower() == b'content-length' and v.strip() != b'0') for k, v in scope['headers'])
+        client = (scope.get('client') or ('unknown', 0))[0]
+        if has_body:
+            # One event loop owns this middleware; no await occurs before admission.
+            if self.clients.get(client, 0) >= self.per_ip or self.uploads >= self.max_uploads:
+                return await JSONResponse({'detail': 'Quá nhiều yêu cầu đang tải.'}, status_code=429,
+                                          headers={'Connection': 'close', 'Retry-After': '1'})(scope,receive,send)
+            self.uploads += 1
+            self.clients[client] = self.clients.get(client, 0) + 1
         total=0; chunks=[]
-        while True:
-            message=await receive()
-            if message['type']=='http.disconnect': return
-            body=message.get('body',b'');total+=len(body)
-            if total>131072:
-                return await JSONResponse({'detail':'Yêu cầu quá lớn.'},status_code=413)(scope,receive,send)
-            chunks.append(body)
-            if not message.get('more_body',False): break
+        try:
+            with anyio.fail_after(self.total_timeout):
+                while True:
+                    with anyio.fail_after(self.idle_timeout):
+                        message=await receive()
+                    if message['type']=='http.disconnect': return
+                    body=message.get('body',b'');total+=len(body)
+                    if total>131072:
+                        return await JSONResponse({'detail':'Yêu cầu quá lớn.'},status_code=413,
+                                                  headers={'Connection': 'close'})(scope,receive,send)
+                    if body: chunks.append(body)
+                    if not message.get('more_body',False): break
+        except TimeoutError:
+            return await JSONResponse({'detail': 'Hết thời gian tải yêu cầu.'}, status_code=408,
+                                      headers={'Connection': 'close'})(scope,receive,send)
+        finally:
+            if has_body:
+                self.uploads -= 1
+                remaining = self.clients[client] - 1
+                if remaining: self.clients[client] = remaining
+                else: del self.clients[client]
         delivered=False
         async def bounded_receive():
             nonlocal delivered
@@ -481,6 +547,7 @@ def apply_staff_action(db, user, kind, p, now):
     allowed = {
         'staff.report.review': {'id', 'status', 'reason'},
         'staff.report.hide': {'id', 'reason'},
+        'staff.report.restore': {'id', 'reason'},
         'staff.user.suspend': {'userID', 'suspended', 'reason'},
         'staff.user.verify_age': {'userID', 'birthDate', 'reason'},
         'staff.user.role': {'userID', 'role', 'reason'},
@@ -490,12 +557,22 @@ def apply_staff_action(db, user, kind, p, now):
     reason = text_field(p, 'reason', 1000)
     if kind == 'staff.report.review':
         review_report(db, identifier(p.get('id')), p.get('status'), reason, user['id'], now)
-    elif kind == 'staff.report.hide':
+    elif kind in ('staff.report.hide', 'staff.report.restore'):
         rid = identifier(p.get('id'))
         row = db.execute('''SELECT j.* FROM reports r JOIN journals j ON j.id=r.journal_id
-                            WHERE r.id=? AND j.author_id=r.reported_id AND j.audience='community' ''', (rid,)).fetchone()
+                            WHERE r.id=? AND j.author_id=r.reported_id''', (rid,)).fetchone()
         if row is None:
-            fail('Bài cộng đồng đã bị xóa hoặc không còn công khai.', 409)
+            fail('Bài viết đã bị xóa.', 409)
+        held = db.execute('SELECT 1 FROM moderation_holds WHERE journal_id=?', (row['id'],)).fetchone()
+        if kind == 'staff.report.restore':
+            if not held: fail('Bài viết không bị hạn chế chia sẻ.', 409)
+            db.execute('DELETE FROM moderation_holds WHERE journal_id=?', (row['id'],))
+            review_report(db, rid, 'reviewed', reason, user['id'], now)
+            audit(db, user['id'], 'report.restore', rid, {'journalID': row['id'], 'reason': reason}, now)
+            return {}
+        if held or row['audience'] != 'community':
+            fail('Bài cộng đồng đã bị ẩn hoặc không còn công khai.', 409)
+        db.execute('INSERT INTO moderation_holds VALUES(?,?,?)', (row['id'], user['id'], now))
         # The owner's private body survives. Only the reported public post is withdrawn.
         db.execute("UPDATE journals SET audience='privateOnly',shared_text='',connection_id=NULL WHERE id=?", (row['id'],))
         db.execute('DELETE FROM comments WHERE journal_id=?', (row['id'],))
@@ -522,7 +599,8 @@ def apply_staff_action(db, user, kind, p, now):
 
 
 def staff_report_dto(db, row):
-    journal = db.execute("SELECT 1 FROM journals WHERE id=? AND author_id=? AND audience='community'",
+    journal = db.execute("""SELECT 1 FROM journals j WHERE id=? AND author_id=? AND audience='community'
+                            AND NOT EXISTS(SELECT 1 FROM moderation_holds h WHERE h.journal_id=j.id)""",
                          (row['journal_id'], row['reported_id'])).fetchone()
     names = {r['id']: r['nickname'] for r in db.execute('SELECT id,nickname FROM users WHERE id IN (?,?)',
                                                        (row['reporter_id'], row['reported_id']))}
@@ -530,6 +608,7 @@ def staff_report_dto(db, row):
                 reporterNickname=names[row['reporter_id']], reportedNickname=names[row['reported_id']],
                 reason=row['reason'], status=row['status'], date=row['created']-SWIFT_EPOCH,
                 journalID=row['journal_id'], evidence=row['evidence'], canHide=bool(journal),
+                canRestore=bool(db.execute('SELECT 1 FROM moderation_holds WHERE journal_id=?', (row['journal_id'],)).fetchone()),
                 reviewNote=row['review_note'], reviewerID=row['reviewer_id'],
                 reviewedAt=row['reviewed_at']-SWIFT_EPOCH if row['reviewed_at'] is not None else None)
 
@@ -546,9 +625,11 @@ def apply_action(db,user,kind,p,now):
         body=text_field(p,'body',20000); title=text_field(p,'title',160,default='',empty=True)
         audience=p.get('audience','privateOnly')
         if audience not in ('privateOnly','companion','community'): fail('Chế độ chia sẻ không hợp lệ.')
+        if audience != 'privateOnly' and db.execute('SELECT 1 FROM moderation_holds WHERE journal_id=?', (jid,)).fetchone():
+            fail('Bài này đang bị hạn chế chia sẻ. Bạn vẫn có thể lưu riêng tư; liên hệ quản trị viên để xem xét lại.', 403)
         excerpt=text_field(p,'sharedText',20000,default='',empty=True)
         if audience!='privateOnly' and (not excerpt or excerpt not in body): fail('Đoạn chia sẻ phải nằm trong journal.')
-        support=p.get('support','Chỉ cần lắng nghe')
+        support=text_field(p,'support',80,default='Chỉ cần lắng nghe')
         if support not in SUPPORT: fail('Lựa chọn phản hồi không hợp lệ.')
         conn=active(db,uid) if audience=='companion' else None
         if audience=='companion' and conn is None: fail('Bạn chưa có kết nối.')
@@ -561,7 +642,15 @@ def apply_action(db,user,kind,p,now):
         if audience!='community':
             db.execute('DELETE FROM comments WHERE journal_id=?',(jid,))
             db.execute('DELETE FROM listening WHERE journal_id=?',(jid,))
+        if bool_field(p, 'anonymous'):
+            db.execute('DELETE FROM invitations WHERE source_journal_id=?', (jid,))
         return {'id':jid}
+    if kind=='journal.hide':
+        row=get_journal(db,p.get('id'),uid)
+        if row['audience'] != 'community' or row['author_id'] == uid:
+            fail('Chỉ có thể ẩn bài cộng đồng của người khác.', 400)
+        db.execute('INSERT OR IGNORE INTO hidden_posts VALUES(?,?)', (uid, row['id']))
+        return {}
     if kind=='journal.delete':
         row=get_journal(db,p.get('id'),uid)
         if row['author_id']!=uid: fail('Không thể xóa bài này.',403)
@@ -582,6 +671,8 @@ def apply_action(db,user,kind,p,now):
         source=None
         if p.get('journalID'):
             source=get_journal(db,p['journalID'],uid)
+            if source['anonymous']:
+                fail('Bài ẩn danh không nhận lời mời. Hãy kết nối qua hồ sơ được chia sẻ.', 403)
             if source['audience']!='community': fail('Bài này không nhận lời mời.',403)
             target=source['author_id']
         else: target=identifier(p.get('userID'))
@@ -623,6 +714,11 @@ def apply_action(db,user,kind,p,now):
         if p.get('journalID'):
             source=get_journal(db,p['journalID'],uid)
             target=source['author_id']
+            if kind=='user.block' and source['anonymous'] and source['audience']=='community':
+                # Compatibility for old clients: hide this story without a named-account side effect.
+                if target==uid: fail('Không thể ẩn bài của mình.')
+                db.execute('INSERT OR IGNORE INTO hidden_posts VALUES(?,?)', (uid, source['id']))
+                return {}
         else: target=identifier(p.get('userID'))
         if target==uid or db.execute('SELECT 1 FROM users WHERE id=?',(target,)).fetchone() is None: fail('Người dùng không hợp lệ.')
         if kind=='user.block':
@@ -639,22 +735,25 @@ def apply_action(db,user,kind,p,now):
         nickname=text_field(p,'nickname',40); bio=text_field(p,'bio',500,default='',empty=True)
         interests=p.get('interests',[])
         if not isinstance(interests,list) or len(interests)>8 or any(not isinstance(x,str) or not 1<=len(x.strip())<=30 for x in interests): fail('Tối đa 8 sở thích, mỗi mục 1–30 ký tự.')
-        support=p.get('support','Chỉ cần lắng nghe')
+        support=text_field(p,'support',80,default='Chỉ cần lắng nghe')
         if support not in SUPPORT: fail('Lựa chọn phản hồi không hợp lệ.')
         pace=text_field(p,'pace',80,default='Buổi tối')
         db.execute('UPDATE users SET nickname=?,bio=?,interests=?,support=?,pace=? WHERE id=?',(nickname,bio,json.dumps([x.strip() for x in interests],ensure_ascii=False),support,pace,uid));return {}
     fail('Thao tác không được hỗ trợ.')
 
 
-def create_app(path: str | Path = 'data/dearly.sqlite3', *, clock: Callable[[],float] = time.time) -> FastAPI:
+def create_app(path: str | Path = 'data/dearly.sqlite3', *, clock: Callable[[],float] = time.time,
+               body_idle_timeout: float = 5.0, body_total_timeout: float = 15.0) -> FastAPI:
+    if body_idle_timeout <= 0 or body_total_timeout <= 0:
+        raise ValueError('Request body timeouts must be positive.')
     database=Database(path); limiter=Limiter(); hashing=threading.BoundedSemaphore(2)
     @asynccontextmanager
     async def lifespan(app):
         anyio.to_thread.current_default_thread_limiter().total_tokens=16
         yield
-    app=FastAPI(title='Dearly API',version='0.3.0',docs_url='/docs',redoc_url=None,lifespan=lifespan)
+    app=FastAPI(title='Dearly API',version='0.4.0',docs_url='/docs',redoc_url=None,lifespan=lifespan)
     app.state.database=database
-    app.add_middleware(BodyLimit)
+    app.add_middleware(BodyLimit, idle_timeout=body_idle_timeout, total_timeout=body_total_timeout)
 
     @app.exception_handler(RequestValidationError)
     async def validation_error(request,exc):
@@ -686,7 +785,7 @@ def create_app(path: str | Path = 'data/dearly.sqlite3', *, clock: Callable[[],f
         return dict(token=token,userID=uid,expiresAt=expires-SWIFT_EPOCH)
 
     @app.get('/health')
-    def health(): return {'status':'ok','version':'0.3.0','dayBoundary':'UTC'}
+    def health(): return {'status':'ok','version':'0.4.0','dayBoundary':'UTC'}
 
     @app.post('/v1/auth/register',status_code=201)
     def register(data: Registration,request: Request):
@@ -768,7 +867,7 @@ def create_app(path: str | Path = 'data/dearly.sqlite3', *, clock: Callable[[],f
             limiter.check('read:'+user['id'], 60, 1)
             where = 'status=?'; args = [status]
             if before:
-                cursor = db.execute('SELECT created,id FROM reports WHERE id=? AND status=?', (identifier(before), status)).fetchone()
+                cursor = db.execute('SELECT created,id FROM reports WHERE id=?', (identifier(before),)).fetchone()
                 if cursor is None: fail('Cursor không hợp lệ.')
                 where += ' AND (created,id)<(?,?)'; args.extend([cursor['created'], cursor['id']])
             rows = db.execute(f'SELECT * FROM reports WHERE {where} ORDER BY created DESC,id DESC LIMIT ?', (*args, limit+1)).fetchall()
@@ -824,7 +923,30 @@ def create_app(path: str | Path = 'data/dearly.sqlite3', *, clock: Callable[[],f
                 where+=' AND (created,id)<(?,?)';args.extend([cursor['created'],cursor['id']])
             rows=db.execute(f'SELECT * FROM journals WHERE {where} ORDER BY created DESC,id DESC LIMIT ?',(*args,limit+1)).fetchall()
             page=rows[:limit]
-            return dict(items=[journal_dto(db,r,uid,now) for r in page],nextCursor=page[-1]['id'] if len(rows)>limit else None)
+            return JSONResponse(dict(items=[journal_dto(db,r,uid,now) for r in page],
+                                     nextCursor=page[-1]['id'] if len(rows)>limit else None), headers=staff_headers)
+
+    @app.get('/v1/connections')
+    def archived_connections(before: str | None=None, limit: int=20, authorization: str | None=Header(default=None)):
+        if not 1 <= limit <= 50: fail('limit phải từ 1 đến 50.')
+        with database.connect() as db:
+            user=authenticate(db,authorization);uid=user['id'];now=clock()
+            limiter.check('read:'+uid,60,1)
+            where='ended IS NOT NULL AND (first_id=? OR second_id=?)';args=[uid,uid]
+            if before:
+                cursor=db.execute('''SELECT started,id FROM connections WHERE id=? AND ended IS NOT NULL
+                                     AND (first_id=? OR second_id=?)''', (identifier(before),uid,uid)).fetchone()
+                if cursor is None: fail('Cursor không hợp lệ.')
+                where+=' AND (started,id)<(?,?)';args.extend([cursor['started'],cursor['id']])
+            rows=db.execute(f'SELECT * FROM connections WHERE {where} ORDER BY started DESC,id DESC LIMIT ?',
+                            (*args,limit+1)).fetchall()
+            page=rows[:limit]
+            profile_ids={uid}
+            for row in page: profile_ids.update((row['first_id'],row['second_id']))
+            marks=','.join('?' for _ in profile_ids)
+            profiles=[profile_dto(r,now) for r in db.execute(f'SELECT * FROM users WHERE id IN ({marks})',list(profile_ids))]
+            return JSONResponse(dict(items=[connection_dto(db,r,now) for r in page], profiles=profiles,
+                                     nextCursor=page[-1]['id'] if len(rows)>limit else None), headers=staff_headers)
 
     @app.get('/v1/messages')
     def history(connectionID: str,before: str | None=None,limit: int=50,authorization: str | None=Header(default=None)):
@@ -840,6 +962,7 @@ def create_app(path: str | Path = 'data/dearly.sqlite3', *, clock: Callable[[],f
                 where+=' AND (created,id)<(?,?)';args.extend([cursor['created'],cursor['id']])
             rows=db.execute(f'SELECT * FROM messages WHERE {where} ORDER BY created DESC,id DESC LIMIT ?',(*args,limit+1)).fetchall()
             page=rows[:limit]
-            return dict(items=[message_dto(r) for r in reversed(page)],nextCursor=page[-1]['id'] if len(rows)>limit else None)
+            return JSONResponse(dict(items=[message_dto(r) for r in reversed(page)],
+                                     nextCursor=page[-1]['id'] if len(rows)>limit else None), headers=staff_headers)
 
     return app

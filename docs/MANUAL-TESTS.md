@@ -37,7 +37,7 @@ Chưa được chạy trong môi trường tạo source. Điền kết quả th�
 | Đóng/mở app | Khôi phục phiên Keychain, tải state online mới | Chưa chạy |
 | Mất mạng sau POST | Retry cùng ID không tạo chat/journal hai lần; báo trạng thái rõ | Chưa chạy |
 | Scroll journal cũ / load tin cũ | Phân trang đúng quyền; không lẫn tài khoản | Chưa chạy |
-| Bài ẩn danh gửi lời mời | Trước accept không hiện profile tác giả, kể cả xóa bài | Chưa chạy |
+| Bài ẩn danh | Không có nút mời; ẩn riêng bài không đổi gợi ý hay kết nối; chặn hồ sơ không lọc bài ẩn danh | Chưa chạy |
 | Qua ngày UTC | Check-in/streak cùng ngày server, không phụ thuộc timezone máy | Chưa chạy |
 | Bản Release | Chỉ HTTPS có certificate tin cậy | Chưa chạy |
 
@@ -55,3 +55,12 @@ Use synthetic accounts/content for these checks and run the updated backend with
 8. On the login screen, choose System, Light, then Dark. Repeat under avatar → Appearance. Check the choice survives restart and logout, and System follows changes in iOS Settings while the app is open.
 9. Inspect login/registration, all four tabs, editors, comments, sent/received chat bubbles, garden stages/archives, settings, and staff screens in both appearances. Open sheets and confirmation dialogs, use the keyboard, and check text/control contrast, large text, VoiceOver labels, and the night garden.
 10. Run a native Debug and Release build plus **⌘U** in Xcode. Linux syntax/project checks do not validate Swift type checking, the asset compiler, or actual iOS rendering.
+
+## Security fixes (v0.4)
+
+1. Hide one anonymous story. Other stories and named suggestions remain unchanged. Named profile blocking still ends the identified connection and hides identified posts; use story hiding/reporting for anonymous content.
+2. Hide a reported post as staff, then try sharing from an editor opened before that action. The server rejects publication. The author can save privately. Staff restoration permits sharing again but never publishes automatically.
+3. Review/dismiss the report at a different device's current pagination cursor. The other device can still load the next page.
+4. Browse more than 20 saved gardens, move forward/back through pages, and confirm rewards and partner names remain available.
+5. Let a session expire while settings or archive/editor sheets are open. The app returns to login without a force-unwrap crash or another account's data remaining in a sheet. Repeat logout when the token has already been revoked.
+6. Set the device calendar to a non-Gregorian calendar. Daily check-in remains aligned with the server's Gregorian UTC date.

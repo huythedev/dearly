@@ -1,4 +1,4 @@
-# Dearly backend 0.2
+# Dearly backend 0.4
 
 A Python 3.11+ / FastAPI / SQLite backend for the Dearly iOS app. It runs as a single server on macOS, Linux, or Windows. No separate database server, Redis, Node.js, or Docker is required.
 
@@ -124,13 +124,13 @@ docker compose exec backend python run.py set-role --username YOUR_USERNAME --ro
 
 Only the server CLI can grant/revoke admin or change an admin account. The API rejects self-management and admin targets. Demoting or suspending the last non-suspended admin is rejected; grant a replacement admin first. All accounts, including existing accounts after migration, default to `user`. Public signup/profile updates cannot grant roles. Roles are read from the database for every request, including retries, so demotion takes effect immediately without waiting for token expiry. The iOS staff entry updates on the next state sync.
 
-Reports contain the submitted reason and, for a reported community post, a snapshot of its **published excerpt**. Staff can identify accounts involved in a report, including anonymous posts. Private journal bodies, unshared text, and chat transcripts are not exposed by staff endpoints. The excerpt remains in the report after the original post is withdrawn or deleted. Hiding a reported post makes it private and deletes its community comments/listening reactions; it does not delete the author's original journal. Authors can subsequently edit/share their journals again; use account suspension when access needs to be revoked.
+Reports contain the submitted reason and, for a reported community post, a snapshot of its **published excerpt**. Staff can identify accounts involved in a report, including anonymous posts. Private journal bodies, unshared text, and chat transcripts are not exposed by staff endpoints. The excerpt remains in the report after the original post is withdrawn or deleted. Hiding a reported post makes it private, deletes its community comments/listening reactions, and restricts further sharing of that entry. The author can keep editing privately. Staff can choose **Allow the author to share again** after review; this is audited and leaves the entry private until its author chooses to share it.
 
 Staff and CLI mutations append an audit event in the same transaction: actor user ID (or `server-cli`), action, target, reason, and timestamp. No password, token, or birth date is placed in audit details. Staff HTTP responses use `Cache-Control: no-store`. The audit log is admin-readable through the API, has no client edit/delete endpoint, and is not tamper-proof against an operator with direct database access. Reports/audit events have no automatic retention cleanup yet; include their retention in the pilot's operational policy.
 
 ### Upgrading an existing database
 
-Use the previous checkout's backup command before upgrading. Restart the backend after updating the code. Startup automatically migrates SQLite `user_version=1` to `2` in a transaction, adds roles/report review fields and audit storage, and preserves accounts, sessions, journals, reports, connections, and rewards. Repeated startup/CLI access is safe. No new runtime dependencies are required, and the default single-worker SQLite setup is unchanged. Do not run the old backend against an upgraded database; rollback requires the pre-upgrade backup and matching code.
+Use the previous checkout's backup command before upgrading. Stop the old backend, update/install the pinned requirements, then restart. Startup migrates SQLite v1/v2 to `user_version=3` in a transaction. It preserves accounts, sessions, journal bodies, reports, connections, and rewards; reconstructs durable sharing restrictions from earlier staff hide audit events; and cancels old pending anonymous invitations to close the identity oracle. Identified invitations are retained. Update the iOS client too: anonymous stories now offer **Hide this story**, with invitations/account blocking available through identified profiles. Repeated startup/CLI access is safe. The default single-worker SQLite setup is unchanged. Do not run the old backend against an upgraded database; rollback requires the pre-upgrade backup and matching code.
 
 ### Backups
 
@@ -213,15 +213,16 @@ From `backend` on macOS/Linux:
 
 On Windows, use `.\.venv\Scripts\python.exe`. The benchmark starts a real HTTP server on a temporary localhost port and removes its temporary fixture data afterward. This temporary-port behavior belongs to the benchmark; the normal server launcher does not choose a free port automatically.
 
-The current backend suite passes 33 tests on Linux, including staff authorization and database migration. See the [validation notes](../docs/VALIDATION.md). Windows/macOS execution of these changes and Docker have not been verified in this session. No GitHub Actions workflows are included in this checkout.
+The backend suite covers staff authorization, migration, the audit regressions, and real HTTP upload admission/timeouts. See the [validation notes](../docs/VALIDATION.md). GitHub Actions runs backend/static/dependency checks and native iOS tests. Windows/macOS backend execution and Docker have not been verified locally.
 
 ## Runtime behavior and limits
 
 - Uvicorn uses standard `asyncio` and `h11`, with one worker and a concurrency limit of 64. Synchronous endpoints use up to 16 threads, and password hashing allows at most two simultaneous operations.
 - SQLite uses WAL, indexes for common queries, and `BEGIN IMMEDIATE` transactions for invitation and check-in consistency. There is one writer at a time, with a 2 MiB cache per connection.
-- Request bodies are limited to 128 KiB; journals to 20,000 characters; messages to 4,000; responses to 2,000. The rate limiter holds at most 4,096 buckets in memory.
-- State snapshots return bounded windows: up to 60 personal journals, 60 community posts, 60 companion journals, 20 gardens, 100 invitations, 200 responses, and 100 recent messages.
-- Personal journal pagination uses 40 entries per page in the app, with an API maximum of 60. Chat supports up to 100 messages per API page; the app retains at most 500 messages in memory. Community and companion journal screens show the latest window without older-history navigation.
+- Request bodies are limited to 128 KiB and expire after 5 seconds without a chunk or 15 seconds total. At most 32 bodies can be read concurrently, at most 8 per client IP; excess uploads receive 429 before parsing/authentication, leaving capacity for body-free reads/health. Timeouts return 408 and close the connection. The launcher supports `--body-idle-timeout SECONDS` and `--body-total-timeout SECONDS`. Keep proxy/header deadlines and origin access restrictions as well; these application controls start after HTTP headers are received.
+- Journals are limited to 20,000 characters; messages to 4,000; responses to 2,000. The rate limiter holds at most 4,096 buckets in memory.
+- State snapshots return bounded windows: up to 60 personal journals, 60 community posts, 60 companion journals, 20 recent gardens plus the active connection if needed, 100 invitations, 200 responses, and 100 recent messages.
+- Personal journal pagination uses 40 entries per page in the app, with an API maximum of 60. Saved gardens use 20 per page (API maximum 50) with member profiles included. Chat supports up to 100 messages per API page; the app retains at most 500 messages in memory. Community and companion journal screens show the latest window without older-history navigation.
 - The app polls about every 3 seconds in the foreground. ETag/304 responses avoid resending unchanged state; failed requests increase the delay up to 30 seconds. There is no push delivery or WebSocket connection while the app is closed.
 - Mutations use request UUIDs. Results are stored in the same transaction so retrying a request does not duplicate a message. Retry keys are retained for 7 days; daily check-ins have a separate UTC uniqueness constraint.
 - Passwords use salted PBKDF2-SHA256 with 600,000 iterations. Random bearer tokens are stored only as hashes on the server, expire after 30 days, and are kept in Keychain on iOS. App session state stays in memory rather than being written to a local journal/chat cache.
