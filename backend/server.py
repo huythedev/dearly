@@ -294,7 +294,8 @@ def journal_dto(db, row, uid, now):
     author = row['id'] if anonymous and not own else row['author_id']
     listening = db.execute('SELECT 1 FROM listening WHERE journal_id=? AND user_id=?',(row['id'],uid)).fetchone()
     return dict(id=row['id'],authorID=author,title=row['title'] if own else '',body=row['body'] if own else '',
-                sharedText=row['shared_text'],audience=row['audience'],connectionID=row['connection_id'],anonymous=anonymous,
+                sharedText=row['shared_text'],audience=row['audience'],connectionID=row['connection_id'],
+                anonymous=bool(row['anonymous']) if own else anonymous,
                 commentsEnabled=bool(row['comments_enabled']),support=row['support'],date=row['created']-SWIFT_EPOCH,
                 listeners=[uid] if listening else [],canInviteAuthor=False if anonymous else can_invite(db,uid,row['author_id'],now),
                 moderationHidden=bool(db.execute('SELECT 1 FROM moderation_holds WHERE journal_id=?', (row['id'],)).fetchone()) if own else False)

@@ -1,6 +1,6 @@
 # Validation — security fixes, 2026-10-16
 
-- **55 backend tests passed** on Linux/Python 3.12, including 22 added regression cases for the audit findings and adjacent bugs. A real loopback HTTP test verifies upload admission, timeout responses, and continued health availability.
+- **56 backend tests passed** on Linux/Python 3.12, including 23 added regression cases for the audit findings and adjacent bugs. A real loopback HTTP test verifies upload admission, timeout responses, and continued health availability. Private/hidden entries retain their author's anonymous sharing preference.
 - A separate real-HTTP two-account smoke test passed: login/registration, invitation acceptance, messaging, check-ins, and conditional state synchronization with 300 journal fixtures.
 - **517 payload-type variations** across mutation handlers completed without unexpected exceptions; each trial rolled back its database changes. This was an exploratory input-validation check, not a production test.
 - Ruff `F,E9`, Python compilation, and whitespace checks passed. The dependency advisory scan reported no known vulnerabilities across the 14 pinned runtime packages, including the formerly unpinned OpenTelemetry dependency.

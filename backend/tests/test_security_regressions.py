@@ -70,6 +70,22 @@ def test_named_block_cannot_probe_anonymous_author_or_replies(env):
     action(client, hv, 'report.create', {'journalID': jid, 'reason': 'Review story'})
 
 
+def test_private_journal_preserves_its_authors_anonymous_sharing_preference(env):
+    client, _, _ = env
+    _, ha = register(env, 'author')
+    _, hv = register(env, 'viewer')
+    mod, hm = register(env, 'moderator')
+    grant(env, mod['userID'], 'moderator')
+    jid = journal(client, ha, anonymous=True)
+    action(client, hv, 'report.create', {'journalID': jid, 'reason': 'Review'})
+    rid = client.get('/v1/staff/reports', headers=hm).json()['items'][0]['id']
+    action(client, hm, 'staff.report.hide', {'id': rid, 'reason': 'Restricted'})
+    own = next(j for j in state(client, ha)['journals'] if j['id'] == jid)
+    assert own['audience'] == 'privateOnly' and own['anonymous'] is True
+    archived = next(j for j in client.get('/v1/journals', headers=ha).json()['items'] if j['id'] == jid)
+    assert archived['anonymous'] is True
+
+
 def test_moderation_hold_survives_edits_restart_and_requires_staff_restore(env):
     client, app, clock = env
     _, ha = register(env, 'author')
