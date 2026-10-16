@@ -6,7 +6,8 @@
 .guide-topline { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-shrink: 0; }
 .guide-topline > span { font-size: 10px; color: var(--muted); letter-spacing: 1px; }
 .guide-topline .text-button { font-size: 11px; min-height: 36px; }
-.guide-copy { min-height: 0; overflow-y: auto; overscroll-behavior: contain; }
+.guide-copy { min-height: 0; overflow-y: auto; overscroll-behavior: contain; overflow-anchor: none; }
+.guide-copy:focus-visible { outline-offset: 4px; border-radius: 4px; }
 .guide-copy h2 { font-size: 27px; line-height: 1.25; letter-spacing: -.5px; }
 .guide-copy h2:focus { outline: none; }
 .guide-copy p { color: var(--muted); font-size: 13px; line-height: 1.8; margin-top: 12px; }
