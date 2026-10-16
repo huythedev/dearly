@@ -9,10 +9,12 @@
 }
 :root[data-theme='dark'] {
   color-scheme: dark;
-  --background: #19241f; --sidebar: #17221d; --surface: #223028; --input: #1c2922;
-  --ink: #e8e9dc; --muted: #acb7a6; --placeholder: #82917e; --forest: #b5cba0; --on-accent: #203026;
-  --sage: #344733; --sage-soft: #2a392d; --peach: #463d30; --clay: #d0a98d; --border: #3b493a;
-  --paper-peach: #34372b; --paper-sage: #28392d; --danger: #c46d62; --shadow: #00000024;
-  --garden-sky: #243a36; --garden-horizon: #3b4c3c; --garden-sun: #dad8b8;
-  --garden-back: #3c5742; --garden-front: #4a6947; --garden-shadow: #334f34;
+  /* Neutral charcoal surfaces keep sage and peach as gentle accents. */
+  --background: #292b2a; --sidebar: #252725; --surface: #343735; --input: #2d302e;
+  --ink: #e9e7df; --muted: #bebdb2; --placeholder: #9a9d92; --forest: #bdcdb1; --on-accent: #2b3329;
+  --sage: #454e42; --sage-soft: #353c34; --peach: #50473f; --clay: #d0a98d; --border: #53584f;
+  --paper-peach: #3e3934; --paper-sage: #383f35; --danger: #df9a8e; --on-danger: #362621; --shadow: #00000018;
+  --backdrop: #15161566;
+  --garden-sky: #343d39; --garden-horizon: #485142; --garden-sun: #e1d4b4;
+  --garden-back: #4b5b46; --garden-front: #627358; --garden-shadow: #414f3b;
 }

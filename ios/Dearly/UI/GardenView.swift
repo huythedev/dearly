@@ -195,9 +195,9 @@ struct GardenIllustration: View {
                 context.stroke(path, with: .color(color), style: StrokeStyle(lineWidth: width, lineCap: .round, lineJoin: .round))
             }
             // A sun or moon above the garden, following the selected appearance.
-            ellipse(267, 43, 38, 38, night ? Color(red: 0.84, green: 0.89, blue: 0.74) : Color(red: 0.97, green: 0.84, blue: 0.60))
+            ellipse(267, 43, 38, 38, night ? Color(red: 0.882, green: 0.831, blue: 0.706) : Color(red: 0.97, green: 0.84, blue: 0.60))
             if night {
-                ellipse(280, 38, 29, 29, Color(red: 0.10, green: 0.17, blue: 0.17))
+                ellipse(280, 38, 29, 29, Color(red: 0.22, green: 0.25, blue: 0.23))
                 for point in [CGPoint(x: 52, y: 45), CGPoint(x: 132, y: 34), CGPoint(x: 220, y: 80)] {
                     ellipse(point.x, point.y, 3, 3, .white.opacity(0.7))
                 }
@@ -206,8 +206,8 @@ struct GardenIllustration: View {
             ellipse(48, 73, 32, 23, .white.opacity(night ? 0.10 : 0.65))
             ellipse(65, 84, 24, 12, .white.opacity(night ? 0.10 : 0.65))
             ellipse(245, 119, 44, 12, .white.opacity(night ? 0.08 : 0.5))
-            ellipse(-50, 177, 290, 160, (night ? Color(red: 0.15, green: 0.26, blue: 0.21) : Color(red: 0.81, green: 0.87, blue: 0.75)))
-            ellipse(160, 161, 270, 180, (night ? Color(red: 0.19, green: 0.31, blue: 0.24) : Color(red: 0.76, green: 0.84, blue: 0.70)))
+            ellipse(-50, 177, 290, 160, (night ? Color(red: 0.294, green: 0.357, blue: 0.275) : Color(red: 0.81, green: 0.87, blue: 0.75)))
+            ellipse(160, 161, 270, 180, (night ? Color(red: 0.384, green: 0.451, blue: 0.345) : Color(red: 0.76, green: 0.84, blue: 0.70)))
             ellipse(52, 216, 265, 45, .black.opacity(0.05))
             ellipse(47, 182, 268, 62, Color(red: 0.69, green: 0.52, blue: 0.37))
             ellipse(47, 172, 268, 61, (night ? Color(red: 0.43, green: 0.36, blue: 0.25) : Color(red: 0.84, green: 0.71, blue: 0.52)))
@@ -276,7 +276,7 @@ struct GardenIllustration: View {
                 ellipse(point.x, point.y, 3, 3, .white.opacity(0.9))
             }
         }
-        .background(LinearGradient(colors: night ? [Color(red: 0.08, green: 0.14, blue: 0.16), Color(red: 0.14, green: 0.24, blue: 0.20)] : [Color(red: 0.92, green: 0.94, blue: 0.85), Color(red: 0.86, green: 0.91, blue: 0.78)], startPoint: .top, endPoint: .bottom))
+        .background(LinearGradient(colors: night ? [Color(red: 0.204, green: 0.239, blue: 0.224), Color(red: 0.282, green: 0.318, blue: 0.259)] : [Color(red: 0.92, green: 0.94, blue: 0.85), Color(red: 0.86, green: 0.91, blue: 0.78)], startPoint: .top, endPoint: .bottom))
         .accessibilityLabel([L("A patch of earth waiting for seeds"), L("The first seed"), L("A green sprout"), L("The first flowers"), L("A flower garden with a lantern"), L("An expanded garden")][min(max(stage, 0), 5)])
     }
 }
