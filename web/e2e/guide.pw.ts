@@ -93,6 +93,36 @@ test('six steps highlight real controls without writing data and keep keyboard f
   await expect(page.getByRole('dialog')).toHaveCount(0);
 });
 
+test('long instructions reset between steps and can be read with the keyboard', async ({ page }) => {
+  await fixture(page);
+  await page.setViewportSize({ width: 320, height: 320 });
+  await page.addInitScript(() => localStorage.setItem('dearly.language', 'vi'));
+  await page.goto('/journal');
+  await page.getByRole('button', { name: 'Bắt đầu khám phá', exact: true }).click();
+  const copy = page.locator('.guide-copy');
+  await expect.poll(() => copy.evaluate(element => element.scrollHeight > element.clientHeight)).toBe(true);
+  await copy.evaluate(element => { element.scrollTop = element.scrollHeight; });
+  await expect.poll(() => copy.evaluate(element => element.scrollTop)).toBeGreaterThan(0);
+  await page.getByRole('button', { name: 'Tiếp', exact: true }).click();
+  await expect(page.getByRole('dialog', { name: 'Tìm lại những trang viết' })).toBeVisible();
+  await expect.poll(() => copy.evaluate(element => element.scrollTop)).toBe(0);
+  await page.keyboard.press('Tab');
+  await page.keyboard.press('Tab');
+  await expect(copy).toBeFocused();
+  await page.keyboard.press('PageDown');
+  await expect.poll(() => copy.evaluate(element => element.scrollTop)).toBeGreaterThan(0);
+  await page.keyboard.press('Shift+Tab');
+  await expect(page.getByRole('button', { name: 'Bỏ qua hướng dẫn', exact: true })).toBeFocused();
+  await page.keyboard.press('Shift+Tab');
+  await page.keyboard.press('Shift+Tab');
+  await expect(page.getByRole('button', { name: 'Quay lại', exact: true })).toBeFocused();
+  await page.keyboard.press('Enter');
+  await expect(page.getByRole('dialog', { name: 'Một trang dành riêng cho bạn' })).toBeVisible();
+  await expect.poll(() => copy.evaluate(element => element.scrollTop)).toBe(0);
+  await page.keyboard.press('Escape');
+  await expect(page.getByRole('dialog')).toHaveCount(0);
+});
+
 for (const connected of [false, true]) {
   test(`Vietnamese instructions fit rotation and missing targets (connected: ${connected})`, async ({ page }) => {
     await fixture(page, connected);

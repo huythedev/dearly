@@ -4,6 +4,12 @@ For guided setup and everyday use, start with the [setup guide](../docs/SETUP.md
 
 React + Vite + TypeScript, sharing the existing FastAPI backend and SQLite database with iOS. Includes signup/login, private journals with excerpt/full sharing previews, anonymous community stories and responses, listening/hiding/reporting, consent-based companions, live chat/history, shared gardens/check-ins/pauses/archives, profile editing, and permission-gated moderation/account/audit screens. Layouts adapt to phones and desktops. English is the source/default language; Vietnamese and System/Light/Dark preferences persist locally. User-written content is never translated.
 
+## Interactive guide
+
+Web includes the same six-step feature tour as iOS, with highlighted controls, a dimmed background, and Back/Next/Skip navigation. It is offered after the first login and can be reopened from **Account settings → Take a guided tour**. See the [tour instructions](../docs/USAGE.md#take-a-guided-tour) for keyboard controls.
+
+To get frontend changes in an existing Docker installation, pull the latest `main`, then run `docker compose up -d --build frontend` from the repository root and refresh the browser.
+
 ## Separate frontend Docker image
 
 The frontend is **`dearly-web:latest`**, built from `web/Dockerfile`. Node builds React; the runtime is non-root Nginx, with no backend process or database. The backend image is built separately from `backend/Dockerfile`.
@@ -76,7 +82,7 @@ Open **http://127.0.0.1:8003**. Vite proxies `/v1`, `/ws` (with WebSocket upgrad
 
 ## Browser sessions and chat
 
-Web auth sends `X-Dearly-Client: web` to the existing `/v1/auth/register` or `/v1/auth/login`. It receives an HttpOnly, SameSite=Strict session cookie; HTTPS also sets Secure, including HTTPS terminated at a same-host Cloudflare Tunnel. The body contains `userID` and `expiresAt`, with no token. Tokens never go in localStorage, sessionStorage, a URL, or JavaScript state. Only language/appearance preferences are stored locally. Reload restores the cookie session; logout revokes it server-side and clears the cookie.
+Web auth sends `X-Dearly-Client: web` to the existing `/v1/auth/register` or `/v1/auth/login`. It receives an HttpOnly, SameSite=Strict session cookie; HTTPS also sets Secure, including HTTPS terminated at a same-host Cloudflare Tunnel. The body contains `userID` and `expiresAt`, with no token. Tokens never go in localStorage, sessionStorage, a URL, or JavaScript state. Language, appearance and account-scoped guide dismissal are stored locally. Reload restores the cookie session; logout revokes it server-side and clears the cookie.
 
 Cookie-authenticated writes require the custom web header and same-origin checks. Cookies use `credentials: same-origin`; no CORS middleware is installed. Native clients keep their bearer token contract and Keychain storage.
 

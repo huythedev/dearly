@@ -16,6 +16,8 @@ After your first login on web or iOS, Dearly offers a short tour. Each step high
 
 Choose **Maybe later** to get straight to your space. To start again, open your profile's **Settings** on web or your avatar's account settings on iOS, then choose **Take a guided tour**. Your choice is remembered for that account on the current browser or device. A different browser or device may offer the tour again.
 
+On web, use **Tab** to move between the guide controls and its instruction text. When the text is longer than the available space, focus it and use the arrow keys or **Page Down** to read more. **Escape** closes the guide. Each new step starts at the top of its instructions.
+
 ## Write a journal
 
 Open **My journal** on web or the journal tab on iOS, then create an entry. New entries start as **Only me**.

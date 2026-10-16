@@ -147,7 +147,7 @@ private struct GuideCard: View {
             ViewThatFits(in: .vertical) {
                 instructions
                 ScrollView { instructions }
-            }
+            }.id(guide.phase)
             if guide.currentStep != nil {
                 HStack {
                     if guide.index > 0 {
@@ -170,6 +170,11 @@ private struct GuideCard: View {
         .background(DearlyTheme.surface, in: RoundedRectangle(cornerRadius: 23))
         .overlay(RoundedRectangle(cornerRadius: 23).stroke(DearlyTheme.border, lineWidth: 1))
         .shadow(color: .black.opacity(0.22), radius: 24, y: 12)
-        .task(id: guide.phase) { focused = true }
+        .task(id: guide.phase) {
+            focused = false
+            await Task.yield()
+            guard !Task.isCancelled else { return }
+            focused = true
+        }
     }
 }
