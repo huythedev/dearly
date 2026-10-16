@@ -1,45 +1,45 @@
-# Kiểm tra thủ công trên Xcode / iPhone
+# Manual checks on Xcode / iPhone
 
-Chưa được chạy trong môi trường tạo source. Điền kết quả thực sau khi chạy.
+These device checks were not run in the source-generation environment. Record actual results after execution. Use separate test accounts/devices for each participant.
 
-| Tình huống | Kết quả mong đợi | Kết quả thực |
+| Scenario | Expected result | Actual result |
 |---|---|---|
-| Lần mở đầu | Màn hình đăng nhập; khôi phục phiên Keychain hợp lệ nếu có | Chưa chạy |
-| Journal mới | Chỉ mình tôi là mặc định | Chưa chạy |
-| Chia sẻ đoạn không thuộc bài | Không lưu; hiển thị giải thích | Chưa chạy |
-| Publish ẩn danh | Chỉ đoạn đã chọn; không lộ tiêu đề, nickname hay link hồ sơ | Chưa chạy |
-| Rút bài về riêng tư | Biến mất khỏi feed của vai khác | Chưa chạy |
-| Người khác phản hồi bài tắt bình luận | Không có ô nhập phản hồi | Chưa chạy |
-| Gửi lời mời khi chưa đồng thuận | Chưa mở chat | Chưa chạy |
-| Đổi sang người nhận | Có profile ngắn, nút chấp nhận/từ chối | Chưa chạy |
-| Vai 17 tuổi và vai 22 tuổi | Không gửi/nhận lời mời; áp dụng cả từ feed | Chưa chạy |
-| Hai vai đồng ý | Cùng thấy một kết nối và chat | Chưa chạy |
-| Gửi chat rồi đổi vai | Tin nhắn đúng người gửi, theo đúng kết nối | Chưa chạy |
-| Một vai check-in hai lần | Không cộng ngày nếu chưa có vai kia | Chưa chạy |
-| Cả hai check-in | Cộng đúng một ngày | Chưa chạy |
-| Bỏ trống một ngày | Streak ngắt, phần thưởng giữ nguyên | Chưa chạy |
-| Bật nghỉ | Không check-in; không mất phần thưởng | Chưa chạy |
-| Rời/chặn | Chat đóng, vườn lưu, không chia sẻ journal cũ sang kết nối mới | Chưa chạy |
-| Báo cáo | Báo cáo gửi tới server và xuất hiện trong hàng đợi staff | Chưa chạy |
-| Đóng/mở app | Bài, chat, connection và vườn được phục hồi | Chưa chạy |
-| Bật VoiceOver | Nút gửi, tạo journal, check-in, hình vườn có nhãn | Chưa chạy |
-| iPhone nhỏ + chữ lớn | Không che nút quan trọng; nội dung cuộn được | Chưa chạy |
+| First launch | Login screen; restores a valid Keychain session if present | Not run |
+| New journal | Only me is the default audience | Not run |
+| Share a passage absent from the entry | Refuses to save and explains why | Not run |
+| Anonymous publication | Shows only the chosen passage without title, nickname, or profile link | Not run |
+| Withdraw a post to private | Disappears from the other account's feed | Not run |
+| Responses disabled | Other users have no response field | Not run |
+| Invitation without mutual consent | Chat remains closed | Not run |
+| Recipient opens an invitation | Short profile and accept/decline controls appear | Not run |
+| Ages 17 and 22 | Cannot send/receive invitations, including from the feed | Not run |
+| Both people accept | Both see the same connection and chat | Not run |
+| Send chat and view as the other participant | Correct sender and connection | Not run |
+| One participant checks in twice | No complete day without the other participant | Not run |
+| Both participants check in | Counts exactly one day | Not run |
+| Miss a day | Streak ends; rewards remain | Not run |
+| Pause the garden | Check-in unavailable; rewards remain | Not run |
+| Leave/block | Chat closes, garden is saved, old journals are not shared into a new connection | Not run |
+| Report | Sent to the server and appears in the staff queue | Not run |
+| Close/reopen app | Entries, chat, connections, and gardens are restored | Not run |
+| Enable VoiceOver | Send, compose, check-in, and garden illustrations have labels | Not run |
+| Small iPhone with large text | Important controls remain visible and content scrolls | Not run |
 
 
-# Online (cần chạy trên Xcode/iPhone)
+# Online checks on Xcode/iPhone
 
-| Tình huống | Kết quả mong đợi | Kết quả thực |
+| Scenario | Expected result | Actual result |
 |---|---|---|
-| Server Windows/Linux, iPhone cùng LAN | URL đúng IP host; app xin quyền Local Network | Chưa chạy |
-| Đăng ký/login/logout | Token Keychain; logout server xác nhận, UI trở về màn hình đăng nhập | Chưa chạy |
-| Tài khoản chưa xác minh tuổi | Có journal; không matching; hiển thị hướng dẫn xác minh | Chưa chạy |
-| Hai thiết bị đăng nhập hai tài khoản | Bài/lời mời/chat/check-in đồng bộ qua server | Chưa chạy |
-| Đóng/mở app | Khôi phục phiên Keychain, tải state online mới | Chưa chạy |
-| Mất mạng sau POST | Retry cùng ID không tạo chat/journal hai lần; báo trạng thái rõ | Chưa chạy |
-| Scroll journal cũ / load tin cũ | Phân trang đúng quyền; không lẫn tài khoản | Chưa chạy |
-| Bài ẩn danh | Không có nút mời; ẩn riêng bài không đổi gợi ý hay kết nối; chặn hồ sơ không lọc bài ẩn danh | Chưa chạy |
-| Qua ngày UTC | Check-in/streak cùng ngày server, không phụ thuộc timezone máy | Chưa chạy |
-| Bản Release | Chỉ HTTPS có certificate tin cậy | Chưa chạy |
+| Windows/Linux server and iPhone on the same LAN | Correct host IP URL; app requests Local Network access | Not run |
+| Register/login/logout | Keychain token; confirmed server logout returns to login | Not run |
+| Unverified age | Journals available, matching blocked, verification guidance shown | Not run |
+| Two devices with different accounts | Entries/invitations/chat/check-ins synchronize through the server | Not run |
+| Close/reopen app | Restores Keychain session and loads fresh online state | Not run |
+| Lose network after POST | Retry with the same ID avoids duplicate messages/journals; clear status | Not run |
+| Browse old journals/messages | Pagination enforces ownership without mixing accounts | Not run |
+| Anonymous post | No invitation control; hiding leaves suggestions/connections intact; profile blocks do not filter anonymous posts | Not run |
+| UTC day boundary | Check-in/streak matches the server date regardless of device timezone | Not run |
+| Release build | HTTPS with trusted certificates only | Not run |
 
 # Roles and appearance checks (v0.3)
 
@@ -64,3 +64,10 @@ Use synthetic accounts/content for these checks and run the updated backend with
 4. Browse more than 20 saved gardens, move forward/back through pages, and confirm rewards and partner names remain available.
 5. Let a session expire while settings or archive/editor sheets are open. The app returns to login without a force-unwrap crash or another account's data remaining in a sheet. Repeat logout when the token has already been revoked.
 6. Set the device calendar to a non-Gregorian calendar. Daily check-in remains aligned with the server's Gregorian UTC date.
+
+## English source and Vietnamese translations
+
+1. Start with no saved language preference. Login, registration, settings, tabs, journal, community, chat, garden, and staff screens use English. Restart and confirm English remains the default.
+2. Choose Vietnamese from the language menu, then repeat those screens, accessibility labels, confirmations, and dynamic names/counts. Restart and log out/in; the saved Vietnamese preference remains selected.
+3. Trigger login, field-validation, permission, and oversized-upload errors in both languages. Each uses the chosen language without exposing credentials.
+4. Upgrade a test database with legacy support preferences and Vietnamese user-written content. Both old and new support choices display translated labels; nicknames, journal text, messages, interests, and conversation pace retain their original content. Update app/backend together.

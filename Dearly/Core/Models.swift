@@ -5,9 +5,9 @@ enum Audience: String, Codable, CaseIterable, Identifiable {
     var id: String { rawValue }
     var title: String {
         switch self {
-        case .privateOnly: return "Chỉ mình tôi"
-        case .companion: return "Bạn đồng hành"
-        case .community: return "Cộng đồng"
+        case .privateOnly: return "Only me"
+        case .companion: return "Companion"
+        case .community: return "Community"
         }
     }
     var icon: String {
@@ -20,10 +20,32 @@ enum Audience: String, Codable, CaseIterable, Identifiable {
 }
 
 enum SupportStyle: String, Codable, CaseIterable, Identifiable {
-    case listen = "Chỉ cần lắng nghe"
-    case relate = "Chia sẻ trải nghiệm"
-    case brainstorm = "Cùng nghĩ cách"
+    case listen, relate, brainstorm
     var id: String { rawValue }
+    var title: String {
+        switch self {
+        case .listen: return L("Just listen")
+        case .relate: return L("Share experiences")
+        case .brainstorm: return L("Think it through together")
+        }
+    }
+
+    // Read snapshots from earlier app/server versions; always write stable identifiers.
+    init(from decoder: Decoder) throws {
+        let container = try decoder.singleValueContainer()
+        let value = try container.decode(String.self)
+        let legacy: [String: Self] = ["Chỉ cần lắng nghe": .listen,
+                                     "Chia sẻ trải nghiệm": .relate, "Cùng nghĩ cách": .brainstorm]
+        guard let style = Self(rawValue: value) ?? legacy[value] else {
+            throw DecodingError.dataCorruptedError(in: container, debugDescription: "Unknown support style: \(value)")
+        }
+        self = style
+    }
+
+    func encode(to encoder: Encoder) throws {
+        var container = encoder.singleValueContainer()
+        try container.encode(rawValue)
+    }
 }
 
 struct Profile: Codable, Identifiable, Equatable {
@@ -140,7 +162,7 @@ struct LocalReport: Codable, Identifiable {
 enum DearlyError: LocalizedError {
     case invalid(String)
     var errorDescription: String? {
-        switch self { case .invalid(let message): return message }
+        switch self { case .invalid(let message): return L(message) }
     }
 }
 
@@ -221,16 +243,16 @@ struct AppState: Codable {
                               support: SupportStyle, now: Date) throws {
         let content = body.trimmingCharacters(in: .whitespacesAndNewlines)
         let excerpt = sharedText.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !content.isEmpty else { throw DearlyError.invalid("Viết vài dòng trước khi lưu nhé.") }
+        guard !content.isEmpty else { throw DearlyError.invalid("Write a few lines before saving.") }
         if audience != .privateOnly && (excerpt.isEmpty || !content.contains(excerpt)) {
-            throw DearlyError.invalid("Phần chia sẻ cần là toàn bài hoặc một đoạn có trong journal.")
+            throw DearlyError.invalid("Share the whole entry or a passage from your journal.")
         }
         let connection = activeConnection(for: currentUserID)
         if audience == .companion && connection == nil {
-            throw DearlyError.invalid("Bạn cần một kết nối trước khi chia sẻ với bạn đồng hành.")
+            throw DearlyError.invalid("You need a connection before sharing with a companion.")
         }
         if let id, !journals.contains(where: { $0.id == id && $0.authorID == currentUserID }) {
-            throw DearlyError.invalid("Không thể sửa journal này.")
+            throw DearlyError.invalid("You cannot edit this journal entry.")
         }
         let old = journals.first { $0.id == id }
         let entry = Journal(id: id ?? UUID(), authorID: currentUserID,
@@ -260,7 +282,7 @@ struct AppState: Codable {
     mutating func comment(on id: UUID, text: String, now: Date) throws {
         guard let journal = journals.first(where: { $0.id == id }), canRead(journal),
               journal.audience == .community, journal.commentsEnabled else {
-            throw DearlyError.invalid("Bài viết này hiện không nhận phản hồi.")
+            throw DearlyError.invalid("This post is not accepting responses.")
         }
         let value = text.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !value.isEmpty else { return }
@@ -268,16 +290,16 @@ struct AppState: Codable {
     }
 
     mutating func invite(_ id: UUID, now: Date) throws {
-        guard canInvite(id) else { throw DearlyError.invalid("Kết nối này hiện không khả dụng.") }
+        guard canInvite(id) else { throw DearlyError.invalid("This connection is currently unavailable.") }
         guard !invitations.contains(where: {
             Set([$0.senderID, $0.recipientID]) == Set([currentUserID, id])
-        }) else { throw DearlyError.invalid("Đã có lời mời giữa hai bạn. Xem mục Đồng hành nhé.") }
+        }) else { throw DearlyError.invalid("There is already an invitation between you. Check Companions.") }
         invitations.append(Invitation(senderID: currentUserID, recipientID: id, date: now))
     }
 
     mutating func accept(_ id: UUID, now: Date) throws {
         guard let invitation = invitations.first(where: { $0.id == id && $0.recipientID == currentUserID }),
-              canInvite(invitation.senderID) else { throw DearlyError.invalid("Lời mời không còn khả dụng.") }
+              canInvite(invitation.senderID) else { throw DearlyError.invalid("This invitation is no longer available.") }
         let members = [invitation.senderID, currentUserID]
         connections.append(Connection(members: members, startedAt: now))
         invitations.removeAll { members.contains($0.senderID) || members.contains($0.recipientID) }
@@ -290,19 +312,19 @@ struct AppState: Codable {
 
     mutating func send(_ text: String, now: Date) throws {
         guard let connection = activeConnection(for: currentUserID) else {
-            throw DearlyError.invalid("Hai người cần đồng ý kết nối trước khi chat.")
+            throw DearlyError.invalid("Both people must accept the connection before chatting.")
         }
         let value = text.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !value.isEmpty else { return }
-        guard value.count <= 4000 else { throw DearlyError.invalid("Mỗi tin nhắn tối đa 4.000 ký tự nhé.") }
+        guard value.count <= 4000 else { throw DearlyError.invalid("Messages can contain up to 4,000 characters.") }
         messages.append(ChatMessage(connectionID: connection.id, senderID: currentUserID, text: value, date: now))
     }
 
     mutating func checkIn(now: Date, calendar: Calendar = .current) throws {
         guard let index = connections.firstIndex(where: { $0.active && $0.members.contains(currentUserID) }) else {
-            throw DearlyError.invalid("Kết nối với một người để gieo hạt cùng nhau.")
+            throw DearlyError.invalid("Connect with someone to plant a seed together.")
         }
-        guard !connections[index].paused else { throw DearlyError.invalid("Khu vườn đang nghỉ. Tiếp tục khi cả hai sẵn sàng nhé.") }
+        guard !connections[index].paused else { throw DearlyError.invalid("The garden is resting. Continue when you are both ready.") }
         let key = Connection.dayKey(now, calendar: calendar)
         connections[index].checkIns[key, default: []].insert(currentUserID)
         let streak = connections[index].streak(on: now, calendar: calendar)
@@ -328,21 +350,21 @@ struct AppState: Codable {
     }
 
     static func demo(now: Date = Date()) -> AppState {
-        let me = Profile(id: UUID(), nickname: "Mây", age: 17, symbol: "cloud.fill", bio: "Chậm một chút cũng được. Mình thích những cuộc trò chuyện thật lòng.", interests: ["Âm nhạc", "Đọc sách", "Đi dạo"], support: .listen, pace: "Buổi tối")
-        let fern = Profile(id: UUID(), nickname: "Dương xỉ", age: 17, symbol: "leaf.fill", bio: "Một người nghe, mê nhạc indie và những ngày trời dịu.", interests: ["Âm nhạc", "Đi dạo", "Chụp ảnh"], support: .relate, pace: "Buổi tối")
-        let sun = Profile(id: UUID(), nickname: "Nắng", age: 16, symbol: "sun.max.fill", bio: "Mình đang học cách bắt đầu những điều nhỏ.", interests: ["Đọc sách", "Vẽ"], support: .brainstorm, pace: "Vài lần mỗi tuần")
-        let adult = Profile(id: UUID(), nickname: "Thông", age: 22, symbol: "tree.fill", bio: "Tài khoản demo nhóm người lớn.", interests: ["Âm nhạc"], support: .listen, pace: "Buổi tối")
+        let me = Profile(id: UUID(), nickname: "Cloud", age: 17, symbol: "cloud.fill", bio: "It is okay to slow down. I enjoy honest conversations.", interests: ["Music", "Reading", "Walking"], support: .listen, pace: "Evenings")
+        let fern = Profile(id: UUID(), nickname: "Fern", age: 17, symbol: "leaf.fill", bio: "A listener who loves indie music and gentle days.", interests: ["Music", "Walking", "Photography"], support: .relate, pace: "Evenings")
+        let sun = Profile(id: UUID(), nickname: "Sunshine", age: 16, symbol: "sun.max.fill", bio: "I am learning to start with small things.", interests: ["Reading", "Drawing"], support: .brainstorm, pace: "A few times a week")
+        let adult = Profile(id: UUID(), nickname: "Pine", age: 22, symbol: "tree.fill", bio: "Demo account for the adult age group.", interests: ["Music"], support: .listen, pace: "Evenings")
         return AppState(profiles: [me, fern, sun, adult], currentUserID: me.id, journals: [
-            Journal(authorID: me.id, title: "Một khoảng nhỏ cho mình", body: "Hôm nay mình muốn thử viết xuống những điều chưa biết kể với ai. Có lẽ bắt đầu bằng một câu thôi cũng đủ.", sharedText: "", date: now),
-            Journal(authorID: fern.id, title: "", body: "Hôm nay mình ngồi lại sau giờ học, nghe hết một bài nhạc mà không làm gì khác. Một chuyện nhỏ, nhưng thấy ngày nhẹ hơn một chút.", sharedText: "Hôm nay mình ngồi lại sau giờ học, nghe hết một bài nhạc mà không làm gì khác. Một chuyện nhỏ, nhưng thấy ngày nhẹ hơn một chút.", audience: .community, support: .listen, date: now.addingTimeInterval(-3600)),
-            Journal(authorID: sun.id, title: "", body: "Có ai cũng mất khá lâu để thấy mình thuộc về một nhóm bạn không? Mình vẫn đang tìm nhịp của mình.", sharedText: "Có ai cũng mất khá lâu để thấy mình thuộc về một nhóm bạn không? Mình vẫn đang tìm nhịp của mình.", audience: .community, anonymous: true, support: .relate, date: now.addingTimeInterval(-7200))
+            Journal(authorID: me.id, title: "A little space for myself", body: "Today I want to write down what I do not yet know how to share. Perhaps one sentence is enough to begin.", sharedText: "", date: now),
+            Journal(authorID: fern.id, title: "", body: "Today I sat after class and listened to a whole song without doing anything else. A small thing, but the day felt a little lighter.", sharedText: "Today I sat after class and listened to a whole song without doing anything else. A small thing, but the day felt a little lighter.", audience: .community, support: .listen, date: now.addingTimeInterval(-3600)),
+            Journal(authorID: sun.id, title: "", body: "Does anyone else take a while to feel they belong in a group of friends? I am still finding my own pace.", sharedText: "Does anyone else take a while to feel they belong in a group of friends? I am still finding my own pace.", audience: .community, anonymous: true, support: .relate, date: now.addingTimeInterval(-7200))
         ])
     }
 }
 
 // UI localization stays separate from Codable values sent to the backend.
 enum AppLanguage {
-    static var code: String { UserDefaults.standard.string(forKey: "dearly.language") == "en" ? "en" : "vi" }
+    static var code: String { UserDefaults.standard.string(forKey: "dearly.language") == "vi" ? "vi" : "en" }
     static var bundle: Bundle {
         guard let path = Bundle.main.path(forResource: code, ofType: "lproj"),
               let bundle = Bundle(path: path) else { return .main }
@@ -354,7 +376,8 @@ func L(_ key: String) -> String {
     AppLanguage.bundle.localizedString(forKey: key, value: key, table: nil)
 }
 
-// Paired templates keep interpolated user names and content verbatim.
-func L(_ vietnamese: String, _ english: String) -> String {
-    AppLanguage.code == "en" ? english : vietnamese
+// Positional placeholders allow translated word order while keeping user content verbatim.
+func LF(_ key: String, _ arguments: String...) -> String {
+    String(format: L(key), locale: Locale(identifier: AppLanguage.code),
+           arguments: arguments.map { $0 as CVarArg })
 }

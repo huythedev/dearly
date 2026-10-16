@@ -12,7 +12,7 @@ RUN pip install --no-cache-dir -r requirements.txt \
     && mkdir /data \
     && chown dearly:dearly /data
 
-COPY server.py run.py ./
+COPY server.py run.py localization.py translations.vi.json ./
 USER dearly
 
 VOLUME ["/data"]

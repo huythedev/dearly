@@ -2,7 +2,7 @@ import SwiftUI
 
 @MainActor
 struct ServerConnectionView: View {
-    @AppStorage("dearly.language") private var language = "vi"
+    @AppStorage("dearly.language") private var language = "en"
     @EnvironmentObject private var store: DearlyStore
     @AppStorage("dearly.server.address") private var address = "https://dearly.huythedev.com"
     @State private var registering = false
@@ -28,39 +28,39 @@ struct ServerConnectionView: View {
                     GardenIllustration(stage: 2)
                         .frame(height: 160).clipShape(RoundedRectangle(cornerRadius: 28))
                         .accessibilityHidden(true)
-                    PageHeading(eyebrow: L("MỘT KHOẢNG DỊU DÀNG"),
-                        title: registering ? L("Bắt đầu từ một hạt mầm.") : L("Mừng bạn trở về."),
-                        subtitle: registering ? L("Một nơi để viết, được lắng nghe và cùng lớn lên.") : L("Những trang viết và khu vườn của bạn đang đợi."))
+                    PageHeading(eyebrow: L("A LITTLE ROOM TO BREATHE"),
+                        title: registering ? L("Start with a little seed.") : L("Welcome back."),
+                        subtitle: registering ? L("A place to write, feel heard, and grow together.") : L("Your pages and your garden are waiting."))
                 }
                 VStack(alignment: .leading, spacing: 22) {
                     HStack(spacing: 4) {
-                        modeButton("Đăng nhập", register: false)
-                        modeButton("Đăng ký", register: true)
+                        modeButton("Log in", register: false)
+                        modeButton("Sign up", register: true)
                     }.padding(5).background(DearlyTheme.cream, in: Capsule())
                     VStack(alignment: .leading, spacing: 16) {
-                        field("Tên đăng nhập", symbol: "person") {
-                            TextField(L("Tên đăng nhập"), text: $username)
+                        field("Username", symbol: "person") {
+                            TextField(L("Username"), text: $username)
                                 .textContentType(.username).textInputAutocapitalization(.never).autocorrectionDisabled()
                                 .focused($focusedField, equals: .username).submitLabel(.next)
                                 .onSubmit { focusedField = registering ? .nickname : .password }
                         }
                         if registering {
-                            field("Tên bạn muốn được gọi", symbol: "leaf") {
+                            field("What should we call you?", symbol: "leaf") {
                                 TextField(L("Nickname"), text: $nickname).textContentType(.nickname)
                                     .focused($focusedField, equals: .nickname).submitLabel(.next)
                                     .onSubmit { focusedField = .password }
                             }
                         }
-                        field("Mật khẩu", symbol: "lock") {
-                            SecureField(registering ? L("Ít nhất 10 ký tự") : L("Mật khẩu"), text: $password)
+                        field("Password", symbol: "lock") {
+                            SecureField(registering ? L("At least 10 characters") : L("Password"), text: $password)
                                 .textContentType(registering ? .newPassword : .password)
                                 .focused($focusedField, equals: .password).submitLabel(.go)
                                 .onSubmit { if canSubmit { Task { await authenticate() } } }
                         }
                         if registering {
-                            DatePicker(L("Ngày sinh"), selection: $birthDate, in: ...Date(), displayedComponents: .date)
+                            DatePicker(L("Date of birth"), selection: $birthDate, in: ...Date(), displayedComponents: .date)
                                 .font(.subheadline).tint(DearlyTheme.forest)
-                            Text(L("Từ 16 tuổi. Ngày sinh được giữ riêng tư. Kết nối đồng hành mở sau khi quản trị viên xác minh tuổi."))
+                            Text(L("For ages 16 and up. Your birthday stays private. Companion connections unlock after an administrator verifies your age."))
                                 .font(.caption).foregroundStyle(DearlyTheme.muted).lineSpacing(3)
                         }
                     }
@@ -70,7 +70,7 @@ struct ServerConnectionView: View {
                     }
                     Button { Task { await authenticate() } } label: {
                         HStack {
-                            Text(store.isAuthenticating ? L("Đang kết nối…") : (registering ? L("Tạo tài khoản") : L("Đăng nhập")))
+                            Text(store.isAuthenticating ? L("Connecting…") : (registering ? L("Create account") : L("Log in")))
                                 .font(.subheadline.weight(.semibold))
                             Spacer()
                             if store.isAuthenticating { ProgressView().tint(DearlyTheme.onAccent) }
@@ -79,7 +79,7 @@ struct ServerConnectionView: View {
                             .background(DearlyTheme.forest, in: RoundedRectangle(cornerRadius: 18))
                     }.buttonStyle(.plain).disabled(!canSubmit).opacity(canSubmit || store.isAuthenticating ? 1 : 0.55)
                         .accessibilityIdentifier("auth.submit")
-                    Label(L("Riêng tư từ trang viết đầu tiên."), systemImage: "lock.shield")
+                    Label(L("Private from your very first page."), systemImage: "lock.shield")
                         .font(.caption).foregroundStyle(DearlyTheme.muted)
                         .frame(maxWidth: .infinity)
                 }.padding(22).dearlyCard().disabled(store.isAuthenticating)
@@ -88,13 +88,13 @@ struct ServerConnectionView: View {
                         TextField("https://dearly.huythedev.com", text: $address)
                             .keyboardType(.URL).textInputAutocapitalization(.never).autocorrectionDisabled()
                             .padding(14).background(DearlyTheme.surface.opacity(0.8), in: RoundedRectangle(cornerRadius: 14))
-                        Text(L("Simulator: localhost. iPhone: địa chỉ IP của máy chạy server, cùng Wi-Fi. HTTP chỉ dùng trong bản Debug."))
+                        Text(L("Simulator: localhost. iPhone: use your server’s IP address on the same Wi-Fi. HTTP is available in Debug builds only."))
                             .font(.caption).foregroundStyle(DearlyTheme.muted)
                     }.padding(.top, 12)
                 } label: {
-                    Label(L("Kết nối server"), systemImage: "network").font(.footnote.weight(.medium))
+                    Label(L("Server connection"), systemImage: "network").font(.footnote.weight(.medium))
                 }.tint(DearlyTheme.forest).disabled(store.isAuthenticating)
-                Text(L("Dearly là không gian đồng hành, không phải dịch vụ trị liệu."))
+                Text(L("Dearly is a space for companionship, not a therapy service."))
                     .font(.caption).foregroundStyle(DearlyTheme.muted).multilineTextAlignment(.center)
                     .frame(maxWidth: .infinity)
             }.padding(24).frame(maxWidth: 520).frame(maxWidth: .infinity)
@@ -146,28 +146,28 @@ struct ServerConnectionView: View {
 
 @MainActor
 struct ProfileEditorView: View {
-    @AppStorage("dearly.language") private var language = "vi"
+    @AppStorage("dearly.language") private var language = "en"
     @EnvironmentObject private var store: DearlyStore
     @Environment(\.dismiss) private var dismiss
     @State private var nickname = ""
     @State private var bio = ""
     @State private var interests = ""
     @State private var support: SupportStyle = .listen
-    @State private var pace = "Buổi tối"
+    @State private var pace = "Evenings"
     var body: some View {
         NavigationStack {
             Form {
                 TextField(L("Nickname"), text: $nickname)
-                TextField(L("Vài dòng về bạn"), text: $bio, axis: .vertical).lineLimit(2...5)
-                TextField(L("Sở thích, cách nhau bằng dấu phẩy"), text: $interests)
-                Picker(L("Mình muốn"), selection: $support) { ForEach(SupportStyle.allCases) { Text(L($0.rawValue)).tag($0) } }
-                TextField(L("Nhịp trò chuyện"), text: $pace)
+                TextField(L("A little about you"), text: $bio, axis: .vertical).lineLimit(2...5)
+                TextField(L("Interests, separated by commas"), text: $interests)
+                Picker(L("What I need"), selection: $support) { ForEach(SupportStyle.allCases) { Text($0.title).tag($0) } }
+                TextField(L("Conversation pace"), text: $pace)
                 if let error = store.errorMessage { Text(error).foregroundStyle(.red) }
-            }.navigationTitle(L("Hồ sơ của bạn")).navigationBarTitleDisplayMode(.inline)
+            }.navigationTitle(L("Your profile")).navigationBarTitleDisplayMode(.inline)
                 .toolbar {
-                    ToolbarItem(placement: .cancellationAction) { Button(L("Hủy")) { dismiss() } }
+                    ToolbarItem(placement: .cancellationAction) { Button(L("Cancel")) { dismiss() } }
                     ToolbarItem(placement: .confirmationAction) {
-                        Button(L("Lưu")) {
+                        Button(L("Save")) {
                             Task {
                                 let values = interests.split(separator: ",").map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }.filter { !$0.isEmpty }
                                 if await store.updateProfile(nickname: nickname, bio: bio, interests: values, support: support, pace: pace) { dismiss() }

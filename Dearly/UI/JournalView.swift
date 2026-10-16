@@ -2,7 +2,7 @@ import SwiftUI
 
 @MainActor
 struct JournalView: View {
-    @AppStorage("dearly.language") private var language = "vi"
+    @AppStorage("dearly.language") private var language = "en"
     @EnvironmentObject private var store: DearlyStore
     @State private var composing = false
     @State private var editing: Journal?
@@ -10,34 +10,34 @@ struct JournalView: View {
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 26) {
-                PageHeading(eyebrow: L("Một khoảng cho riêng bạn"), title: L("Hôm nay, bạn thế nào?"), subtitle: L("Không cần viết thật hay. Chỉ cần là bạn."))
+                PageHeading(eyebrow: L("A LITTLE SPACE OF YOUR OWN"), title: L("How are you today?"), subtitle: L("You don’t need the perfect words. Just be you."))
                 VStack(alignment: .leading, spacing: 18) {
-                    HStack { Tag(text: L("GỢI Ý HÔM NAY"), icon: "sparkle", color: DearlyTheme.surface.opacity(0.55)); Spacer(); Image(systemName: "sun.max").font(.title2) }
-                    Text(L("Có điều gì bạn muốn nói,\nnhưng vẫn chưa nói được?"))
+                    HStack { Tag(text: L("TODAY’S PROMPT"), icon: "sparkle", color: DearlyTheme.surface.opacity(0.55)); Spacer(); Image(systemName: "sun.max").font(.title2) }
+                    Text(L("Is there something you want to say,\nbut haven’t found the words for?"))
                         .font(.system(size: 25, design: .serif)).lineSpacing(5)
                     Button { composing = true } label: {
-                        HStack { Text(L("Để vài dòng ở đây")).fontWeight(.medium); Spacer(); Image(systemName: "arrow.up.right") }
+                        HStack { Text(L("Leave a few words here")).fontWeight(.medium); Spacer(); Image(systemName: "arrow.up.right") }
                             .font(.subheadline).padding(.top, 8)
                     }.accessibilityIdentifier("journal.compose")
                 }.padding(23).foregroundStyle(DearlyTheme.forest)
                     .background(DearlyTheme.sage, in: RoundedRectangle(cornerRadius: 25))
                 HStack(spacing: 8) {
                     Image(systemName: "lock").font(.caption)
-                    Text(L("Chỉ bạn đọc được, cho đến khi bạn chọn chia sẻ.")).font(.caption)
+                    Text(L("Only you can read it, until you choose to share.")).font(.caption)
                 }.foregroundStyle(DearlyTheme.muted)
-                SectionLabel(title: L("Những trang của bạn"), detail: L("\(store.state.myJournals.count) trang", "\(store.state.myJournals.count) pages"))
+                SectionLabel(title: L("Your pages"), detail: LF("%1$@ pages", String(describing: store.state.myJournals.count)))
                 if store.isOnline {
-                    Button(L("Xem tất cả trang trên server"), systemImage: "books.vertical") { showingArchive = true }
+                    Button(L("Browse all your pages"), systemImage: "books.vertical") { showingArchive = true }
                         .font(.subheadline)
                 }
                 if store.state.myJournals.isEmpty {
-                    EmptyCard(icon: "book", title: L("Trang đầu đang chờ bạn"), detail: L("Một câu ngắn cũng là một khởi đầu."))
+                    EmptyCard(icon: "book", title: L("Your first page is waiting"), detail: L("Even one sentence is a beginning."))
                 }
                 ForEach(store.state.myJournals) { entry in
                     Button { editing = entry } label: { JournalRow(entry: entry) }.buttonStyle(.plain)
                 }
                 Button { composing = true } label: {
-                    Label(L("Viết một trang mới"), systemImage: "plus").font(.subheadline.weight(.semibold)).frame(maxWidth: .infinity).padding(16)
+                    Label(L("Write a new page"), systemImage: "plus").font(.subheadline.weight(.semibold)).frame(maxWidth: .infinity).padding(16)
                 }.dearlyCard()
             }.padding(22).padding(.bottom, 20)
         }
@@ -49,7 +49,7 @@ struct JournalView: View {
 
 @MainActor
 struct JournalArchiveView: View {
-    @AppStorage("dearly.language") private var language = "vi"
+    @AppStorage("dearly.language") private var language = "en"
     @EnvironmentObject private var store: DearlyStore
     @Environment(\.dismiss) private var dismiss
     @State private var page: JournalPage?
@@ -61,7 +61,7 @@ struct JournalArchiveView: View {
         NavigationStack {
             ScrollView {
                 VStack(spacing: 18) {
-                    Text(L("Trang \(cursors.count) · Tải tối đa 40 journal mỗi lần", "Page \(cursors.count) · Up to 40 entries per page")).font(.caption).foregroundStyle(DearlyTheme.muted)
+                    Text(LF("Page %1$@ · Up to 40 entries per page", String(describing: cursors.count))).font(.caption).foregroundStyle(DearlyTheme.muted)
                     if let error { Text(error).foregroundStyle(.red) }
                     if loading { ProgressView() }
                     ForEach(page?.items ?? []) { entry in
@@ -69,17 +69,17 @@ struct JournalArchiveView: View {
                     }
                     HStack {
                         if cursors.count > 1 {
-                            Button(L("Trang trước")) { cursors.removeLast(); Task { await load() } }.disabled(loading)
+                            Button(L("Previous page")) { cursors.removeLast(); Task { await load() } }.disabled(loading)
                         }
                         Spacer()
                         if let next = page?.nextCursor {
-                            Button(L("Trang tiếp")) { cursors.append(next); Task { await load() } }.disabled(loading)
+                            Button(L("Next page")) { cursors.append(next); Task { await load() } }.disabled(loading)
                         }
                     }
                 }.padding(22)
             }.background(DearlyTheme.cream)
-                .navigationTitle(L("Các trang của bạn")).navigationBarTitleDisplayMode(.inline)
-                .toolbar { ToolbarItem(placement: .confirmationAction) { Button(L("Xong")) { dismiss() } } }
+                .navigationTitle(L("Your pages")).navigationBarTitleDisplayMode(.inline)
+                .toolbar { ToolbarItem(placement: .confirmationAction) { Button(L("Done")) { dismiss() } } }
                 .sheet(item: $editing, onDismiss: { Task { await load() } }) { JournalEditor(entry: $0) }
                 .task { await load() }
                 .onChange(of: store.state.currentUserID) { _, _ in dismiss() }
@@ -95,7 +95,7 @@ struct JournalArchiveView: View {
 
 @MainActor
 struct JournalRow: View {
-    @AppStorage("dearly.language") private var language = "vi"
+    @AppStorage("dearly.language") private var language = "en"
     var entry: Journal
     var body: some View {
         VStack(alignment: .leading, spacing: 14) {
@@ -104,7 +104,7 @@ struct JournalRow: View {
                 Spacer()
                 Image(systemName: entry.audience.icon).foregroundStyle(DearlyTheme.forest)
             }
-            Text(entry.title.isEmpty ? L("Một trang của mình") : entry.title)
+            Text(entry.title.isEmpty ? L("A page of my own") : entry.title)
                 .font(.system(size: 21, design: .serif)).foregroundStyle(DearlyTheme.ink)
             Text(entry.body).font(.subheadline).foregroundStyle(DearlyTheme.muted).lineSpacing(4).lineLimit(3)
             Tag(text: L(entry.audience.title), icon: entry.audience.icon)
@@ -114,7 +114,7 @@ struct JournalRow: View {
 
 @MainActor
 struct JournalEditor: View {
-    @AppStorage("dearly.language") private var language = "vi"
+    @AppStorage("dearly.language") private var language = "en"
     @EnvironmentObject private var store: DearlyStore
     @Environment(\.dismiss) private var dismiss
     var entry: Journal?
@@ -137,57 +137,57 @@ struct JournalEditor: View {
         NavigationStack {
             Form {
                 Section {
-                    TextField(L("Đặt tên cho hôm nay (tùy chọn)"), text: $title)
+                    TextField(L("Give today a title (optional)"), text: $title)
                         .font(.system(.title3, design: .serif))
                     TextEditor(text: $bodyText).frame(minHeight: 220)
-                        .accessibilityLabel(L("Nội dung journal")).accessibilityIdentifier("journal.body")
-                } header: { Text(L("Bạn có thể bắt đầu từ bất cứ đâu")) }
+                        .accessibilityLabel(L("Journal text")).accessibilityIdentifier("journal.body")
+                } header: { Text(L("You can start anywhere")) }
                 Section {
-                    Picker(L("Ai được đọc?"), selection: $audience) {
+                    Picker(L("Who can read this?"), selection: $audience) {
                         ForEach(Audience.allCases) { option in Text(L(option.title)).tag(option) }
                     }.disabled(sharingRestricted)
                     if sharingRestricted {
-                        Text(L("Quản trị viên đã hạn chế chia sẻ bài này. Bạn vẫn có thể chỉnh sửa và lưu riêng tư.", "Staff have restricted sharing for this entry. You can still edit and save it privately."))
+                        Text(L("Staff have restricted sharing for this entry. You can still edit and save it privately."))
                             .font(.caption).foregroundStyle(.secondary)
                     }
                     if audience != .privateOnly {
-                        Toggle(L("Chỉ chia sẻ một đoạn"), isOn: $useExcerpt)
+                        Toggle(L("Share just a passage"), isOn: $useExcerpt)
                         if useExcerpt {
-                            Text(L("Dán chính xác đoạn muốn chia sẻ. Phần còn lại luôn riêng tư.")).font(.caption)
-                            TextEditor(text: $excerpt).frame(minHeight: 100).accessibilityLabel(L("Đoạn được chia sẻ"))
+                            Text(L("Paste the exact passage you want to share. The rest stays private.")).font(.caption)
+                            TextEditor(text: $excerpt).frame(minHeight: 100).accessibilityLabel(L("Shared passage"))
                         }
-                        Picker(L("Mình muốn"), selection: $support) {
-                            ForEach(SupportStyle.allCases) { Text(L($0.rawValue)).tag($0) }
+                        Picker(L("What I need"), selection: $support) {
+                            ForEach(SupportStyle.allCases) { Text($0.title).tag($0) }
                         }
                     }
                     if audience == .community {
-                        Toggle(L("Ẩn danh bài viết này"), isOn: $anonymous)
-                        Toggle(L("Cho phép phản hồi"), isOn: $commentsEnabled)
+                        Toggle(L("Share anonymously"), isOn: $anonymous)
+                        Toggle(L("Allow responses"), isOn: $commentsEnabled)
                     }
-                } header: { Text(L("Bạn chọn điều người khác được thấy")) } footer: {
-                    Text(audience == .privateOnly ? L("Mặc định riêng tư. Bạn có thể thay đổi sau.") : L("Chỉ phần nội dung đã chọn được chia sẻ. Tiêu đề journal luôn riêng tư."))
+                } header: { Text(L("You choose what others see")) } footer: {
+                    Text(audience == .privateOnly ? L("Private by default. You can change this later.") : L("Only the selected text is shared. Your journal title always stays private."))
                 }
                 if audience != .privateOnly {
-                    Section(L("Xem trước phần chia sẻ")) {
+                    Section(L("Preview what you’re sharing")) {
                         Text(useExcerpt ? excerpt : bodyText).font(.body)
-                        Text(anonymous && audience == .community ? L("Hiển thị: Một người bạn · không có liên kết hồ sơ") : L("Hiển thị: \(store.me.nickname)", "Shown as: \(store.me.nickname)"))
+                        Text(anonymous && audience == .community ? L("Shown as: A friend · no profile link") : LF("Shown as: %1$@", String(describing: store.me.nickname)))
                             .font(.caption).foregroundStyle(.secondary)
                     }
                 }
                 if let validation { Section { Text(validation).foregroundStyle(.red) } }
                 if entry != nil {
-                    Section { Button(L("Xóa trang này"), role: .destructive) { confirmDelete = true } }
+                    Section { Button(L("Delete this page"), role: .destructive) { confirmDelete = true } }
                 }
             }
-            .navigationTitle(entry == nil ? L("Một trang mới") : L("Trang của bạn")).navigationBarTitleDisplayMode(.inline)
+            .navigationTitle(entry == nil ? L("A new page") : L("Your page")).navigationBarTitleDisplayMode(.inline)
             .toolbar {
-                ToolbarItem(placement: .cancellationAction) { Button(L("Hủy")) { dismiss() } }
+                ToolbarItem(placement: .cancellationAction) { Button(L("Cancel")) { dismiss() } }
                 ToolbarItem(placement: .confirmationAction) {
-                    Button(L("Lưu")) { Task { await save() } }.disabled(store.isBusy).fontWeight(.semibold).accessibilityIdentifier("journal.save")
+                    Button(L("Save")) { Task { await save() } }.disabled(store.isBusy).fontWeight(.semibold).accessibilityIdentifier("journal.save")
                 }
             }
-            .confirmationDialog(L("Xóa vĩnh viễn trang này và các phản hồi?"), isPresented: $confirmDelete, titleVisibility: .visible) {
-                Button(L("Xóa trang"), role: .destructive) {
+            .confirmationDialog(L("Permanently delete this page and its responses?"), isPresented: $confirmDelete, titleVisibility: .visible) {
+                Button(L("Delete page"), role: .destructive) {
                     Task {
                         if let entry, await store.deleteJournal(entry.id) { dismiss() }
                     }

@@ -45,7 +45,7 @@ def main():
                     db.execute('UPDATE users SET age_verified=1')
                     for i in range(300):
                         content=f'Fixture {i}. '+('A journal sentence. '*50)
-                        db.execute('INSERT INTO journals VALUES(?,?,?,?,?,?,?,?,?,?,?)',(str(uuid.uuid4()).upper(),users[0][0]['userID'],'Private title',content,content,'community',None,0,1,'Chỉ cần lắng nghe',now+i/1000))
+                        db.execute('INSERT INTO journals VALUES(?,?,?,?,?,?,?,?,?,?,?)',(str(uuid.uuid4()).upper(),users[0][0]['userID'],'Private title',content,content,'community',None,0,1,'listen',now+i/1000))
                     changed(db)
                 def action(h,kind,p):
                     r=client.post('/v1/actions',headers=h,json=dict(requestID=str(uuid.uuid4()),kind=kind,payload=p));assert r.status_code==200,r.text;return r.json()

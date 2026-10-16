@@ -27,7 +27,7 @@ def test_anonymous_invitation_probes_never_link_named_candidates(env):
         if target:
             action(client, hv, 'invitation.send', {'userID': target})
         denied = action(client, hv, 'invitation.send', {'journalID': jid}, expected=403)
-        assert denied['detail'] == 'Bài ẩn danh không nhận lời mời. Hãy kết nối qua hồ sơ được chia sẻ.'
+        assert denied['detail'] == 'Anonymous stories do not accept invitations. Connect through a shared profile.'
         dto = next(j for j in state(client, hv)['journals'] if j['id'] == jid)
         assert dto['authorID'] == jid and dto['canInviteAuthor'] is False
 
@@ -211,7 +211,7 @@ def test_v2_migration_preserves_staff_hides_and_drops_anonymous_invites(env):
         action(new_client, ha, 'journal.save', journal_payload, expected=403)
     Database(app.state.database.path)
     with app.state.database.connect() as db:
-        assert db.execute('PRAGMA user_version').fetchone()[0] == 3
+        assert db.execute('PRAGMA user_version').fetchone()[0] == 4
         assert not db.execute('PRAGMA foreign_key_check').fetchall()
 
 

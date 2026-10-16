@@ -18,8 +18,8 @@ enum SessionKeychain {
             var item = query
             item[kSecValueData as String] = data
             item[kSecAttrAccessible as String] = kSecAttrAccessibleWhenUnlockedThisDeviceOnly
-            guard SecItemAdd(item as CFDictionary, nil) == errSecSuccess else { throw DearlyError.invalid(L("Không lưu được phiên trong Keychain.")) }
-        } else if status != errSecSuccess { throw DearlyError.invalid(L("Không cập nhật được Keychain.")) }
+            guard SecItemAdd(item as CFDictionary, nil) == errSecSuccess else { throw DearlyError.invalid(L("Couldn’t securely save your session.")) }
+        } else if status != errSecSuccess { throw DearlyError.invalid(L("Couldn’t update your saved session.")) }
     }
     static func load() -> ServerSession? {
         let query: [String: Any] = [kSecClass as String: kSecClassGenericPassword, kSecAttrService as String: service,
@@ -105,7 +105,7 @@ actor APIClient {
         guard let url = URL(string: value.trimmingCharacters(in: .whitespacesAndNewlines)),
               let host = url.host?.lowercased(), url.user == nil, url.password == nil,
               url.query == nil, url.fragment == nil, url.path.isEmpty || url.path == "/" else {
-            throw DearlyError.invalid(L("Nhập địa chỉ gốc, ví dụ https://dearly.example.com hoặc http://192.168.1.10:8000 khi phát triển."))
+            throw DearlyError.invalid(L("Enter the server address, such as https://dearly.example.com or http://192.168.1.10:8000 for development."))
         }
         if url.scheme == "https" { return url }
         #if DEBUG
@@ -115,7 +115,7 @@ actor APIClient {
              (parts[0] == 172 && (16...31).contains(parts[1])))
         if url.scheme == "http" && (privateIP || host == "localhost" || (host == "[::1]" || host == "::1") || host.hasSuffix(".local")) { return url }
         #endif
-        throw DearlyError.invalid(L("Cần HTTPS. Bản Debug chỉ cho phép HTTP tới localhost hoặc mạng LAN riêng."))
+        throw DearlyError.invalid(L("HTTPS is required. Debug builds also allow HTTP on localhost or a private network."))
     }
 
     init(baseURL: URL, token: String? = nil) {
@@ -213,13 +213,14 @@ actor APIClient {
         request.httpMethod = method; request.httpBody = body
         request.setValue("application/json", forHTTPHeaderField: "Accept")
         if body != nil { request.setValue("application/json", forHTTPHeaderField: "Content-Type") }
+        request.setValue(AppLanguage.code, forHTTPHeaderField: "Accept-Language")
         if let token { request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization") }
         if let etag { request.setValue(etag, forHTTPHeaderField: "If-None-Match") }
         let (data, response) = try await session.data(for: request)
-        guard let http = response as? HTTPURLResponse else { throw DearlyError.invalid(L("Server trả về phản hồi không hợp lệ.")) }
+        guard let http = response as? HTTPURLResponse else { throw DearlyError.invalid(L("The server returned an invalid response.")) }
         guard (200...299).contains(http.statusCode) || http.statusCode == 304 else {
             let value = try? JSONSerialization.jsonObject(with: data) as? [String: Any]
-            throw APIError(status: http.statusCode, message: value?["detail"] as? String ?? L("Server báo lỗi \(http.statusCode). Kiểm tra thông tin và thử lại.", "Server error \(http.statusCode). Check your details and try again."))
+            throw APIError(status: http.statusCode, message: value?["detail"] as? String ?? LF("Server error %1$@. Check your details and try again.", String(describing: http.statusCode)))
         }
         return (data, http)
     }

@@ -1,14 +1,14 @@
 # Performance notes
 
-Một phép đo nhỏ trên Linux qua **HTTP localhost thật**, hai tài khoản, database có 300 journal giả, snapshot chỉ lấy 60 bài và một chat. 20 request tuần tự cho mỗi nhóm; không phải load test đồng thời và không bao gồm WAN/TLS/iPhone rendering.
+A small Linux measurement over **real localhost HTTP** used two accounts and 300 synthetic journals, with a snapshot window of 60 entries and one chat. Each group ran 20 sequential requests. This was not a concurrent load test and excluded WAN/TLS and iPhone rendering.
 
 | Response | p50 | p95 | Body |
 |---|---:|---:|---:|
-| Snapshot 200 | 3,30 ms | 3,70 ms | Khoảng 81 KB |
-| Conditional 304 | 1,11 ms | 1,40 ms | 0 byte |
+| Snapshot 200 | 3.30 ms | 3.70 ms | About 81 KB |
+| Conditional 304 | 1.11 ms | 1.40 ms | 0 bytes |
 
-Kết quả có thể thay đổi theo máy, database, OS và mạng. Chưa có số RSS đáng tin cậy trong môi trường chạy này; không đưa số từ PID wrapper ra làm footprint Python. `backend/benchmark.py` có thể đọc RSS trên Linux thông thường; Windows/macOS có thể dùng Task Manager/Activity Monitor. Không có cam kết số người dùng đồng thời.
+Results vary by hardware, database, OS, and network. This environment did not provide reliable RSS measurements; wrapper PID usage is not the Python process footprint. `backend/benchmark.py` can read RSS on conventional Linux; Windows/macOS operators can use Task Manager/Activity Monitor. No concurrent-user capacity is promised.
 
-Cơ chế giới hạn RAM: snapshot hữu hạn, phân trang, chat tối đa 500 record client, request 128 KiB, limiter 4.096 bucket, 16 worker thread và SQLite cache 2 MiB mỗi connection. Server không load toàn database vào một AppState trong RAM. Dùng một process/worker cho SQLite và limiter; tăng worker sẽ nhân bộ nhớ cache và không bỏ giới hạn một writer của SQLite.
+Memory controls include bounded snapshots, pagination, at most 500 chat records on the client, 128 KiB requests, 4,096 rate-limit buckets, 16 worker threads, and a 2 MiB SQLite cache per connection. The server does not load its entire database into an in-memory AppState. Use one process/worker for SQLite and the limiter; additional workers multiply cache memory without removing SQLite's single-writer limit.
 
-Khi đánh giá trước pilot: đo độ trễ p95 dưới tải thực, RSS toàn process tree, thời gian lock SQLite, tốc độ tăng database/WAL và lượng data/client. Password hash được cố tình giữ tốn CPU để bảo vệ mật khẩu, không giảm số vòng chỉ để làm đẹp benchmark login.
+Before a pilot, measure p95 latency at realistic load, RSS across the process tree, SQLite lock duration, database/WAL growth, and data transferred per client. Password hashing is deliberately CPU-intensive; do not reduce its iteration count to improve login benchmark numbers.

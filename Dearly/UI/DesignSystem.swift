@@ -14,7 +14,7 @@ enum DearlyTheme {
 
 @MainActor
 struct PrimaryButton: View {
-    @AppStorage("dearly.language") private var language = "vi"
+    @AppStorage("dearly.language") private var language = "en"
     var title: String
     var icon: String = "arrow.right"
     var action: () -> Void
@@ -33,7 +33,7 @@ struct PrimaryButton: View {
 
 @MainActor
 struct Tag: View {
-    @AppStorage("dearly.language") private var language = "vi"
+    @AppStorage("dearly.language") private var language = "en"
     var text: String
     var icon: String?
     var color: Color = DearlyTheme.sage
@@ -51,7 +51,7 @@ struct Tag: View {
 
 @MainActor
 struct Avatar: View {
-    @AppStorage("dearly.language") private var language = "vi"
+    @AppStorage("dearly.language") private var language = "en"
     var symbol: String
     var size: CGFloat = 44
     var body: some View {
@@ -66,7 +66,7 @@ struct Avatar: View {
 
 @MainActor
 struct PageHeading: View {
-    @AppStorage("dearly.language") private var language = "vi"
+    @AppStorage("dearly.language") private var language = "en"
     var eyebrow: String
     var title: String
     var subtitle: String
@@ -83,7 +83,7 @@ struct PageHeading: View {
 
 @MainActor
 struct SectionLabel: View {
-    @AppStorage("dearly.language") private var language = "vi"
+    @AppStorage("dearly.language") private var language = "en"
     var title: String
     var detail: String = ""
     var body: some View {
@@ -97,7 +97,7 @@ struct SectionLabel: View {
 
 @MainActor
 struct EmptyCard: View {
-    @AppStorage("dearly.language") private var language = "vi"
+    @AppStorage("dearly.language") private var language = "en"
     var icon: String
     var title: String
     var detail: String
@@ -119,7 +119,7 @@ extension View {
 
 @MainActor
 struct RootView: View {
-    @AppStorage("dearly.language") private var language = "vi"
+    @AppStorage("dearly.language") private var language = "en"
     @EnvironmentObject private var store: DearlyStore
     @State private var tab = 0
     @State private var showSettings = false
@@ -140,18 +140,18 @@ struct RootView: View {
     private var tabs: some View {
         TabView(selection: $tab) {
             page { JournalView() }.tabItem { Label(L("Journal"), systemImage: "book.closed") }.tag(0)
-            page { CommunityView() }.tabItem { Label(L("Cộng đồng"), systemImage: "bubble.left.and.bubble.right") }.tag(1)
-            page { CompanionView() }.tabItem { Label(L("Đồng hành"), systemImage: "person.2") }.tag(2)
-            page { GardenView() }.tabItem { Label(L("Khu vườn"), systemImage: "leaf") }.tag(3)
+            page { CommunityView() }.tabItem { Label(L("Community"), systemImage: "bubble.left.and.bubble.right") }.tag(1)
+            page { CompanionView() }.tabItem { Label(L("Companion"), systemImage: "person.2") }.tag(2)
+            page { GardenView() }.tabItem { Label(L("Garden"), systemImage: "leaf") }.tag(3)
         }
         .id(store.me.id)
         .disabled(store.isBusy || store.isAuthenticating)
         .sheet(isPresented: $showSettings) { AccountSettingsView() }
         .alert("Dearly", isPresented: Binding(get: { store.errorMessage != nil }, set: { if !$0 { store.errorMessage = nil } })) {
-            Button(L("Đã hiểu")) { store.errorMessage = nil }
+            Button(L("Got it")) { store.errorMessage = nil }
         } message: { Text(store.errorMessage ?? "") }
-        .alert(L("Đã ghi nhận"), isPresented: Binding(get: { store.notice != nil }, set: { if !$0 { store.notice = nil } })) {
-            Button(L("Đóng")) { store.notice = nil }
+        .alert(L("Received"), isPresented: Binding(get: { store.notice != nil }, set: { if !$0 { store.notice = nil } })) {
+            Button(L("Close")) { store.notice = nil }
         } message: { Text(store.notice ?? "") }
     }
 
@@ -162,7 +162,7 @@ struct RootView: View {
                     if store.isOnline {
                         HStack(spacing: 7) {
                             Image(systemName: store.syncError == nil ? "network" : "wifi.exclamationmark")
-                            Text(store.syncError == nil ? L("Đã kết nối server · \(store.me.nickname)", "Connected · \(store.me.nickname)") : L("Mất đồng bộ · Tự thử lại khi mạng ổn định"))
+                            Text(store.syncError == nil ? LF("Connected · %1$@", String(describing: store.me.nickname)) : L("Sync interrupted · Reconnecting automatically"))
                             Spacer()
                             if store.isBusy { ProgressView().controlSize(.small) }
                         }.font(.caption2).foregroundStyle(DearlyTheme.forest).padding(.horizontal, 22).padding(.vertical, 7).background(DearlyTheme.sage.opacity(0.6))
@@ -182,7 +182,7 @@ struct RootView: View {
                                 Text("ONLINE").font(.system(size: 9, weight: .bold)).tracking(1)
                                 Avatar(symbol: store.me.symbol, size: 32)
                             }
-                        }.accessibilityLabel(L("Cài đặt tài khoản \(store.me.nickname)", "Account settings for \(store.me.nickname)"))
+                        }.accessibilityLabel(LF("Account settings for %1$@", String(describing: store.me.nickname)))
                     }
                 }
                 .toolbarBackground(DearlyTheme.cream, for: .navigationBar, .tabBar)
@@ -193,23 +193,23 @@ struct RootView: View {
 
 @MainActor
 struct WelcomeView: View {
-    @AppStorage("dearly.language") private var language = "vi"
+    @AppStorage("dearly.language") private var language = "en"
     var start: () -> Void
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 28) {
                 Text("dearly").font(.system(size: 36, design: .serif)).foregroundStyle(DearlyTheme.forest)
                 GardenIllustration(stage: 3).frame(height: 270).clipShape(RoundedRectangle(cornerRadius: 32))
-                Text(L("Có một nơi,\nbạn được lắng nghe."))
+                Text(L("A place where\nyou feel heard."))
                     .font(.system(size: 39, weight: .regular, design: .serif)).tracking(-1)
-                Text(L("Viết điều chưa biết kể với ai. Tìm một người sẵn lòng lắng nghe. Cùng nuôi một khu vườn nhỏ."))
+                Text(L("Write what you haven’t been able to share. Find someone willing to listen. Grow a little garden together."))
                     .font(.body).lineSpacing(5).foregroundStyle(DearlyTheme.muted)
                 HStack(alignment: .top, spacing: 10) {
                     Image(systemName: "lock.shield")
-                    Text(L("Journal mặc định riêng tư. Bạn luôn được chọn chia sẻ, nghỉ ngơi hoặc rời kết nối."))
+                    Text(L("Your journal is private by default. Sharing, taking a break, or leaving a connection is always your choice."))
                 }.font(.footnote).foregroundStyle(DearlyTheme.forest)
-                PrimaryButton(title: L("Bắt đầu một khoảng dịu dàng"), action: start)
-                Text(L("Đăng nhập hoặc tạo tài khoản để kết nối server. Dearly là không gian đồng hành, không phải dịch vụ trị liệu."))
+                PrimaryButton(title: L("Find a softer moment"), action: start)
+                Text(L("Log in or create an account to connect. Dearly is a space for companionship, not a therapy service."))
                     .font(.caption).foregroundStyle(DearlyTheme.muted).lineSpacing(3)
             }.padding(28)
         }.background(DearlyTheme.cream).foregroundStyle(DearlyTheme.ink)
@@ -218,46 +218,46 @@ struct WelcomeView: View {
 
 @MainActor
 struct AccountSettingsView: View {
-    @AppStorage("dearly.language") private var language = "vi"
+    @AppStorage("dearly.language") private var language = "en"
     @EnvironmentObject private var store: DearlyStore
     @Environment(\.dismiss) private var dismiss
     @State private var editingProfile = false
     var body: some View {
         NavigationStack {
             Form {
-                Section(L("Ngôn ngữ")) {
+                Section(L("Language")) {
                     LanguagePicker()
                 }
-                Section(L("Giao diện", "Appearance")) {
+                Section(L("Appearance")) {
                     AppearancePicker()
                 }
                 if store.isOnline {
-                    Section(L("Tài khoản đang kết nối")) {
+                    Section(L("Your account")) {
                         LabeledContent(L("Nickname"), value: store.me.nickname)
-                        LabeledContent(L("Vai trò", "Role"), value: store.role.title)
+                        LabeledContent(L("Role"), value: store.role.title)
                         LabeledContent("Server", value: store.serverAddress)
-                        LabeledContent(L("Tuổi"), value: store.me.ageVerified ? L("Đã xác minh") : L("Chờ quản trị viên xác minh"))
-                        if let date = store.lastSync { LabeledContent(L("Đồng bộ"), value: date.formatted(Date.FormatStyle(date: .omitted, time: .shortened).locale(Locale(identifier: language)))) }
+                        LabeledContent(L("Age"), value: store.me.ageVerified ? L("Verified") : L("Awaiting administrator verification"))
+                        if let date = store.lastSync { LabeledContent(L("Last synced"), value: date.formatted(Date.FormatStyle(date: .omitted, time: .shortened).locale(Locale(identifier: language)))) }
                         if let error = store.syncError { Text(error).font(.caption).foregroundStyle(.red) }
-                        Button(L("Sửa hồ sơ"), systemImage: "person.crop.circle") { editingProfile = true }
-                        Button(L("Đồng bộ ngay"), systemImage: "arrow.clockwise") { Task { await store.refresh(force: true) } }
-                        Button(L("Đăng xuất"), role: .destructive) { Task { await store.logout() } }.disabled(store.isBusy)
+                        Button(L("Edit profile"), systemImage: "person.crop.circle") { editingProfile = true }
+                        Button(L("Sync now"), systemImage: "arrow.clockwise") { Task { await store.refresh(force: true) } }
+                        Button(L("Log out"), role: .destructive) { Task { await store.logout() } }.disabled(store.isBusy)
                     }
                     if store.hasPermission("reports.read") {
-                        Section(L("Quản lý", "Management")) {
+                        Section(L("Management")) {
                             NavigationLink {
                                 StaffConsoleView()
                             } label: {
-                                Label(L("Quản lý Dearly", "Dearly management"), systemImage: "checkmark.shield")
+                                Label(L("Dearly management"), systemImage: "checkmark.shield")
                             }
                         }
                     }
                     Section {
-                        Text(L("Khi online, server quyết định quyền truy cập và ngày check-in (UTC). Tin nhắn tự đồng bộ khoảng 3 giây khi app đang mở. Dữ liệu được lưu trên server.")).font(.caption)
+                        Text(L("The server manages permissions and daily check-ins (UTC). Messages sync about every 3 seconds while the app is open. Your data is saved on the server.")).font(.caption)
                     }
                 }
-            }.navigationTitle(L("Cài đặt Dearly")).navigationBarTitleDisplayMode(.inline)
-                .toolbar { ToolbarItem(placement: .confirmationAction) { Button(L("Xong")) { dismiss() } } }
+            }.navigationTitle(L("Dearly settings")).navigationBarTitleDisplayMode(.inline)
+                .toolbar { ToolbarItem(placement: .confirmationAction) { Button(L("Done")) { dismiss() } } }
                 .sheet(isPresented: $editingProfile) { ProfileEditorView() }
         }
     }
@@ -285,7 +285,7 @@ struct DearlyBrand: View {
 
 @MainActor
 struct LanguageMenu: View {
-    @AppStorage("dearly.language") private var language = "vi"
+    @AppStorage("dearly.language") private var language = "en"
     var body: some View {
         Menu {
             LanguagePicker()
@@ -298,17 +298,17 @@ struct LanguageMenu: View {
                 .padding(.horizontal, 12).padding(.vertical, 10)
                 .background(DearlyTheme.surface.opacity(0.7), in: Capsule())
                 .overlay(Capsule().stroke(DearlyTheme.border, lineWidth: 1))
-        }.accessibilityLabel(L("Ngôn ngữ"))
+        }.accessibilityLabel(L("Language"))
     }
 }
 
 @MainActor
 struct LanguagePicker: View {
-    @AppStorage("dearly.language") private var language = "vi"
+    @AppStorage("dearly.language") private var language = "en"
     var body: some View {
-        Picker(L("Ngôn ngữ"), selection: $language) {
-            Text(verbatim: "Tiếng Việt").tag("vi")
+        Picker(L("Language"), selection: $language) {
             Text(verbatim: "English").tag("en")
+            Text(verbatim: "Tiếng Việt").tag("vi")
         }
     }
 }
@@ -324,19 +324,19 @@ enum AppAppearance: String, CaseIterable {
     }
     var title: String {
         switch self {
-        case .system: return L("Theo hệ thống", "System")
-        case .light: return L("Sáng", "Light")
-        case .dark: return L("Tối", "Dark")
+        case .system: return L("System")
+        case .light: return L("Light")
+        case .dark: return L("Dark")
         }
     }
 }
 
 @MainActor
 struct AppearancePicker: View {
-    @AppStorage("dearly.language") private var language = "vi"
+    @AppStorage("dearly.language") private var language = "en"
     @AppStorage("dearly.appearance") private var appearance = AppAppearance.system.rawValue
     var body: some View {
-        Picker(L("Giao diện", "Appearance"), selection: $appearance) {
+        Picker(L("Appearance"), selection: $appearance) {
             ForEach(AppAppearance.allCases, id: \.rawValue) { Text($0.title).tag($0.rawValue) }
         }
     }
@@ -349,6 +349,6 @@ struct AppearanceMenu: View {
             Image(systemName: "circle.lefthalf.filled")
                 .foregroundStyle(DearlyTheme.forest).padding(11)
                 .background(DearlyTheme.surface, in: Circle())
-        }.accessibilityLabel(L("Giao diện", "Appearance"))
+        }.accessibilityLabel(L("Appearance"))
     }
 }

@@ -66,7 +66,7 @@ The app’s default server is **`https://dearly.huythedev.com`**. This is a clie
 5. Register or log in. Usernames use 3–64 characters from `a-z A-Z 0-9 _ . -`; passwords use 10–128 characters; nicknames allow up to 40 characters.
 6. To test matching and chat, create two accounts on separate devices or simulators and verify their birth dates with the administration CLI below.
 
-The app requires a backend session and has no offline demo fallback. New accounts can write journals immediately; matching requires operator-verified age. While the app is open, changes normally synchronize about every 3 seconds. Choose English or Vietnamese from the login screen’s language menu or account settings.
+The app requires a backend session and has no offline demo fallback. New accounts can write journals immediately; matching requires operator-verified age. While the app is open, changes normally synchronize about every 3 seconds. English is the default and source language; choose Vietnamese from the login screen’s language menu or account settings. API errors default to English and support `Accept-Language: vi`. Stored support preferences use `listen`, `relate`, or `brainstorm`, independently of display language.
 
 Debug builds allow HTTP to localhost, private IPv4 addresses, and `.local` hosts. Release builds require HTTPS. The API client rejects redirects and uses normal certificate validation; a self-signed certificate must be trusted by iOS to work.
 
@@ -130,7 +130,9 @@ Staff and CLI mutations append an audit event in the same transaction: actor use
 
 ### Upgrading an existing database
 
-Use the previous checkout's backup command before upgrading. Stop the old backend, update/install the pinned requirements, then restart. Startup migrates SQLite v1/v2 to `user_version=3` in a transaction. It preserves accounts, sessions, journal bodies, reports, connections, and rewards; reconstructs durable sharing restrictions from earlier staff hide audit events; and cancels old pending anonymous invitations to close the identity oracle. Identified invitations are retained. Update the iOS client too: anonymous stories now offer **Hide this story**, with invitations/account blocking available through identified profiles. Repeated startup/CLI access is safe. The default single-worker SQLite setup is unchanged. Do not run the old backend against an upgraded database; rollback requires the pre-upgrade backup and matching code.
+Use the previous checkout's backup command before upgrading. Stop the old backend, update/install the pinned requirements, then restart. Startup migrates SQLite v1/v2/v3 to `user_version=4` in a transaction. It preserves accounts, sessions, journal bodies, reports, connections, and rewards; reconstructs durable sharing restrictions from earlier staff hide audit events; cancels old pending anonymous invitations; and converts predefined Vietnamese support values to stable English identifiers. Free-form profile text and journal content are preserved. New accounts receive English defaults even on databases with older column defaults.
+
+Update the iOS app and backend together: the new app can read older Vietnamese support values, and the backend accepts those legacy inputs, but older apps cannot decode the new identifiers in responses. Anonymous stories offer **Hide this story**, with invitations/account blocking available through identified profiles. Repeated startup/CLI access is safe. The default single-worker SQLite setup is unchanged. Do not run the old backend against an upgraded database; rollback requires the pre-upgrade backup and matching code. See the [localization guide](../docs/LOCALIZATION.md).
 
 ### Backups
 
