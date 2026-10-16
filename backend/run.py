@@ -17,10 +17,10 @@ def main():
     sub=parser.add_subparsers(dest='command',required=True)
     serve=sub.add_parser('serve')
     serve.add_argument('--host',default='127.0.0.1')
-    serve.add_argument('--port',type=int,default=8000)
+    serve.add_argument('--port',type=int,default=os.environ.get('DEARLY_PORT','8002'))
     serve.add_argument('--body-idle-timeout',type=float,default=5.0,help='Maximum seconds between request body chunks')
     serve.add_argument('--body-total-timeout',type=float,default=15.0,help='Maximum total seconds to read a request body')
-    serve.add_argument('--proxy-ips',default='',help='Trusted reverse-proxy IPs only (e.g. 127.0.0.1). Empty disables forwarded headers.')
+    serve.add_argument('--proxy-ips',default=os.environ.get('DEARLY_PROXY_IPS',''),help='Trusted reverse-proxy IPs only (e.g. 127.0.0.1). Empty disables forwarded headers.')
     serve.add_argument('--cert',help='TLS certificate PEM (optional behind an HTTPS reverse proxy)')
     serve.add_argument('--key',help='TLS private key PEM')
     serve.add_argument('--web-dir',default=os.environ.get('DEARLY_WEB_DIST'),help='Vite dist directory (defaults to ../web/dist when built)')
@@ -44,6 +44,7 @@ def main():
         args.reason=args.reason.strip()
         if not 1 <= len(args.reason) <= 1000: parser.error('--reason must contain 1–1000 characters')
     if args.command=='serve':
+        if not 1 <= args.port <= 65535: parser.error('--port / DEARLY_PORT must be between 1 and 65535')
         if bool(args.cert)!=bool(args.key): parser.error('--cert and --key must be used together')
         if args.body_idle_timeout <= 0 or args.body_total_timeout <= 0:
             parser.error('Request body timeouts must be positive.')

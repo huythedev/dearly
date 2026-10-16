@@ -101,6 +101,9 @@ private final class NoRedirectDelegate: NSObject, URLSessionTaskDelegate, @unche
 }
 
 actor APIClient {
+    // Oracle_VPS routes this public origin to the frontend proxy on port 8003.
+    static let defaultServerAddress = "https://dearly.huythedev.com"
+
     let baseURL: URL
     private let token: String?
     private let session: URLSession
@@ -110,7 +113,7 @@ actor APIClient {
         guard let url = URL(string: value.trimmingCharacters(in: .whitespacesAndNewlines)),
               let host = url.host?.lowercased(), url.user == nil, url.password == nil,
               url.query == nil, url.fragment == nil, url.path.isEmpty || url.path == "/" else {
-            throw DearlyError.invalid(L("Enter the server address, such as https://dearly.example.com or http://192.168.1.10:8000 for development."))
+            throw DearlyError.invalid(L("Enter the server address, such as https://dearly.huythedev.com or http://192.168.1.10:8002 for development."))
         }
         if url.scheme == "https" { return url }
         #if DEBUG

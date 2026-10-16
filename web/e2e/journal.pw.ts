@@ -10,6 +10,7 @@ test('account, private journal, explicit sharing, preferences and mobile logout'
   await page.getByLabel('Date of birth', { exact: true }).fill('2000-01-01');
   await page.getByRole('button', { name: 'Create your space' }).click();
   await expect(page.getByRole('heading', { name: 'Make room for your thoughts.' })).toBeVisible();
+  await expect(page.getByRole('status')).toHaveText('A little more connected');
   await page.getByRole('button', { name: 'New entry', exact: true }).click();
   const dialog = page.getByRole('dialog');
   await dialog.getByLabel('Title', { exact: true }).fill('A small beginning');

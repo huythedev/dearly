@@ -1,3 +1,20 @@
+# Deployment ports and Oracle tunnel — 2026-10-16
+
+- Fresh configuration defaults to frontend 8003, backend 8002, and Compose upstream `backend:8002`. Docker images, Compose mappings, the setup wizard, native launcher, Vite proxy, and deployment instructions agree. Existing operator overrides are retained.
+- Local checks passed: 102 backend/configuration tests, 5 web unit tests, production build, Python static checks, shell/Node syntax, and native English/Vietnamese server-help consistency. A real local startup confirmed API health on 8002 and React plus proxied health on 8003.
+- iOS login defaults and placeholder share `APIClient.defaultServerAddress` (`https://dearly.huythedev.com`); the native socket test validates that origin and its `wss://` endpoint. Saved custom server addresses keep precedence. Native Simulator and Docker integration results are recorded in the PR's CI checks.
+- Cloudflare `Oracle_VPS` Dearly ingress was updated to `http://127.0.0.1:8003` and verified by reading configuration version 11 back. Dearly DNS already targets this tunnel. All other tunnel configuration was preserved. Public application reachability was not required because the containers have not been deployed.
+
+The notes below describe earlier revisions.
+
+# Independent Docker services — 2026-10-16
+
+- Backend + configuration regression suite: 102 tests passed locally, including 15 startup/setup tests for independent ports, preserving existing environment settings, interactive backend input, cancellation, malformed addresses, and template injection rejection.
+- Shell and Node smoke scripts pass syntax checks; Python static checks pass. The local environment has no Docker daemon.
+- CI builds the API-only and frontend-only images and tests non-default host/internal ports, real WebSocket send/delivery, shared REST idempotency, cookie/CSRF handling, and desktop/mobile browser flows. It then recreates the frontend without a rebuild to reach the same backend through a Docker host mapping and repeats those checks.
+
+The notes below describe earlier revisions.
+
 # Web monorepo and realtime validation — 2026-10-16
 
 - Local backend: 87 tests passed, including same-origin browser cookies, SPA/API route boundaries, member-only socket delivery, REST/socket idempotency, expiry/suspension, frame size, and per-account connection limits.

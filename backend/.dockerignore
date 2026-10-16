@@ -1,0 +1,9 @@
+**
+!Dockerfile
+!requirements.txt
+!server.py
+!run.py
+!localization.py
+!translations.vi.json
+!realtime.py
+!web_support.py

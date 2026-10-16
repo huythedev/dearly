@@ -2,7 +2,7 @@
 
 The base URL is the server origin, without a path or query. All `/v1/*` endpoints except register/login require `Authorization: Bearer TOKEN`. The running server exposes the full OpenAPI specification at `/docs`.
 
-The web client uses the same origin with relative `/v1/...` paths. It opts into an HttpOnly session cookie by sending `X-Dearly-Client: web` on register/login. This response omits `token` while keeping `userID` / `expiresAt`; native bearer responses are unchanged. Cookie-authenticated unsafe requests require that header and a matching Origin/Host. Browser logout clears/revokes the cookie session. HTTPS web cookies use Secure; all use SameSite=Strict. No CORS configuration is needed.
+The web client uses the frontend origin with relative `/v1/...` paths. In split Docker deployments, Nginx forwards these requests and `/ws/chat` to the configured `DEARLY_BACKEND_ADDRESS`, preserving public Host/port, Origin and cookies. It opts into an HttpOnly session cookie by sending `X-Dearly-Client: web` on register/login. This response omits `token` while keeping `userID` / `expiresAt`; native bearer responses are unchanged. Cookie-authenticated unsafe requests require that header and a matching Origin/Host. Browser logout clears/revokes the cookie session. HTTPS web cookies use Secure; all use SameSite=Strict. No CORS configuration is needed.
 
 | Method / path | Input | Output |
 |---|---|---|

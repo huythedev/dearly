@@ -4,32 +4,46 @@ A quiet place to write, find someone willing to listen, and grow a little garden
 
 **SwiftUI · iOS 17+ · React · Vite · TypeScript · FastAPI · SQLite**
 
-## Run web + API together
+## Run separate frontend and backend containers
 
-The monorepo has `ios/`, `web/`, and the shared `backend/`. Web and iOS use the same accounts and database.
+The monorepo has `ios/`, `web/`, and the shared `backend/`. Web and iOS use the same accounts and database. Docker now builds **two independent images**: `dearly-web:latest` (React + Nginx) and `dearly-api:latest` (FastAPI + SQLite).
+
+From the repository root, optionally run the configuration wizard to enter the frontend port, backend port, and backend IP/hostname:port:
 
 ```bash
-# From the repository root, with Docker Compose installed:
+python3 configure-docker.py
+# Windows: py -3 configure-docker.py
 docker compose up -d --build
 ```
 
-Open **http://127.0.0.1:8000**. The multi-stage image builds React and lets FastAPI serve it alongside `/v1/*`, `/ws/chat`, `/health`, and `/docs`. There is one service and no Caddy requirement. Keep the existing Cloudflare Tunnel hostname `dearly.huythedev.com` pointing all paths to this service; no separate frontend hostname or CORS setup is needed. Rebuild/restart your backend host to deploy this change; updating this repository alone does not update the running domain.
+Or copy `.env.example` to `.env` and edit the settings directly. Existing `.env` values take precedence; update them when upgrading. Defaults are **web http://127.0.0.1:8003** and **API http://127.0.0.1:8002**. Both published ports and both internal listen ports can be changed independently. For example:
 
-Without Docker, first build the web app with **Node.js 24**:
-
-```bash
-cd web
-npm ci
-npm run build
+```dotenv
+DEARLY_FRONTEND_PORT=9080
+DEARLY_BACKEND_PORT=9100
+DEARLY_BACKEND_ADDRESS=backend:8002
 ```
 
-Then start the backend using the platform-specific instructions below. It automatically serves `web/dist` when present. Node is needed for the build, not to run the resulting application. API-only operation still works without a frontend build. See [web development and behavior](web/README.md) for Vite's local development proxy, browser sessions, chat, and tests.
+`backend:8002` is the Compose service's **internal** address, even when its published host port is 9100. For a backend on another machine, enter its reachable address instead, such as `192.168.1.20:9100`; publish that backend on its LAN interface. For a backend running on the Docker host, use `host.docker.internal:9100`. The frontend container can also prompt for this address when launched interactively without `DEARLY_BACKEND_ADDRESS`.
+
+Each service can run alone:
+
+```bash
+docker compose up -d --build backend
+docker compose up -d --build frontend
+```
+
+The frontend serves React and forwards `/v1/*`, `/ws/*`, `/health`, and `/docs` to its configured backend. The browser keeps relative URLs and same-origin cookies; changing the backend address needs only a frontend restart/recreation, not a frontend rebuild. No Caddy or browser CORS configuration is required.
+
+The **Oracle_VPS** Cloudflare Tunnel route for **dearly.huythedev.com** is configured as `http://127.0.0.1:8003`. The frontend forwards API/chat to `backend:8002`. iOS uses the same public HTTPS origin, including `wss://dearly.huythedev.com/ws/chat`. If you customize the frontend published port, update the tunnel origin too. The existing `dearly-data` SQLite volume is retained; start the containers separately to make the service available.
+
+See [web Docker configuration](web/README.md) for independent hosts, interactive startup, port mappings, and tests. For development without Docker, Vite can proxy to a local backend; FastAPI's optional built-web hosting remains available for local development.
 
 ## Run the iOS app
 
 1. Open `ios/Dearly.xcodeproj` in Xcode 26 or newer (deployment target: iOS 17+).
 2. Select the **Dearly** scheme and an iPhone Simulator, then press **⌘R**. For a physical device, configure your signing team first.
-3. Log in or create an account. The default backend address is **`https://dearly.huythedev.com`**. A previously saved server address takes precedence.
+3. Log in or create an account. The default server address is **`https://dearly.huythedev.com`**, through the frontend proxy to the shared backend. A previously saved server address takes precedence.
 4. To use a different backend, expand **Server connection / Kết nối server** on the login screen and enter its base URL.
 
 The app requires a backend account. It starts at login, restores a saved session when possible, and returns to login after logout or session expiry. There is no offline demo fallback. Journal entries, messages, and account changes are saved through the backend; session tokens are stored in Keychain.
@@ -58,9 +72,9 @@ py -3 setup.py
 .\.venv\Scripts\python.exe run.py serve
 ```
 
-Setup creates `backend/.venv` and installs the pinned dependencies. The server defaults to **`127.0.0.1:8000`**, with health status at `http://127.0.0.1:8000/health` and interactive API documentation at `http://127.0.0.1:8000/docs`.
+Setup creates `backend/.venv` and installs the pinned dependencies. The server defaults to **`127.0.0.1:8002`**, with health status at `http://127.0.0.1:8002/health` and interactive API documentation at `http://127.0.0.1:8002/docs`.
 
-**The launcher does not automatically select another port.** If port 8000 is occupied, choose one explicitly:
+**The launcher does not automatically select another port.** If port 8002 is occupied, choose one explicitly:
 
 ```bash
 .venv/bin/python run.py serve --port 8001
@@ -70,18 +84,18 @@ For local development, build the iOS app in **Debug** and change its server addr
 
 | Client | Server address | Backend binding |
 |---|---|---|
-| Simulator on the same Mac | `http://localhost:8000` | Default localhost binding |
-| Physical iPhone on the same Wi-Fi | `http://<computer-LAN-IP>:8000` | `serve --host 0.0.0.0 --port 8000` |
+| Simulator on the same Mac | `http://localhost:8002` | Default localhost binding |
+| Physical iPhone on the same Wi-Fi | `http://<computer-LAN-IP>:8002` | `serve --host 0.0.0.0 --port 8002` |
 
 If you change the backend port, update the app URL as well. `localhost` on an iPhone refers to the phone itself. Release builds require HTTPS with a trusted certificate.
 
 Alternatively, with Docker and Docker Compose installed, run from the repository root:
 
 ```bash
-docker compose up -d --build
+docker compose up -d --build backend
 ```
 
-This builds `dearly-api:latest` with both the web app and API and runs it on `127.0.0.1:8000` with persistent SQLite storage. Copy `.env.example` to `.env` to change the host binding or port. See the [Docker instructions](backend/README.md#docker) for logs, administration, backups, and stopping the service.
+This builds the API-only `dearly-api:latest` image and runs it on `127.0.0.1:8002` with persistent SQLite storage. Set `DEARLY_BACKEND_PORT` in `.env` to change its published port. See the [Docker instructions](backend/README.md#docker) for logs, administration, backups, and stopping the service.
 
 See the [backend README](backend/README.md) for database paths, LAN troubleshooting, HTTPS hosting, administration, Docker, and tests.
 
@@ -151,6 +165,9 @@ To try the companion flow, create two accounts on separate devices or simulators
 | `ios/Dearly.xcodeproj` | Native Xcode project; relative source paths remain inside ios/ |
 | `web/src/` | Responsive React app, English source copy, Vietnamese translations, themes, and same-origin API/chat client |
 | `web/e2e/` | Desktop/mobile browser flow tests |
+| `web/Dockerfile`, `web/docker/` | Independent frontend image, runtime backend address prompt, Nginx REST/WebSocket proxy |
+| `backend/Dockerfile` | API-only image with configurable listen port |
+| `configure-docker.py`, `.env.example`, `compose.yaml` | Interactive setup and independent service/port configuration |
 | `backend/localization.py`, `backend/translations.vi.json` | English API error templates and Vietnamese responses |
 | `backend/server.py` | API, authentication, authorization, and SQLite transactions |
 | `backend/run.py` | Server launcher, role grants, age verification, reports, suspension/restoration, and backups |
@@ -164,7 +181,7 @@ Local databases, virtual environments, credentials, Xcode user settings, and bui
 
 This environment has no Xcode or iOS Simulator. A GitHub Actions job builds and runs native tests on an available iPhone Simulator; its result is separate from the local backend checks. Device rendering still needs the [manual checklist](docs/MANUAL-TESTS.md).
 
-The backend regression suite covers the security fixes, role boundaries, database upgrades, persistent moderation, upload timeouts, and complete garden archives. See [validation notes](docs/VALIDATION.md) and [security behavior](docs/SECURITY.md). GitHub Actions runs backend/security tests, frontend contract tests/build/audit, desktop/mobile browser flows, a combined Docker image smoke test, and native iOS tests from `ios/Dearly.xcodeproj`. Windows/macOS backend execution, Docker, public HTTPS deployment, and App Store/TestFlight distribution have not been verified locally.
+The backend regression suite covers the security fixes, role boundaries, database upgrades, persistent moderation, upload timeouts, and complete garden archives. See [validation notes](docs/VALIDATION.md) and [security behavior](docs/SECURITY.md). GitHub Actions runs backend/security tests, frontend contract tests/build/audit, desktop/mobile browser flows, separate Docker image, custom-port, remote-upstream, cookie, and WebSocket smoke tests, and native iOS tests from `ios/Dearly.xcodeproj`. Windows/macOS backend execution, Docker, public HTTPS deployment, and App Store/TestFlight distribution have not been verified locally.
 
 This is a small-server pilot. Age verification and moderation require an operator; there is no automatic identity verification, message moderation, or appeals dashboard. See the [roadmap](docs/ROADMAP.md) for remaining work. Dearly is a space for companionship, not a therapy service.
 

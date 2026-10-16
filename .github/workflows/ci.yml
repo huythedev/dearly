@@ -25,7 +25,7 @@ jobs:
           python-version: '3.12'
       - run: python -m pip install -r backend/requirements-dev.txt ruff==0.17.1 pip-audit==2.10.1
       - run: python -m pytest -q backend/tests
-      - run: ruff check backend --select F,E9
+      - run: ruff check backend configure-docker.py --select F,E9
       - run: pip-audit -r backend/requirements.txt
 
   web:
@@ -56,25 +56,42 @@ jobs:
   docker:
     runs-on: ubuntu-latest
     timeout-minutes: 15
+    env:
+      DEARLY_FRONTEND_PORT: '18080'
+      DEARLY_BACKEND_PORT: '18081'
+      DEARLY_FRONTEND_LISTEN_PORT: '18082'
+      DEARLY_BACKEND_LISTEN_PORT: '18083'
+      DEARLY_BACKEND_BIND: 0.0.0.0
+      DEARLY_TEST_FRONTEND_URL: http://127.0.0.1:18080
+      DEARLY_TEST_BACKEND_URL: http://127.0.0.1:18081
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
-      - run: docker compose build
-      - name: Verify the combined web and API container
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7
+        with:
+          node-version: '24'
+          cache: npm
+          cache-dependency-path: web/package-lock.json
+      - run: npm ci
+        working-directory: web
+      - run: npx playwright install --with-deps chromium
+        working-directory: web
+      - run: docker compose config --quiet && docker compose build
+      - name: Verify separate images, custom ports, browser sessions and live chat
         shell: bash
         run: |
           set -euo pipefail
           docker compose up -d
           trap 'docker compose logs; docker compose down' EXIT
-          for attempt in {1..30}; do
-            if curl --fail --silent http://127.0.0.1:8000/health; then break; fi
-            sleep 1
-          done
-          curl --fail --silent http://127.0.0.1:8000/health
-          curl --fail --silent http://127.0.0.1:8000/ | grep -q 'Dearly'
-          test "$(curl --silent -o /dev/null -w '%{http_code}' http://127.0.0.1:8000/v1/state)" = 401
-          test "$(curl --silent -o /dev/null -w '%{http_code}' http://127.0.0.1:8000/v1/missing)" = 404
+          node web/scripts/docker-smoke.mjs
+          DEARLY_E2E_BASE_URL="$DEARLY_TEST_FRONTEND_URL" npm --prefix web run test:e2e
+          # Retarget the same frontend image to a backend through a host IP/port.
+          # No image rebuild: this also exercises Linux host.docker.internal mapping.
+          docker compose restart backend
+          DEARLY_BACKEND_ADDRESS=host.docker.internal:18081 docker compose up -d --no-build --force-recreate frontend
+          node web/scripts/docker-smoke.mjs
+          DEARLY_E2E_BASE_URL="$DEARLY_TEST_FRONTEND_URL" npm --prefix web run test:e2e
 
   ios:
     runs-on: macos-26

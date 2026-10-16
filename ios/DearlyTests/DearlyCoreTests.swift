@@ -3,10 +3,12 @@ import XCTest
 
 final class DearlyCoreTests: XCTestCase {
     func testNativeSocketURLUsesSameHostWithoutCredentialsInURL() throws {
-        let secure = try APIClient.chatURL(for: URL(string: "https://dearly.huythedev.com")!)
+        let server = try APIClient.validatedURL(APIClient.defaultServerAddress)
+        XCTAssertEqual(server.absoluteString, "https://dearly.huythedev.com")
+        let secure = try APIClient.chatURL(for: server)
         XCTAssertEqual(secure.absoluteString, "wss://dearly.huythedev.com/ws/chat")
-        let local = try APIClient.chatURL(for: URL(string: "http://localhost:8001")!)
-        XCTAssertEqual(local.absoluteString, "ws://localhost:8001/ws/chat")
+        let local = try APIClient.chatURL(for: URL(string: "http://localhost:8002")!)
+        XCTAssertEqual(local.absoluteString, "ws://localhost:8002/ws/chat")
         XCTAssertNil(secure.query)
     }
 

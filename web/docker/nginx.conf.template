@@ -1,0 +1,59 @@
+worker_processes auto;
+pid /tmp/dearly-nginx.pid;
+error_log /dev/stderr warn;
+events { worker_connections 1024; }
+http {
+    include /etc/nginx/mime.types;
+    default_type application/octet-stream;
+    access_log /dev/stdout;
+    server_tokens off;
+    sendfile on;
+    client_body_temp_path /tmp/client_temp;
+    proxy_temp_path /tmp/proxy_temp;
+    fastcgi_temp_path /tmp/fastcgi_temp;
+    uwsgi_temp_path /tmp/uwsgi_temp;
+    scgi_temp_path /tmp/scgi_temp;
+    resolver ${DEARLY_DNS_RESOLVER} valid=10s ipv6=off;
+    map $http_upgrade $connection_upgrade { default upgrade; '' close; }
+    server {
+        listen ${DEARLY_FRONTEND_LISTEN_PORT};
+        server_name _;
+        root /usr/share/nginx/html;
+        index index.html;
+        client_max_body_size 128k;
+        client_body_timeout 15s;
+        client_header_timeout 15s;
+        set $dearly_backend "${DEARLY_BACKEND_URL}";
+        proxy_http_version 1.1;
+        # Keep the browser's public host AND port for cookie/Origin authorization.
+        proxy_set_header Host $http_host;
+        proxy_set_header Origin $http_origin;
+        proxy_set_header X-Forwarded-For $remote_addr;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection $connection_upgrade;
+        proxy_connect_timeout 5s;
+        proxy_read_timeout 75s;
+        proxy_send_timeout 30s;
+        proxy_buffering off;
+        proxy_redirect off;
+        proxy_ssl_server_name on;
+        proxy_ssl_name ${DEARLY_BACKEND_HOST};
+        proxy_ssl_verify on;
+        proxy_ssl_verify_depth 3;
+        proxy_ssl_trusted_certificate /etc/ssl/certs/ca-certificates.crt;
+
+        location = /frontend-health { access_log off; default_type text/plain; return 200 "ok\n"; }
+        location ~ ^/(v1|ws)(/|$) { proxy_pass $dearly_backend; }
+        location ~ ^/(health|docs|openapi\.json)(/|$) { proxy_pass $dearly_backend; }
+        location ~ /\. { return 404; }
+        location /assets/ { try_files $uri =404; expires 7d; add_header X-Content-Type-Options nosniff always; }
+        location = /index.html {
+            add_header Cache-Control no-cache always;
+            add_header X-Content-Type-Options nosniff always;
+            add_header Referrer-Policy no-referrer always;
+            add_header Content-Security-Policy "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'self'; base-uri 'none'; frame-ancestors 'none'; form-action 'self'" always;
+        }
+        location ~ \.[^/]+$ { try_files $uri =404; add_header X-Content-Type-Options nosniff always; }
+        location / { try_files $uri /index.html; }
+    }
+}

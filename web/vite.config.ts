@@ -4,13 +4,13 @@ import react from '@vitejs/plugin-react';
 export default defineConfig({
   plugins: [react()],
   server: {
-    port: 5173,
+    port: 8003,
     strictPort: true,
     proxy: {
       // Preserve Host and Origin so the backend can enforce same-origin sessions.
-      '/v1': { target: 'http://127.0.0.1:8000' },
-      '/ws': { target: 'ws://127.0.0.1:8000', ws: true },
-      '/health': { target: 'http://127.0.0.1:8000' },
+      '/v1': { target: 'http://127.0.0.1:8002' },
+      '/ws': { target: 'ws://127.0.0.1:8002', ws: true },
+      '/health': { target: 'http://127.0.0.1:8002' },
     },
   },
   build: { sourcemap: false },
