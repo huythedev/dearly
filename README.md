@@ -4,26 +4,40 @@ A quiet place to write, find someone willing to listen, and grow a little garden
 
 **SwiftUI · iOS 17+ · React · Vite · TypeScript · FastAPI · SQLite**
 
-## Run web + API together
+## Run separate frontend and backend containers
 
-The monorepo has `ios/`, `web/`, and the shared `backend/`. Web and iOS use the same accounts and database.
+The monorepo has `ios/`, `web/`, and the shared `backend/`. Web and iOS use the same accounts and database. Docker now builds **two independent images**: `dearly-web:latest` (React + Nginx) and `dearly-api:latest` (FastAPI + SQLite).
+
+From the repository root, optionally run the configuration wizard to enter the frontend port, backend port, and backend IP/hostname:port:
 
 ```bash
-# From the repository root, with Docker Compose installed:
+python3 configure-docker.py
+# Windows: py -3 configure-docker.py
 docker compose up -d --build
 ```
 
-Open **http://127.0.0.1:8000**. The multi-stage image builds React and lets FastAPI serve it alongside `/v1/*`, `/ws/chat`, `/health`, and `/docs`. There is one service and no Caddy requirement. Keep the existing Cloudflare Tunnel hostname `dearly.huythedev.com` pointing all paths to this service; no separate frontend hostname or CORS setup is needed. Rebuild/restart your backend host to deploy this change; updating this repository alone does not update the running domain.
+Or copy `.env.example` to `.env` and edit the settings directly. Defaults are **web http://127.0.0.1:8080** and **API http://127.0.0.1:8000**. Both published ports and both internal listen ports can be changed independently. For example:
 
-Without Docker, first build the web app with **Node.js 24**:
-
-```bash
-cd web
-npm ci
-npm run build
+```dotenv
+DEARLY_FRONTEND_PORT=9080
+DEARLY_BACKEND_PORT=9100
+DEARLY_BACKEND_ADDRESS=backend:8000
 ```
 
-Then start the backend using the platform-specific instructions below. It automatically serves `web/dist` when present. Node is needed for the build, not to run the resulting application. API-only operation still works without a frontend build. See [web development and behavior](web/README.md) for Vite's local development proxy, browser sessions, chat, and tests.
+`backend:8000` is the Compose service's **internal** address, even when its published host port is 9100. For a backend on another machine, enter its reachable address instead, such as `192.168.1.20:9100`; publish that backend on its LAN interface. For a backend running on the Docker host, use `host.docker.internal:9100`. The frontend container can also prompt for this address when launched interactively without `DEARLY_BACKEND_ADDRESS`.
+
+Each service can run alone:
+
+```bash
+docker compose up -d --build backend
+docker compose up -d --build frontend
+```
+
+The frontend serves React and forwards `/v1/*`, `/ws/*`, `/health`, and `/docs` to its configured backend. The browser keeps relative URLs and same-origin cookies; changing the backend address needs only a frontend restart/recreation, not a frontend rebuild. No Caddy or browser CORS configuration is required.
+
+For **dearly.huythedev.com**, point the Cloudflare Tunnel to the **frontend port** (8080 by default), which forwards API/chat internally. An older tunnel pointing at backend port 8000 will reach the API only after this split. The existing `dearly-data` SQLite volume is retained. This repository change does not deploy or edit the running tunnel.
+
+See [web Docker configuration](web/README.md) for independent hosts, interactive startup, port mappings, and tests. For development without Docker, Vite can proxy to a local backend; FastAPI's optional built-web hosting remains available for local development.
 
 ## Run the iOS app
 
@@ -78,10 +92,10 @@ If you change the backend port, update the app URL as well. `localhost` on an iP
 Alternatively, with Docker and Docker Compose installed, run from the repository root:
 
 ```bash
-docker compose up -d --build
+docker compose up -d --build backend
 ```
 
-This builds `dearly-api:latest` with both the web app and API and runs it on `127.0.0.1:8000` with persistent SQLite storage. Copy `.env.example` to `.env` to change the host binding or port. See the [Docker instructions](backend/README.md#docker) for logs, administration, backups, and stopping the service.
+This builds the API-only `dearly-api:latest` image and runs it on `127.0.0.1:8000` with persistent SQLite storage. Set `DEARLY_BACKEND_PORT` in `.env` to change its published port. See the [Docker instructions](backend/README.md#docker) for logs, administration, backups, and stopping the service.
 
 See the [backend README](backend/README.md) for database paths, LAN troubleshooting, HTTPS hosting, administration, Docker, and tests.
 
@@ -151,6 +165,9 @@ To try the companion flow, create two accounts on separate devices or simulators
 | `ios/Dearly.xcodeproj` | Native Xcode project; relative source paths remain inside ios/ |
 | `web/src/` | Responsive React app, English source copy, Vietnamese translations, themes, and same-origin API/chat client |
 | `web/e2e/` | Desktop/mobile browser flow tests |
+| `web/Dockerfile`, `web/docker/` | Independent frontend image, runtime backend address prompt, Nginx REST/WebSocket proxy |
+| `backend/Dockerfile` | API-only image with configurable listen port |
+| `configure-docker.py`, `.env.example`, `compose.yaml` | Interactive setup and independent service/port configuration |
 | `backend/localization.py`, `backend/translations.vi.json` | English API error templates and Vietnamese responses |
 | `backend/server.py` | API, authentication, authorization, and SQLite transactions |
 | `backend/run.py` | Server launcher, role grants, age verification, reports, suspension/restoration, and backups |
@@ -164,7 +181,7 @@ Local databases, virtual environments, credentials, Xcode user settings, and bui
 
 This environment has no Xcode or iOS Simulator. A GitHub Actions job builds and runs native tests on an available iPhone Simulator; its result is separate from the local backend checks. Device rendering still needs the [manual checklist](docs/MANUAL-TESTS.md).
 
-The backend regression suite covers the security fixes, role boundaries, database upgrades, persistent moderation, upload timeouts, and complete garden archives. See [validation notes](docs/VALIDATION.md) and [security behavior](docs/SECURITY.md). GitHub Actions runs backend/security tests, frontend contract tests/build/audit, desktop/mobile browser flows, a combined Docker image smoke test, and native iOS tests from `ios/Dearly.xcodeproj`. Windows/macOS backend execution, Docker, public HTTPS deployment, and App Store/TestFlight distribution have not been verified locally.
+The backend regression suite covers the security fixes, role boundaries, database upgrades, persistent moderation, upload timeouts, and complete garden archives. See [validation notes](docs/VALIDATION.md) and [security behavior](docs/SECURITY.md). GitHub Actions runs backend/security tests, frontend contract tests/build/audit, desktop/mobile browser flows, separate Docker image, custom-port, remote-upstream, cookie, and WebSocket smoke tests, and native iOS tests from `ios/Dearly.xcodeproj`. Windows/macOS backend execution, Docker, public HTTPS deployment, and App Store/TestFlight distribution have not been verified locally.
 
 This is a small-server pilot. Age verification and moderation require an operator; there is no automatic identity verification, message moderation, or appeals dashboard. See the [roadmap](docs/ROADMAP.md) for remaining work. Dearly is a space for companionship, not a therapy service.
 

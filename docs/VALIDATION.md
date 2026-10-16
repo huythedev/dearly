@@ -1,3 +1,11 @@
+# Independent Docker services — 2026-10-16
+
+- Backend + configuration regression suite: 102 tests passed locally, including 15 startup/setup tests for independent ports, preserving existing environment settings, interactive backend input, cancellation, malformed addresses, and template injection rejection.
+- Shell and Node smoke scripts pass syntax checks; Python static checks pass. The local environment has no Docker daemon.
+- CI builds the API-only and frontend-only images and tests non-default host/internal ports, real WebSocket send/delivery, shared REST idempotency, cookie/CSRF handling, and desktop/mobile browser flows. It then recreates the frontend without a rebuild to reach the same backend through a Docker host mapping and repeats those checks.
+
+The notes below describe earlier revisions.
+
 # Web monorepo and realtime validation — 2026-10-16
 
 - Local backend: 87 tests passed, including same-origin browser cookies, SPA/API route boundaries, member-only socket delivery, REST/socket idempotency, expiry/suspension, frame size, and per-account connection limits.

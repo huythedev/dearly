@@ -142,30 +142,31 @@ Keep SQLite on a local disk, not SMB/NFS. Do not run multiple replicas writing t
 
 ## HTTPS hosting
 
-FastAPI serves the built web app and every API/WebSocket route on the same port. No extra reverse proxy is required just to combine them.
+Docker deployment uses a separate frontend container. Point the public **dearly.huythedev.com** Cloudflare Tunnel at that frontend's published port (8080 by default). It serves React and proxies API, WebSocket, and documentation routes to this backend, preserving the browser's Host **including its port** and Origin. Native iOS can use that same public origin or connect to a separately secured backend endpoint.
 
-For the existing **dearly.huythedev.com** setup, keep the Cloudflare Tunnel hostname forwarding **all paths** to `http://localhost:8000`. Do not create a static-only route that captures `/v1` or `/ws`. Preserve the incoming `Host` and browser `Origin`; browser sessions and WebSockets enforce that they match. HTTPS at the public domain gives browser sessions a Secure, HttpOnly, SameSite=Strict cookie. No frontend API-origin environment variable or CORS allowlist is needed.
+The frontend accepts an HTTP backend IP/hostname:port or an HTTPS origin with a trusted certificate. Configure `DEARLY_BACKEND_ADDRESS` on the frontend, not in browser JavaScript. It must be reachable from that container; `localhost` refers to the frontend itself. No browser CORS allowlist is needed.
 
-If a trusted local proxy supplies client IP headers, run `serve --proxy-ips 127.0.0.1` (use the actual proxy addresses, never `*`). Forwarded headers are ignored by default. The launcher can also terminate TLS directly using `serve --cert certificate.pem --key private-key.pem`.
+Only trust actual frontend/reverse-proxy addresses when enabling forwarded client IPs: use `DEARLY_PROXY_IPS` or `serve --proxy-ips` with explicit addresses. The frontend overwrites X-Forwarded-For with its observed client IP. Without trusted proxy configuration, backend limits group traffic by the frontend's IP. Behind Cloudflare, account for the tunnel/proxy chain when choosing the trusted boundary. Forwarded headers are ignored by default.
 
-Build `web/dist` with `npm ci && npm run build` from `web/`, then start the backend normally. It discovers that directory relative to the source, independently of the working directory. Override it with `serve --web-dir /absolute/path/to/dist` or `DEARLY_WEB_DIST`. An explicit path without `index.html` fails startup; without a build or override the backend remains API-only. Static SPA fallback never captures API, WebSocket, documentation, or missing asset paths.
+For non-Docker local development, optional FastAPI hosting of `web/dist` is still supported. Build in `web/`, then start normally; override discovery with `serve --web-dir /absolute/path/to/dist` or `DEARLY_WEB_DIST`. Explicit missing builds fail startup. The API-only Docker image contains no web assets.
 
 ## Docker
 
-Install Docker Engine with the Compose plugin, or Docker Desktop, before using these commands.
+Install Docker Engine with the Compose plugin, or Docker Desktop. Frontend and backend build/run independently; SQLite stays in the existing `dearly-data` volume.
 
-### Compose (from the repository root)
+### Compose (repository root)
 
 ```bash
-# Optional: copy .env.example to .env and edit the host binding or port.
-docker compose up -d --build
+python3 configure-docker.py  # Windows: py -3 configure-docker.py
+# Or copy .env.example to .env and edit it.
+docker compose up -d --build backend
 docker compose ps
 docker compose logs -f backend
 ```
 
-This builds the local **`dearly-api:latest`** image, serves the web app and backend at `http://127.0.0.1:8000`, and stores SQLite in a named volume. The service restarts unless explicitly stopped. The image runs as a non-root user and checks `/health` every 30 seconds; `docker compose ps` displays its health status.
+Set `DEARLY_BACKEND_PORT=9100` to publish the API on a different host port. `DEARLY_BACKEND_BIND` defaults to 127.0.0.1; set 0.0.0.0 or the host's LAN interface to allow a frontend on another machine. `DEARLY_BACKEND_LISTEN_PORT` sets the container's internal port (default 8000); health checks and Compose port mappings follow it. When changing that internal port, update the frontend's backend address too. Legacy `DEARLY_PORT` / `DEARLY_BIND` in a root `.env` still provide host-port/bind defaults, but the new names are preferred.
 
-If port 8000 is occupied, set `DEARLY_PORT=8001` in a root `.env` file before starting. For LAN access, set `DEARLY_BIND=0.0.0.0`. Otherwise the port is accessible only on the Docker host. Update the app’s server URL to match. The container’s internal port remains 8000.
+Start both services with `docker compose up -d --build`, or start only the frontend with `docker compose up -d --build frontend` and a reachable `DEARLY_BACKEND_ADDRESS`. The frontend and backend have no forced startup dependency and can be deployed to different machines.
 
 ```bash
 docker compose exec backend python run.py reports
@@ -175,21 +176,22 @@ docker compose cp backend:/data/dearly-backup.sqlite3 ./dearly-backup.sqlite3
 docker compose down
 ```
 
-`docker compose down` preserves the database volume. **Adding `--volumes` deletes that volume and its data.** Use a new backup filename for each backup. Do not run the native backend and Compose on the same host port.
+`docker compose down` preserves the named volume. Adding `--volumes` deletes it. Keep the same Compose project/directory when upgrading so the existing volume is reused. Stop the old combined backend before assigning its old published port to the new frontend.
 
-### Build and run without Compose (from the repository root)
+### Without Compose (repository root)
 
 ```bash
-docker build -f backend/Dockerfile -t dearly-api:latest .
-docker run -d --name dearly-api --restart unless-stopped --init -p 127.0.0.1:8000:8000 -v dearly-data:/data dearly-api:latest
-docker logs -f dearly-api
+docker build -t dearly-api:latest backend
+docker run -d --name dearly-api --restart unless-stopped --init -p 127.0.0.1:9100:8000 -v dearly-data:/data dearly-api:latest
 ```
 
-To avoid a host port conflict, change the mapping to `127.0.0.1:8001:8000`. Run administration commands with `docker exec dearly-api python run.py reports`. Stop the container with `docker stop dearly-api`.
+For a custom internal port as well:
 
-The repository-root `.dockerignore` allows only backend runtime files and web build inputs. Node builds the frontend in a separate stage; the final Python image contains only runtime dependencies and built web assets. Local databases, credentials, iOS sources, virtual environments, and Node dependencies are excluded. Keep the same named data volume when upgrading. The image does not configure public DNS, HTTPS, or your tunnel.
+```bash
+docker run -d --name dearly-api-custom --init -e DEARLY_PORT=8200 -p 127.0.0.1:9100:8200 -v dearly-data:/data dearly-api:latest
+```
 
-Docker is not installed on the current development machine, so the image build and container health check have not yet been verified here.
+Both run with a non-root user. The image has no Node/React/Nginx dependency. `backend/.dockerignore` allows only API runtime inputs and excludes local databases, credentials, environments, tests, and backups. Administration commands remain `docker exec dearly-api python run.py ...`. When using host-native Python, `DEARLY_PORT` sets the launcher's default port and explicit `--port` takes precedence.
 
 ## Tests
 
@@ -203,7 +205,7 @@ From `backend` on macOS/Linux:
 
 On Windows, use `.\.venv\Scripts\python.exe`. The benchmark starts a real HTTP server on a temporary localhost port and removes its temporary fixture data afterward. This temporary-port behavior belongs to the benchmark; the normal server launcher does not choose a free port automatically.
 
-The backend suite covers staff authorization, migration, the audit regressions, and real HTTP upload admission/timeouts. See the [validation notes](../docs/VALIDATION.md). GitHub Actions runs backend/static/dependency checks and native iOS tests. Windows/macOS backend execution and Docker have not been verified locally.
+The backend suite covers staff authorization, migration, the audit regressions, and real HTTP upload admission/timeouts. See the [validation notes](../docs/VALIDATION.md). GitHub Actions runs backend/static/dependency checks and native iOS tests. Windows/macOS backend execution and Docker are not available locally; CI exercises the two Docker images, independent custom ports, proxy cookie auth, and live chat through both Compose DNS and a host-mapped backend.
 
 ## Runtime behavior and limits
 
