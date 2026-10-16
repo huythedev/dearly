@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState, type FormEvent } from 'react';
 import { ArrowRight, Check, Flag, Heart, HeartHandshake, Leaf, LockKeyhole, MessageCircle, Pause, Send, ShieldCheck, Sprout, Sun, Users } from 'lucide-react';
 import { Avatar, Dialog, Empty, GardenArt } from './components';
-import { ReportDialog } from './Journals';
+import { ReportDialog } from './ReportDialog';
 import { useI18n } from './i18n';
 import { usePage } from './usePage';
 import type { Dearly } from './useDearly';

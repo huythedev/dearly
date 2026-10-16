@@ -187,3 +187,24 @@ def test_chat_has_a_per_account_connection_budget_and_releases_slots(env):
             assert disconnected.value.code == 4429
     with client.websocket_connect('/ws/chat') as available:
         socket_auth(available, a['token'])
+
+
+def test_browser_mutation_is_bound_to_the_account_that_created_it(env):
+    client, _, _ = env
+    first, _ = register(env, 'first_tab')
+    second, _ = register(env, 'second_tab')
+    fields = {'password': 'test-password-123'}
+    assert client.post('/v1/auth/login', headers=WEB, json={**fields, 'username': 'first_tab'}).status_code == 200
+    payload = {'requestID': str(uuid.uuid4()), 'kind': 'profile.update', 'payload': {'nickname': 'First account only'}}
+    headers = {**WEB, 'X-Dearly-User': first['userID']}
+    assert client.post('/v1/actions', headers=headers, json=payload).status_code == 200
+    # Another tab switches the shared cookie before a lost reply is retried.
+    assert client.post('/v1/auth/login', headers=WEB, json={**fields, 'username': 'second_tab'}).status_code == 200
+    retry = client.post('/v1/actions', headers=headers, json=payload)
+    assert retry.status_code == 409
+    assert 'account changed' in retry.json()['detail']
+    state = client.get('/v1/state').json()['state']
+    assert state['currentUserID'] == second['userID']
+    assert next(p for p in state['profiles'] if p['id'] == second['userID'])['nickname'] != 'First account only'
+    # Reject before recording the request ID for the new account.
+    assert client.post('/v1/actions', headers={**WEB, 'X-Dearly-User': second['userID']}, json=payload).status_code == 200

@@ -56,8 +56,10 @@ Web chat sends/receives over WebSocket, with reconnect, deduplication, and an id
 
 | Path | Purpose |
 |---|---|
-| `ios/Dearly/Core/Models.swift` | Codable models, domain rules, and localization helpers |
-| `ios/Dearly/Core/APIClient.swift` | HTTP requests, session storage, and API DTOs |
+| `ios/Dearly/Core/Models.swift` | Codable models and domain rules |
+| `ios/Dearly/Core/APIClient.swift` | HTTP and WebSocket transport |
+| `ios/Dearly/Core/APITypes.swift`, `SessionKeychain.swift`, `Localization.swift` | Wire DTOs, Keychain session storage and language lookup |
+| `ios/Dearly/Core/StateSynchronizer.swift` | Serial, coalesced snapshot reads |
 | `ios/Dearly/Core/StaffModels.swift` | Staff roles, reports, account summaries, and audit DTOs |
 | `ios/Dearly/Core/DearlyStore.swift` | Backend authentication, synchronization, mutations, and UI state |
 | `ios/Dearly/UI/` | Login/signup, journal, community, companion, garden, settings, and staff screens |
@@ -70,13 +72,15 @@ Web chat sends/receives over WebSocket, with reconnect, deduplication, and an id
 | `backend/Dockerfile` | API-only image with configurable listen port |
 | `configure-docker.py`, `.env.example`, `compose.yaml` | Interactive setup and independent service/port configuration |
 | `backend/localization.py`, `backend/translations.vi.json` | English API error templates and Vietnamese responses |
-| `backend/server.py` | API, authentication, authorization, and SQLite transactions |
+| `backend/server.py`, `backend/dearly/` | Compatible factory entrypoint; modules for database, validation, policies, serialization, services, actions and feature routes |
 | `backend/run.py` | Server launcher, role grants, age verification, reports, suspension/restoration, and backups |
 | `backend/tests/` | API, privacy, concurrency, and persistence tests |
 | `ios/DearlyTests/` | Native model, backend contract, signed-out state, and localization tests |
 | `docs/` | Setup, usage, hosting, staff and development guides; API reference and validation notes |
 
 Local databases, virtual environments, credentials, Xcode user settings, and build output are excluded by `.gitignore`.
+
+See the [source audit and module guide](SOURCE-AUDIT.md) for ownership boundaries, fixed concurrency issues and regression coverage.
 
 ## Product scope
 

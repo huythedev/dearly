@@ -7,6 +7,12 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		F264F7CA4FC506052EDA1ABD /* Dearly/UI/AccountSettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 89D176AEC402F25DE7A6D83B; };
+		69DD7FCF886CAC8A2A80AF0A /* Dearly/UI/RootView.swift in Sources */ = {isa = PBXBuildFile; fileRef = BD89AE342DDEBF0D5BB16F71; };
+		42A58EF170E40BEC12794626 /* Dearly/Core/StateSynchronizer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 27D0CAF9CB6E431245895C0E; };
+		D7747DC25EDBD92693B02C3C /* Dearly/Core/Localization.swift in Sources */ = {isa = PBXBuildFile; fileRef = 834BD9BEA6ED2D5EC1603ABB; };
+		DDCBE873C6BA5432E0274742 /* Dearly/Core/APITypes.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD24552B0352649D3FB6B616; };
+		6ACC11715F65F81113186C27 /* Dearly/Core/SessionKeychain.swift in Sources */ = {isa = PBXBuildFile; fileRef = D87C01855BA3559CAFFFEA3B; };
 		A30000000000000000000001 /* staff-responses.json in Resources */ = {isa = PBXBuildFile; fileRef = A30000000000000000000002; };
 		A20000000000000000000003 /* Dearly/UI/StaffView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000004; };
 		A20000000000000000000001 /* Dearly/Core/StaffModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000002; };
@@ -37,6 +43,12 @@
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXFileReference section */
+		89D176AEC402F25DE7A6D83B /* Dearly/UI/AccountSettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Dearly/UI/AccountSettingsView.swift; sourceTree = "<group>"; };
+		BD89AE342DDEBF0D5BB16F71 /* Dearly/UI/RootView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Dearly/UI/RootView.swift; sourceTree = "<group>"; };
+		27D0CAF9CB6E431245895C0E /* Dearly/Core/StateSynchronizer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Dearly/Core/StateSynchronizer.swift; sourceTree = "<group>"; };
+		834BD9BEA6ED2D5EC1603ABB /* Dearly/Core/Localization.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Dearly/Core/Localization.swift; sourceTree = "<group>"; };
+		DD24552B0352649D3FB6B616 /* Dearly/Core/APITypes.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Dearly/Core/APITypes.swift; sourceTree = "<group>"; };
+		D87C01855BA3559CAFFFEA3B /* Dearly/Core/SessionKeychain.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Dearly/Core/SessionKeychain.swift; sourceTree = "<group>"; };
 		A30000000000000000000002 /* staff-responses.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = "DearlyTests/Fixtures/staff-responses.json"; sourceTree = "<group>"; };
 		A20000000000000000000004 /* Dearly/UI/StaffView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Dearly/UI/StaffView.swift; sourceTree = "<group>"; };
 		A20000000000000000000002 /* Dearly/Core/StaffModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Dearly/Core/StaffModels.swift; sourceTree = "<group>"; };
@@ -99,6 +111,12 @@
 			children = (
 				A10000000000000000000002 /* Localizable.xcstrings */,
 				6431BD92EEBEB86576039E48 /* Dearly/Core/APIClient.swift */,
+				89D176AEC402F25DE7A6D83B /* Dearly/UI/AccountSettingsView.swift */,
+				BD89AE342DDEBF0D5BB16F71 /* Dearly/UI/RootView.swift */,
+				27D0CAF9CB6E431245895C0E /* Dearly/Core/StateSynchronizer.swift */,
+				834BD9BEA6ED2D5EC1603ABB /* Dearly/Core/Localization.swift */,
+				DD24552B0352649D3FB6B616 /* Dearly/Core/APITypes.swift */,
+				D87C01855BA3559CAFFFEA3B /* Dearly/Core/SessionKeychain.swift */,
 				5371C3D7596D92323D5A25CD /* Dearly/Core/DearlyStore.swift */,
 				B0B5C641E1A98A98255B8E27 /* Dearly/Core/Models.swift */,
 				A20000000000000000000004 /* Dearly/UI/StaffView.swift */,
@@ -237,6 +255,12 @@
 			buildActionMask = 2147483647;
 			files = (
 				C5EA4C3E67762C047B68CB72 /* Dearly/Core/APIClient.swift in Sources */,
+				F264F7CA4FC506052EDA1ABD /* Dearly/UI/AccountSettingsView.swift in Sources */,
+				69DD7FCF886CAC8A2A80AF0A /* Dearly/UI/RootView.swift in Sources */,
+				42A58EF170E40BEC12794626 /* Dearly/Core/StateSynchronizer.swift in Sources */,
+				D7747DC25EDBD92693B02C3C /* Dearly/Core/Localization.swift in Sources */,
+				DDCBE873C6BA5432E0274742 /* Dearly/Core/APITypes.swift in Sources */,
+				6ACC11715F65F81113186C27 /* Dearly/Core/SessionKeychain.swift in Sources */,
 				B78570EBEA90BC87BBD86DA8 /* Dearly/Core/DearlyStore.swift in Sources */,
 				D5367D01CC759B17F3DCBCFC /* Dearly/Core/Models.swift in Sources */,
 				A20000000000000000000003 /* Dearly/UI/StaffView.swift in Sources */,

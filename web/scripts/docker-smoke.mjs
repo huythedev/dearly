@@ -23,10 +23,17 @@ async function json(path, init = {}) {
   return { response, value };
 }
 const html = await fetch(origin, options());
-assert.match(await html.text(), /Dearly/);
+const document = await html.text();
+assert.match(document, /Dearly/);
+const assetPath = document.match(/(?:src|href)="(\/assets\/[^\"]+\.(?:js|css))"/)?.[1];
+assert.ok(assetPath, 'The build must reference a fingerprinted asset.');
+const asset = await fetch(`${origin}${assetPath}`, options());
+assert.equal(asset.status, 200);
+assert.match(asset.headers.get('Cache-Control') ?? '', /max-age=604800/);
 assert.match(html.headers.get('Content-Security-Policy'), /connect-src 'self'/);
 assert.equal((await fetch(`${origin}/journal`, options())).status, 200);
 assert.equal((await fetch(`${origin}/assets/missing.js`, options())).status, 404);
+assert.equal((await fetch(`${origin}/assets/.hidden.js`, options())).status, 404);
 assert.equal((await fetch(`${origin}/v1/missing`, options())).status, 404);
 assert.equal((await fetch(`${backend}/`, options())).status, 404, 'Backend image must remain API-only.');
 assert.equal((await fetch(`${backend}/health`, options())).status, 200);

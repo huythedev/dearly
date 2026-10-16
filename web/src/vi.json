@@ -340,5 +340,6 @@
   "user": "Thành viên",
   "you": "bạn",
   "{field} must be true/false.": "{field} phải là true/false.",
-  "{field}: use between {minimum} and {maximum} characters.": "{field}: cần từ {minimum} đến {maximum} ký tự."
+  "{field}: use between {minimum} and {maximum} characters.": "{field}: cần từ {minimum} đến {maximum} ký tự.",
+  "Your account changed. Reload the page before trying again.": "Tài khoản của bạn đã thay đổi. Hãy tải lại trang trước khi thử lại."
 }

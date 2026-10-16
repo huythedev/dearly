@@ -70,5 +70,6 @@
   "Your session has expired or your account is locked. Please log in again.": "Phiên đã hết hạn hoặc tài khoản bị khóa. Đăng nhập lại nhé.",
   "limit must be between 1 and 50.": "limit phải từ 1 đến 50.",
   "{field} must be true/false.": "{field} phải là true/false.",
-  "{field}: use between {minimum} and {maximum} characters.": "{field}: cần từ {minimum} đến {maximum} ký tự."
+  "{field}: use between {minimum} and {maximum} characters.": "{field}: cần từ {minimum} đến {maximum} ký tự.",
+  "Your account changed. Reload the page before trying again.": "Tài khoản của bạn đã thay đổi. Hãy tải lại trang trước khi thử lại."
 }

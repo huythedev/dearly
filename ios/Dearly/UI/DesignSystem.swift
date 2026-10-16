@@ -118,80 +118,6 @@ extension View {
 }
 
 @MainActor
-struct RootView: View {
-    @AppStorage("dearly.language") private var language = "en"
-    @EnvironmentObject private var store: DearlyStore
-    @State private var tab = 0
-    @State private var showSettings = false
-    @Environment(\.scenePhase) private var scenePhase
-    var body: some View {
-        Group {
-            if store.isOnline {
-                tabs
-            } else {
-                ServerConnectionView()
-            }
-        }
-        .environment(\.locale, Locale(identifier: AppLanguage.code))
-        .task { await store.syncLoop() }
-        .onChange(of: scenePhase) { _, phase in store.foreground = phase == .active }
-    }
-
-    private var tabs: some View {
-        TabView(selection: $tab) {
-            page { JournalView() }.tabItem { Label(L("Journal"), systemImage: "book.closed") }.tag(0)
-            page { CommunityView() }.tabItem { Label(L("Community"), systemImage: "bubble.left.and.bubble.right") }.tag(1)
-            page { CompanionView() }.tabItem { Label(L("Companion"), systemImage: "person.2") }.tag(2)
-            page { GardenView() }.tabItem { Label(L("Garden"), systemImage: "leaf") }.tag(3)
-        }
-        .id(store.me.id)
-        .disabled(store.isBusy || store.isAuthenticating)
-        .sheet(isPresented: $showSettings) { AccountSettingsView() }
-        .alert("Dearly", isPresented: Binding(get: { store.errorMessage != nil }, set: { if !$0 { store.errorMessage = nil } })) {
-            Button(L("Got it")) { store.errorMessage = nil }
-        } message: { Text(store.errorMessage ?? "") }
-        .alert(L("Received"), isPresented: Binding(get: { store.notice != nil }, set: { if !$0 { store.notice = nil } })) {
-            Button(L("Close")) { store.notice = nil }
-        } message: { Text(store.notice ?? "") }
-    }
-
-    private func page<Content: View>(@ViewBuilder content: () -> Content) -> some View {
-        NavigationStack {
-            content()
-                .safeAreaInset(edge: .top, spacing: 0) {
-                    if store.isOnline {
-                        HStack(spacing: 7) {
-                            Image(systemName: store.syncError == nil ? "network" : "wifi.exclamationmark")
-                            Text(store.syncError == nil ? LF("Connected · %1$@", String(describing: store.me.nickname)) : L("Sync interrupted · Reconnecting automatically"))
-                            Spacer()
-                            if store.isBusy { ProgressView().controlSize(.small) }
-                        }.font(.caption2).foregroundStyle(DearlyTheme.forest).padding(.horizontal, 22).padding(.vertical, 7).background(DearlyTheme.sage.opacity(0.6))
-                    }
-                }
-                .background(DearlyTheme.cream.ignoresSafeArea())
-                .toolbar {
-                    if #available(iOS 26.0, *) {
-                        ToolbarItem(placement: .topBarLeading) { DearlyBrand() }
-                            .sharedBackgroundVisibility(.hidden)
-                    } else {
-                        ToolbarItem(placement: .topBarLeading) { DearlyBrand() }
-                    }
-                    ToolbarItem(placement: .topBarTrailing) {
-                        Button { showSettings = true } label: {
-                            HStack(spacing: 7) {
-                                Text(L("ONLINE")).font(.system(size: 9, weight: .bold)).tracking(1)
-                                Avatar(symbol: store.me.symbol, size: 32)
-                            }
-                        }.accessibilityLabel(LF("Account settings for %1$@", String(describing: store.me.nickname)))
-                    }
-                }
-                .toolbarBackground(DearlyTheme.cream, for: .navigationBar, .tabBar)
-                .toolbarBackground(.visible, for: .navigationBar, .tabBar)
-        }
-    }
-}
-
-@MainActor
 struct WelcomeView: View {
     @AppStorage("dearly.language") private var language = "en"
     var start: () -> Void
@@ -215,54 +141,6 @@ struct WelcomeView: View {
         }.background(DearlyTheme.cream).foregroundStyle(DearlyTheme.ink)
     }
 }
-
-@MainActor
-struct AccountSettingsView: View {
-    @AppStorage("dearly.language") private var language = "en"
-    @EnvironmentObject private var store: DearlyStore
-    @Environment(\.dismiss) private var dismiss
-    @State private var editingProfile = false
-    var body: some View {
-        NavigationStack {
-            Form {
-                Section(L("Language")) {
-                    LanguagePicker()
-                }
-                Section(L("Appearance")) {
-                    AppearancePicker()
-                }
-                if store.isOnline {
-                    Section(L("Your account")) {
-                        LabeledContent(L("Nickname"), value: store.me.nickname)
-                        LabeledContent(L("Role"), value: store.role.title)
-                        LabeledContent(L("Server"), value: store.serverAddress)
-                        LabeledContent(L("Age"), value: store.me.ageVerified ? L("Verified") : L("Awaiting administrator verification"))
-                        if let date = store.lastSync { LabeledContent(L("Last synced"), value: date.formatted(Date.FormatStyle(date: .omitted, time: .shortened).locale(Locale(identifier: AppLanguage.code)))) }
-                        if let error = store.syncError { Text(error).font(.caption).foregroundStyle(.red) }
-                        Button(L("Edit profile"), systemImage: "person.crop.circle") { editingProfile = true }
-                        Button(L("Sync now"), systemImage: "arrow.clockwise") { Task { await store.refresh(force: true) } }
-                        Button(L("Log out"), role: .destructive) { Task { await store.logout() } }.disabled(store.isBusy)
-                    }
-                    if store.hasPermission("reports.read") {
-                        Section(L("Management")) {
-                            NavigationLink {
-                                StaffConsoleView()
-                            } label: {
-                                Label(L("Dearly management"), systemImage: "checkmark.shield")
-                            }
-                        }
-                    }
-                    Section {
-                        Text(L("Chat updates live while the app is open. If the connection drops, automatic sync keeps your messages up to date. Daily check-ins use UTC. Your data is saved on the server.")).font(.caption)
-                    }
-                }
-            }.navigationTitle(L("Dearly settings")).navigationBarTitleDisplayMode(.inline)
-                .toolbar { ToolbarItem(placement: .confirmationAction) { Button(L("Done")) { dismiss() } } }
-                .sheet(isPresented: $editingProfile) { ProfileEditorView() }
-        }
-    }
-}
-
 
 @MainActor
 struct DearlyBrand: View {
