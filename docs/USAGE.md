@@ -10,6 +10,12 @@ Usernames use 3–64 characters: English letters (`a–z`, `A–Z`), digits, und
 
 New accounts can write journals and explore the community immediately. Companion matching becomes available after an administrator reviews the date of birth.
 
+## Take a guided tour
+
+After your first login on web or iOS, Dearly offers a short tour. Each step highlights a real control and explains what it does. Use **Next** and **Back** to explore, or **Skip guide** to leave at any point. The tour does not create entries, send messages or check in to your garden.
+
+Choose **Maybe later** to get straight to your space. To start again, open your profile's **Settings** on web or your avatar's account settings on iOS, then choose **Take a guided tour**. Your choice is remembered for that account on the current browser or device. A different browser or device may offer the tour again.
+
 ## Write a journal
 
 Open **My journal** on web or the journal tab on iOS, then create an entry. New entries start as **Only me**.

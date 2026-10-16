@@ -7,9 +7,10 @@ struct GardenView: View {
     @State private var showingArchive = false
     private var archives: [Connection] { store.state.connections.filter { !$0.active && $0.members.contains(store.me.id) } }
     var body: some View {
-        ScrollView {
+        GuideScrollView {
             VStack(alignment: .leading, spacing: 24) {
                 PageHeading(eyebrow: L("GROWING BY SHOWING UP"), title: L("Our little garden."), subtitle: L("There’s no rush. Little things are still growing."))
+                    .guideTarget(.garden, enabled: store.connection == nil)
                 if let connection = store.connection {
                     activeGarden(connection)
                 } else {
@@ -58,7 +59,7 @@ struct GardenView: View {
                 PrimaryButton(title: connection.paused ? L("Your garden is resting") : (checked ? L("You checked in today") : L("I’m still here")), icon: checked ? "checkmark" : "drop") {
                     Task { await store.checkIn() }
                 }.disabled(checked || connection.paused).opacity(checked || connection.paused ? 0.65 : 1)
-                    .accessibilityIdentifier("garden.checkin")
+                    .guideTarget(.garden).accessibilityIdentifier("garden.checkin")
                 Text(checked && partnerChecked ? L("You both showed up. Another day for your garden to grow 🌱") : L("Both of you check in to count a day together. No message quota to meet."))
                     .font(.caption).foregroundStyle(DearlyTheme.muted).lineSpacing(3)
             }

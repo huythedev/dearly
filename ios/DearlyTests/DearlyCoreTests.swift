@@ -3,6 +3,77 @@ import XCTest
 
 final class DearlyCoreTests: XCTestCase {
     @MainActor
+    func testGuideReplaysAndKeepsCompletionScopedToAccountAndServer() throws {
+        let suite = "dearly.guide.tests.\(UUID())"
+        let defaults = try XCTUnwrap(UserDefaults(suiteName: suite))
+        defer { defaults.removePersistentDomain(forName: suite) }
+        let guide = GuideProgress(defaults: defaults)
+        let user = UUID()
+        guide.configure(server: "https://first.example/", userID: user)
+        XCTAssertEqual(guide.phase, .welcome)
+        guide.start()
+        XCTAssertEqual(guide.currentStep, .compose)
+        guide.configure(server: "https://first.example", userID: user)
+        XCTAssertEqual(guide.currentStep, .compose)
+        guide.advance()
+        XCTAssertEqual(guide.currentStep, .pages)
+        guide.back()
+        XCTAssertEqual(guide.currentStep, .compose)
+        for _ in GuideStep.allCases { guide.advance() }
+        XCTAssertFalse(guide.isPresented)
+        guide.configure(server: nil, userID: nil)
+        guide.configure(server: "https://first.example", userID: user)
+        XCTAssertFalse(guide.isPresented)
+        guide.start()
+        XCTAssertEqual(guide.currentStep, .compose)
+        guide.configure(server: "https://second.example", userID: user)
+        XCTAssertEqual(guide.phase, .welcome)
+        guide.dismiss()
+        guide.configure(server: "https://second.example", userID: UUID())
+        XCTAssertEqual(guide.phase, .welcome)
+        guide.configure(server: nil, userID: nil)
+        guide.start()
+        XCTAssertFalse(guide.isPresented)
+    }
+
+    @MainActor
+    func testGuideIgnoresStaleFramesAndClearsTargetsBetweenSteps() throws {
+        let suite = "dearly.guide.frames.\(UUID())"
+        let defaults = try XCTUnwrap(UserDefaults(suiteName: suite))
+        defer { defaults.removePersistentDomain(forName: suite) }
+        let guide = GuideProgress(defaults: defaults)
+        guide.configure(server: "https://example.com", userID: UUID())
+        guide.start()
+        let owner = UUID(), oldOwner = UUID()
+        let rect = CGRect(x: 10, y: 100, width: 200, height: 44)
+        guide.record(.pages, rect: rect, owner: owner)
+        XCTAssertTrue(guide.frames.isEmpty)
+        guide.record(.compose, rect: rect, owner: owner)
+        guide.remove(.compose, owner: oldOwner)
+        XCTAssertEqual(guide.frames[.compose]?.rect, rect)
+        guide.advance()
+        XCTAssertTrue(guide.frames.isEmpty)
+        guide.record(.pages, rect: .null, owner: owner)
+        XCTAssertTrue(guide.frames.isEmpty)
+        guide.record(.pages, rect: rect, owner: owner)
+        guide.configure(server: nil, userID: nil)
+        XCTAssertTrue(guide.frames.isEmpty)
+    }
+
+    func testGuideCardsStayWithinPortraitAndLandscapeSafeAreas() {
+        for viewport in [CGRect(x: 0, y: 0, width: 320, height: 568), CGRect(x: 0, y: 0, width: 568, height: 320)] {
+            let available = viewport.insetBy(dx: 16, dy: 32)
+            for target in [CGRect(x: 25, y: 50, width: 200, height: 44), CGRect(x: 25, y: viewport.maxY - 90, width: 200, height: 44)] {
+                let height = min(350, GuideLayout.maxHeight(target: target, available: available))
+                let size = CGSize(width: min(380, available.width), height: height)
+                let origin = GuideLayout.origin(target: target, card: size, available: available)
+                XCTAssertTrue(available.contains(CGRect(origin: origin, size: size)))
+            }
+        }
+        XCTAssertNil(GuideLayout.spotlight(CGRect(x: 10, y: 900, width: 100, height: 44), in: CGRect(x: 0, y: 0, width: 320, height: 568)))
+    }
+
+    @MainActor
     func testSnapshotsSerializeAndRetainInvalidationsDuringARead() async {
         let synchronizer = StateSynchronizer()
         let started = expectation(description: "Initial snapshot started")

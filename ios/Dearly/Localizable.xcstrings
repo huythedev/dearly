@@ -205,6 +205,23 @@
         }
       }
     },
+    "A connection takes two" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "A connection takes two"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Kết nối từ hai phía"
+          }
+        }
+      }
+    },
     "A cozy garden corner" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -341,6 +358,40 @@
         }
       }
     },
+    "A little guide to Dearly" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "A little guide to Dearly"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Cùng làm quen với Dearly"
+          }
+        }
+      }
+    },
+    "A little help getting started" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "A little help getting started"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Một chút hướng dẫn để bắt đầu"
+          }
+        }
+      }
+    },
     "A little space for myself" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -405,6 +456,23 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Một trang của mình"
+          }
+        }
+      }
+    },
+    "A page of your own" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "A page of your own"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Một trang dành riêng cho bạn"
           }
         }
       }
@@ -1157,6 +1225,23 @@
         }
       }
     },
+    "Back" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Back"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Quay lại"
+          }
+        }
+      }
+    },
     "Based on UTC" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -1612,6 +1697,23 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Bạn đồng hành"
+          }
+        }
+      }
+    },
+    "Companion matching requires verified ages and an accepted invitation. Both people choose to connect before their private chat opens." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Companion matching requires verified ages and an accepted invitation. Both people choose to connect before their private chat opens."
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Để tìm bạn đồng hành, hai người cần được xác minh độ tuổi và chấp nhận lời mời. Cuộc trò chuyện riêng chỉ mở khi cả hai đồng ý kết nối."
           }
         }
       }
@@ -2166,6 +2268,40 @@
         }
       }
     },
+    "Explore shared passages and the kind of support each writer wants. Anonymous stories hide the nickname; the rest of a private entry stays private." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Explore shared passages and the kind of support each writer wants. Anonymous stories hide the nickname; the rest of a private entry stays private."
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Đọc những đoạn được chia sẻ và tìm hiểu cách mỗi người muốn được hỗ trợ. Bài ẩn danh không hiện biệt danh; phần nhật ký không được chia sẻ vẫn riêng tư."
+          }
+        }
+      }
+    },
+    "Explore the main features at your own pace. You can skip the guide and open it again from Settings." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Explore the main features at your own pace. You can skip the guide and open it again from Settings."
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Khám phá các tính năng chính theo nhịp của bạn. Bạn có thể bỏ qua và mở lại hướng dẫn trong phần Cài đặt."
+          }
+        }
+      }
+    },
     "Fern" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -2196,6 +2332,40 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Bắt đầu một khoảng dịu dàng"
+          }
+        }
+      }
+    },
+    "Find your pages" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Find your pages"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tìm lại những trang viết"
+          }
+        }
+      }
+    },
+    "Finish" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Finish"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Hoàn tất"
           }
         }
       }
@@ -2332,6 +2502,23 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Đã hiểu"
+          }
+        }
+      }
+    },
+    "Grow a little together" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Grow a little together"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Cùng nhau lớn lên từng chút"
           }
         }
       }
@@ -3101,6 +3288,23 @@
         }
       }
     },
+    "Listen with kindness" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Listen with kindness"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Lắng nghe bằng sự tử tế"
+          }
+        }
+      }
+    },
     "Listening" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -3203,6 +3407,23 @@
         }
       }
     },
+    "Make Dearly feel like you" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Make Dearly feel like you"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Để Dearly gần gũi với bạn hơn"
+          }
+        }
+      }
+    },
     "Manage account" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -3250,6 +3471,23 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Để lần khác"
+          }
+        }
+      }
+    },
+    "Maybe later" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Maybe later"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Để sau nhé"
           }
         }
       }
@@ -3335,6 +3573,23 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Âm nhạc"
+          }
+        }
+      }
+    },
+    "Next" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Next"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tiếp"
           }
         }
       }
@@ -3509,6 +3764,23 @@
         }
       }
     },
+    "Once you have a companion, check in on the same UTC day to grow your garden. You can pause when you need a break and keep your earned rewards." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Once you have a companion, check in on the same UTC day to grow your garden. You can pause when you need a break and keep your earned rewards."
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Khi đã có bạn đồng hành, cả hai cùng điểm danh trong một ngày theo giờ UTC để khu vườn lớn lên. Bạn có thể cho vườn nghỉ khi cần và vẫn giữ phần thưởng đã nhận."
+          }
+        }
+      }
+    },
     "Only me" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -3590,6 +3862,23 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Chờ xử lý"
+          }
+        }
+      }
+    },
+    "Open account settings for your profile, language and appearance. Choose Take a guided tour there whenever you want another look." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Open account settings for your profile, language and appearance. Choose Take a guided tour there whenever you want another look."
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Mở cài đặt tài khoản để chỉnh hồ sơ, ngôn ngữ và giao diện. Chọn Xem hướng dẫn tại đó bất cứ khi nào bạn muốn xem lại."
           }
         }
       }
@@ -4308,6 +4597,23 @@
         }
       }
     },
+    "Revisit the main features with a step-by-step guide." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Revisit the main features with a step-by-step guide."
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Làm quen lại với các tính năng chính qua từng bước hướng dẫn."
+          }
+        }
+      }
+    },
     "Role" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -4784,6 +5090,23 @@
         }
       }
     },
+    "Show me around" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Show me around"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Bắt đầu khám phá"
+          }
+        }
+      }
+    },
     "Shown as: %1$@" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -4869,6 +5192,23 @@
         }
       }
     },
+    "Skip guide" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Skip guide"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Bỏ qua hướng dẫn"
+          }
+        }
+      }
+    },
     "Someone, alongside you." : {
       "extractionState" : "manual",
       "localizations" : {
@@ -4916,6 +5256,23 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Quản trị viên đã hạn chế chia sẻ bài này. Bạn vẫn có thể chỉnh sửa và lưu riêng tư."
+          }
+        }
+      }
+    },
+    "Start a journal entry here. It begins private. In the editor, you choose whether to share a passage with your companion or the community." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Start a journal entry here. It begins private. In the editor, you choose whether to share a passage with your companion or the community."
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Bắt đầu viết nhật ký tại đây. Trang mới luôn ở chế độ riêng tư. Khi viết, bạn có thể chọn chia sẻ một đoạn với bạn đồng hành hoặc cộng đồng."
           }
         }
       }
@@ -5001,6 +5358,23 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Lắng nghe một chút."
+          }
+        }
+      }
+    },
+    "Step %1$@ of %2$@" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Step %1$@ of %2$@"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Bước %1$@ trên %2$@"
           }
         }
       }
@@ -5171,6 +5545,23 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "GỢI Ý HÔM NAY"
+          }
+        }
+      }
+    },
+    "Take a guided tour" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Take a guided tour"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Xem hướng dẫn"
           }
         }
       }
@@ -6789,6 +7180,23 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Những trang viết và khu vườn của bạn đang đợi."
+          }
+        }
+      }
+    },
+    "Your pages stay in your journal. Open an entry to edit it, or browse earlier pages whenever you need them." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Your pages stay in your journal. Open an entry to edit it, or browse earlier pages whenever you need them."
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Những trang viết được giữ trong nhật ký của bạn. Mở một trang để chỉnh sửa hoặc xem lại các trang cũ bất cứ khi nào bạn muốn."
           }
         }
       }

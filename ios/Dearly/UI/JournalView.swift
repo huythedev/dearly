@@ -8,7 +8,7 @@ struct JournalView: View {
     @State private var editing: Journal?
     @State private var showingArchive = false
     var body: some View {
-        ScrollView {
+        GuideScrollView {
             VStack(alignment: .leading, spacing: 26) {
                 PageHeading(eyebrow: L("A LITTLE SPACE OF YOUR OWN"), title: L("How are you today?"), subtitle: L("You don’t need the perfect words. Just be you."))
                 VStack(alignment: .leading, spacing: 18) {
@@ -18,7 +18,7 @@ struct JournalView: View {
                     Button { composing = true } label: {
                         HStack { Text(L("Leave a few words here")).fontWeight(.medium); Spacer(); Image(systemName: "arrow.up.right") }
                             .font(.subheadline).padding(.top, 8)
-                    }.accessibilityIdentifier("journal.compose")
+                    }.guideTarget(.compose).accessibilityIdentifier("journal.compose")
                 }.padding(23).foregroundStyle(DearlyTheme.forest)
                     .background(DearlyTheme.sage, in: RoundedRectangle(cornerRadius: 25))
                 HStack(spacing: 8) {
@@ -28,7 +28,7 @@ struct JournalView: View {
                 SectionLabel(title: L("Your pages"), detail: LF("%1$@ pages", String(describing: store.state.myJournals.count)))
                 if store.isOnline {
                     Button(L("Browse all your pages"), systemImage: "books.vertical") { showingArchive = true }
-                        .font(.subheadline)
+                        .font(.subheadline).guideTarget(.pages)
                 }
                 if store.state.myJournals.isEmpty {
                     EmptyCard(icon: "book", title: L("Your first page is waiting"), detail: L("Even one sentence is a beginning."))

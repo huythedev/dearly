@@ -9,6 +9,8 @@ test('account, private journal, explicit sharing, preferences and mobile logout'
   await page.getByLabel('Password', { exact: true }).fill('test-password-123');
   await page.getByLabel('Date of birth', { exact: true }).fill('2000-01-01');
   await page.getByRole('button', { name: 'Create your space' }).click();
+  await expect(page.getByRole('dialog', { name: 'A little guide to Dearly' })).toBeVisible();
+  await page.getByRole('button', { name: 'Maybe later', exact: true }).click();
   await expect(page.getByRole('heading', { name: 'Make room for your thoughts.' })).toBeVisible();
   await expect(page.getByRole('status')).toHaveText('A little more connected');
   await page.getByRole('button', { name: 'New entry', exact: true }).click();

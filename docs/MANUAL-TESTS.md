@@ -5,6 +5,9 @@ These device checks were not run in the source-generation environment. Record ac
 | Scenario | Expected result | Actual result |
 |---|---|---|
 | First launch | Login screen; restores a valid Keychain session if present | Not run |
+| First login tour / replay | Welcome can be deferred; all six steps highlight the correct control; replay from account settings | Not run |
+| Tour with VoiceOver / large text / rotation | Focus stays in instructions; Skip/Back/Next remain reachable; spotlight follows the control in both languages and themes | Not run |
+| Tour on an existing connection | Garden highlights check-in without checking in; no entries, invitations or messages are created | Not run |
 | New journal | Only me is the default audience | Not run |
 | Share a passage absent from the entry | Refuses to save and explains why | Not run |
 | Anonymous publication | Shows only the chosen passage without title, nickname, or profile link | Not run |
