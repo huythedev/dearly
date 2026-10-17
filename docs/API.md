@@ -10,6 +10,11 @@ The web client uses the frontend origin with relative `/v1/...` paths. In split 
 | POST `/v1/auth/register` | username, password, nickname, birthDate YYYY-MM-DD | token, userID, expiresAt |
 | POST `/v1/auth/login` | username, password | token, userID, expiresAt |
 | POST `/v1/auth/logout` | Bearer token | ok; revokes the current token |
+| GET `/v1/encryption/identity` | Authenticated account | Own public keys, fingerprint, recovery-encrypted private bundle; 404 before initialization |
+| POST `/v1/encryption/identity` | agreementKey, signingKey, wrappedPrivate, nonce | Immutable identity; exact duplicate succeeds, replacement returns 409 |
+| GET `/v1/encryption/keys/{userID}` | Self or a present/past connection member | Public keys/fingerprint only |
+| POST `/v1/account/export` | Current password | No-store JSON attachment of owned data; encrypted fields retain their wire values |
+| POST `/v1/account/delete` | Current password, confirmation `DELETE` | ok; all sessions revoked and live identifying/authored data erased |
 | GET `/v1/state` | Bearer; optional If-None-Match | `{state, serverNow}` + ETag, or 304 without a body |
 | POST `/v1/actions` | requestID UUID, kind, payload | ok; id for creation actions |
 | GET `/v1/messages` | connectionID, optional before ID, limit 1–100 | items in ascending time order, nextCursor |
@@ -25,6 +30,10 @@ Browser mutations also send `X-Dearly-User` with the `currentUserID` from their 
 JSON dates are **seconds since 2001-01-01 UTC**, matching the default Swift JSONEncoder/JSONDecoder Date representation. Native DTOs do not use the Unix epoch. `birthDate` is a Gregorian date string rather than a timestamp. IDs are UUIDs. Check-in days use YYYY-MM-DD in server UTC.
 
 ## WebSocket chat
+
+Account export/deletion and encryption routes also bind a supplied `X-Dearly-User` to the authenticated account. Exports never contain credentials or an anonymous story's real reported-user ID. Downloads require password confirmation and are rate limited; deletion protects the final active admin. See [privacy and recovery](ENCRYPTION.md) for retention and format details.
+
+Updated clients send versioned signed ciphertext in journal `body`, companion `sharedText` and message `text`. New encrypted records supply `clientID` so encryption can bind the resource UUID before sending; edits use the existing `id`. Plaintext writes are rejected once a relevant account has encryption enabled. The examples below show the legacy plaintext shape; follow the [v1 encryption contract](ENCRYPTION.md#wire-format-v1) for current sends. Both transports must retain the same optional `clientID` and exact ciphertext on retry.
 
 Connect to `/ws/chat` using the origin's `ws:` or `wss:` scheme. A browser must send a matching Origin and its HttpOnly cookie. Native clients may omit Origin and send a bearer token in the first frame. Do not put a token in a URL/query string. Within 5 seconds, send:
 
@@ -46,7 +55,7 @@ For a native client, add `"token":"TOKEN"` to that frame. Success replies with `
 | `error` | `requestID`, HTTP-like `status`, English `detail`; invalid input does not mutate |
 | `ping` / `pong` | Keepalive; respond to server ping with `{type: "ping"}` |
 
-REST `/v1/actions` and socket sends share authorization, validation, rate limits, transactions, and the request-ID store. Retry the same UUID/payload through either transport after a lost reply. Socket sends cannot execute staff/profile/journal actions. Event delivery rechecks sessions, suspension, active membership, and age eligibility. Revoked/expired sessions close with 4401, disallowed origins with 4403, excess sessions with 4429, malformed frames with 1008, oversized messages with 1009, and temporary database failures with 1013. Idle sessions are rechecked within 15 seconds, including CLI changes. There are at most 32 sockets globally, 4 per account, and 32 queued events per socket. Uvicorn/wsproto bounds assembled frames to 16 KiB; the app also checks complete frames. Use the documented single worker.
+REST `/v1/actions` and socket sends share authorization, validation, rate limits, transactions, and the request-ID store. Retry the same UUID/payload through either transport after a lost reply. Socket sends cannot execute staff/profile/journal actions. Event delivery rechecks sessions, suspension, active membership, and age eligibility. Revoked/expired sessions close with 4401, disallowed origins with 4403, excess sessions with 4429, malformed frames with 1008, oversized messages with 1009, and temporary database failures with 1013. Idle sessions are rechecked within 15 seconds, including CLI changes. There are at most 32 sockets globally, 4 per account, and 32 queued events per socket. Uvicorn/wsproto bounds assembled frames to 32 KiB; the app also checks complete frames. Use the documented single worker.
 
 ## Actions
 
@@ -65,14 +74,14 @@ Each action POST has this form:
 
 | kind | payload |
 |---|---|
-| journal.save | id when editing; title, body, sharedText, audience, anonymous, commentsEnabled, support |
+| journal.save | id when editing, clientID for new encrypted entries; title, body, sharedText, audience, anonymous, commentsEnabled, support |
 | journal.delete | id |
 | journal.hide | community post id; hides only that post for the current user |
 | journal.listen | id, enabled bool (sets a state rather than toggling blindly) |
 | journal.comment | id, text |
 | invitation.send | userID **or** journalID of an identified public post; anonymous posts return 403 |
 | invitation.accept / invitation.dismiss | invitation id |
-| message.send | connectionID, text |
+| message.send | connectionID, text, clientID for encrypted messages |
 | connection.checkin / connection.leave | connectionID |
 | connection.pause | connectionID, paused bool |
 | user.block | userID or identified journalID; legacy anonymous journalID requests hide only that post |
@@ -95,7 +104,7 @@ The production `/management` document and its subpaths require a current moderat
 
 The web console checks `/v1/staff/access` before mounting controls or reading records, and rechecks when returning to a visible tab or a page restored from browser history. Clients require both a recognized staff role and an explicit permission within that role. Permission changes discard pending forms. Staff read/write denials close the console and discard its loaded records even if the following snapshot refresh fails.
 
-`state.currentUserRole` is `user`, `moderator`, or `admin`; `state.permissions` contains only the current account's permission strings. Roles are never accepted from registration or public profile updates. Older state payloads omit these fields; the iOS app treats that as no staff access. The personal snapshot format remains `schemaVersion=1`; SQLite storage migrates separately to `user_version=4`.
+`state.currentUserRole` is `user`, `moderator`, or `admin`; `state.permissions` contains only the current account's permission strings. Roles are never accepted from registration or public profile updates. Older state payloads omit these fields; the iOS app treats that as no staff access. The personal snapshot format remains `schemaVersion=1`; SQLite storage migrates separately to `user_version=5`.
 
 Moderators have `reports.read`, `reports.review`, `reports.hide`, `users.read`, and `users.verify_age`. Admins additionally have `users.suspend`, `roles.manage`, and `audit.read`. Every staff read/write is authenticated and authorized server-side using the current database role, including idempotent retries after demotion. Regular users receive 403. Staff mutations reject unknown payload keys and require a non-empty reason of at most 1,000 characters.
 

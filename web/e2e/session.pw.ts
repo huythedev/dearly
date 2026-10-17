@@ -1,5 +1,7 @@
 import { expect, test, type WebSocketRoute } from '@playwright/test';
 import type { Envelope } from '../src/types';
+import fixture from '../src/fixtures/encryption-v1.json' with { type: 'json' };
+import { open, recoverIdentity, seal, unb64, type IdentityBundle } from '../src/crypto';
 
 const userID = '33333333-3333-4333-8333-333333333333';
 const envelope: Envelope = { serverNow: 813585600, state: {
@@ -56,11 +58,14 @@ for (const status of [200, 503, 401]) {
 test('a stale socket message rejection retries with the current cookie and original account/key', async ({ page }) => {
   await page.addInitScript(id => localStorage.setItem(`dearly.guide.v1:${id}`, 'seen'), userID);
   const connected: Envelope = { ...envelope, state: { ...envelope.state, connections: [{
-    id: 'connection', members: [userID, 'friend'], startedAt: 813585600, endedAt: null,
+    id: fixture.connectionID, members: [userID, fixture.bob.bundle.userID], startedAt: 813585600, endedAt: null,
     paused: false, checkIns: {}, bestStreak: 0, serverTotalDays: 0, serverCurrentStreak: 0,
   }] } };
   let socketKey = '';
+  let published!: IdentityBundle;
+  let live!: WebSocketRoute;
   await page.routeWebSocket('**/ws/chat', socket => socket.onMessage(raw => {
+    live = socket;
     const value = JSON.parse(String(raw));
     if (value.type === 'authenticate') socket.send(JSON.stringify({ type: 'ready' }));
     if (value.type === 'message.send') {
@@ -69,13 +74,26 @@ test('a stale socket message rejection retries with the current cookie and origi
     }
   }));
   let retries = 0;
-  await page.route('**/v1/**', route => {
+  await page.route('**/v1/**', async route => {
     if (route.request().url().endsWith('/state')) return route.fulfill({ json: connected });
+    if (route.request().url().endsWith('/encryption/identity')) {
+      if (route.request().method() === 'GET') return route.fulfill({ status: 404, json: { detail: 'Enable encryption' } });
+      const input = route.request().postDataJSON();
+      const hash = await crypto.subtle.digest('SHA-256', new Uint8Array([...unb64(input.agreementKey), ...unb64(input.signingKey)]));
+      const fingerprint = Array.from(new Uint8Array(hash), n => n.toString(16).padStart(2, '0')).join('');
+      published = { ...input, userID, fingerprint };
+      return route.fulfill({ json: published });
+    }
+    if (route.request().url().endsWith(`/encryption/keys/${fixture.bob.bundle.userID}`)) return route.fulfill({ json: fixture.bob.bundle });
     if (route.request().url().endsWith('/actions')) {
       retries++;
       expect(route.request().headers()['x-dearly-user']).toBe(userID);
       expect(route.request().postDataJSON().requestID).toBe(socketKey);
       expect(route.request().postDataJSON().kind).toBe('message.send');
+      const { payload } = route.request().postDataJSON();
+      expect(payload.text).not.toContain('A hello after reconnecting.');
+      const bob = await recoverIdentity(fixture.bob.bundle, fixture.bob.recoveryCode);
+      expect(await open(bob, payload.text, 'message', payload.clientID, fixture.connectionID, published)).toEqual({ text: 'A hello after reconnecting.' });
       return route.fulfill({ json: { ok: true, id: 'saved' } });
     }
     return route.fulfill({ json: { items: [], profiles: [], nextCursor: null } });
@@ -87,6 +105,11 @@ test('a stale socket message rejection retries with the current cookie and origi
   await expect.poll(() => retries).toBe(1);
   await expect(page.getByLabel('Your message', { exact: true })).toHaveValue('');
   await expect(page.getByRole('heading', { name: 'Welcome back.' })).toHaveCount(0);
+  const bob = await recoverIdentity(fixture.bob.bundle, fixture.bob.recoveryCode);
+  const replyID = crypto.randomUUID().toUpperCase();
+  const reply = await seal(bob, 'message', replyID, fixture.connectionID, { text: 'An encrypted reply 🌿' }, [published, bob.bundle]);
+  live.send(JSON.stringify({ type: 'message', message: { id: replyID, connectionID: fixture.connectionID, senderID: bob.bundle.userID, text: reply, date: 813585600 } }));
+  await expect(page.getByRole('log', { name: 'Conversation' })).toContainText('An encrypted reply 🌿');
 });
 
 test('browser login cookies survive a new browser session and logout still revokes them', async ({ page, context, browser }) => {

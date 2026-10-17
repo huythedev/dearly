@@ -61,6 +61,8 @@ struct Profile: Codable, Identifiable, Equatable {
 }
 
 struct Journal: Codable, Identifiable {
+    var encrypted: Bool?
+    var locked: Bool?
     var id = UUID()
     var authorID: UUID
     var title: String
@@ -93,6 +95,8 @@ struct Invitation: Codable, Identifiable {
 }
 
 struct ChatMessage: Codable, Identifiable, Sendable {
+    var encrypted: Bool?
+    var locked: Bool?
     var id = UUID()
     var connectionID: UUID
     var senderID: UUID

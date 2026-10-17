@@ -211,7 +211,7 @@ def test_v2_migration_preserves_staff_hides_and_drops_anonymous_invites(env):
         action(new_client, ha, 'journal.save', journal_payload, expected=403)
     Database(app.state.database.path)
     with app.state.database.connect() as db:
-        assert db.execute('PRAGMA user_version').fetchone()[0] == 4
+        assert db.execute('PRAGMA user_version').fetchone()[0] == 5
         assert not db.execute('PRAGMA foreign_key_check').fetchall()
 
 

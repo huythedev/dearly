@@ -1,0 +1,39 @@
+{
+  "alice": {
+    "bundle": {
+      "userID": "A0000000-0000-4000-8000-000000000001",
+      "agreementKey": "BGsX0fLhLEJH-Lzm5WOkQPJ3A32BLeszoPShOUXYmMKWT-NC4v4af5uO5-tKfA-eFivOM1drMV7Oy7ZAaDe_UfU",
+      "signingKey": "BHzyexiNA09-ilI4AwS1GsPAiWnid_IbNaYLSPxHZpl4B3dVENuO0EApPZrGn3Qw27p9reY86YIpngS3nSJ4c9E",
+      "fingerprint": "97ab6cd8fef09594d5edfaf11d10b6f7a55e025bbbad924f88ba32edc0c36a79",
+      "nonce": "AAECAwQFBgcICQoL",
+      "wrappedPrivate": "kVjzJH9l5ANv6XsDDXrrUcy0qAQf9zDenJFuRBXR0ZlAPdgpCOPj87yxZqYK1HtVIVvcL-c6GsM8I2V8II1CEOjYvHCNDLB64ayy2LyLt4w"
+    },
+    "recoveryCode": "DEARLY1-NYiBMOYw0s_W-_AnR1p16lrnzC2Z_Rpx4ythwKtrJHY",
+    "privateBytes": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAEAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAg"
+  },
+  "bob": {
+    "bundle": {
+      "userID": "B0000000-0000-4000-8000-000000000002",
+      "agreementKey": "BDAdnlAtx-BdqF2gJqeumqD6ydt9UqlbPj4_mqChtFuLZVG29rMGEiPg0jwCawF9cimNmuRoh8ph1Y22rqF-4mc",
+      "signingKey": "BCN3x9aQokLKbEUHTo6lvu-qVX_VtoNx2dFHW9UqftDhR6E_uYQTpDk_jZDpv5AbfmZYps3s9GcW58Bnsd240rI",
+      "fingerprint": "bde95ab7dc2e39235f5cbeffe497594ce881a3f2935290c38685df26275977dc",
+      "nonce": "AAECAwQFBgcICQoL",
+      "wrappedPrivate": "qRWDL7OfUIRVnHEFVtKryW7bgJayFvOLZNRmf_fpxc_PzmELsgOSkkKOxTTcE4u0v_D1b583BUtFIZ84qUFYJNfk6rF-ldSx0WDJsHmUGTY"
+    },
+    "recoveryCode": "DEARLY1-JumqWxPi2MX1h9mDiUvpVmuI0fOvjNGJUaTQm4ch0fU",
+    "privateBytes": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAB8AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAIA"
+  },
+  "connectionID": "C0000000-0000-4000-8000-000000000003",
+  "journalID": "D0000000-0000-4000-8000-000000000004",
+  "messageID": "E0000000-0000-4000-8000-000000000005",
+  "journalContent": {
+    "title": "Một ngày mới 🌱",
+    "body": "Nội dung riêng tư. A quiet thought. 🔐"
+  },
+  "textContent": {
+    "text": "Mình ở đây, cùng bạn. 🌿"
+  },
+  "journal": "dearly:e2ee:1:{\"v\":1,\"purpose\":\"journal\",\"id\":\"D0000000-0000-4000-8000-000000000004\",\"senderID\":\"A0000000-0000-4000-8000-000000000001\",\"connectionID\":\"\",\"senderKeyID\":\"97ab6cd8fef09594d5edfaf11d10b6f7a55e025bbbad924f88ba32edc0c36a79\",\"nonce\":\"AAECAwQFBgcICQoL\",\"ciphertext\":\"PCCicrGJpzm3Y9pqCnAMTe2xRJSJWzKdg_yMpe32jAMjPIyewKVruk6GMQwzHkEYiiwO6nqkyhmV-U05bCVFwNB95gumuEMVPCDCAZroZpwWqjn94vNxFfEVHzLI5QToBl9pyJeI_MI\",\"ephemeralKey\":\"BM_HRlieShQHhbO_lMcmmtGxetJZ--cXwnauCw50mDOvnuJdAgtb6Xm-T5Nn4nEyLOihAGrvDkH2Eee7GTCXjvg\",\"salt\":\"ICEiIyQlJicoKSorLC0uLzAxMjM0NTY3ODk6Ozw9Pj8\",\"recipients\":[{\"userID\":\"A0000000-0000-4000-8000-000000000001\",\"keyID\":\"97ab6cd8fef09594d5edfaf11d10b6f7a55e025bbbad924f88ba32edc0c36a79\",\"nonce\":\"MjIyMjIyMjIyMjIy\",\"wrappedKey\":\"Btr2MbtgMBjzAZrw237DLakLZpXzQq0eHBxISn4lc5NV5SVjcIS43g9recVmKnfg\"}],\"signature\":\"lrYguf36mQMUK34zusd6i7tNq2SZch95tTB50pfoe1jDra48jS1UWg8X4wDh79bsyy-hI50_ayrptE5qMm_dKg\"}",
+  "passage": "dearly:e2ee:1:{\"v\":1,\"purpose\":\"passage\",\"id\":\"D0000000-0000-4000-8000-000000000004\",\"senderID\":\"A0000000-0000-4000-8000-000000000001\",\"connectionID\":\"C0000000-0000-4000-8000-000000000003\",\"senderKeyID\":\"97ab6cd8fef09594d5edfaf11d10b6f7a55e025bbbad924f88ba32edc0c36a79\",\"nonce\":\"AAECAwQFBgcICQoL\",\"ciphertext\":\"PCCifr2R4CGvDFQn34FYjDhJp_BhuP0FFEeGRqQHZ5Jj8RRdwe8yaOsowM_1HydlQbVXTPS3i4ULsKEbuw\",\"ephemeralKey\":\"BM_HRlieShQHhbO_lMcmmtGxetJZ--cXwnauCw50mDOvnuJdAgtb6Xm-T5Nn4nEyLOihAGrvDkH2Eee7GTCXjvg\",\"salt\":\"ICEiIyQlJicoKSorLC0uLzAxMjM0NTY3ODk6Ozw9Pj8\",\"recipients\":[{\"userID\":\"A0000000-0000-4000-8000-000000000001\",\"keyID\":\"97ab6cd8fef09594d5edfaf11d10b6f7a55e025bbbad924f88ba32edc0c36a79\",\"nonce\":\"MjIyMjIyMjIyMjIy\",\"wrappedKey\":\"3UpAjPvvUK7hBOnWfBWK_Vn4sWnhxpEJaDwpmDXtBnbHeFj06cGwSdCjENHiic-l\"},{\"userID\":\"B0000000-0000-4000-8000-000000000002\",\"keyID\":\"bde95ab7dc2e39235f5cbeffe497594ce881a3f2935290c38685df26275977dc\",\"nonce\":\"MzMzMzMzMzMzMzMz\",\"wrappedKey\":\"lLT_ElKFh2Ksc-4pRBa7FLLKBuOfG2XL10tfE6x3hiXz6f1Zd6vaUPvtLNYuAFHX\"}],\"signature\":\"p-LeKXfx6nkaJTTpM2k0byJg3QVM0JG_JokRq58TaNK2YdbuQxyZSrESoqHdmX_RPRVan3pFNJYl-xhrmGQDOg\"}",
+  "message": "dearly:e2ee:1:{\"v\":1,\"purpose\":\"message\",\"id\":\"E0000000-0000-4000-8000-000000000005\",\"senderID\":\"A0000000-0000-4000-8000-000000000001\",\"connectionID\":\"C0000000-0000-4000-8000-000000000003\",\"senderKeyID\":\"97ab6cd8fef09594d5edfaf11d10b6f7a55e025bbbad924f88ba32edc0c36a79\",\"nonce\":\"AAECAwQFBgcICQoL\",\"ciphertext\":\"PCCifr2R4CGvDFQn34FYjDhJp_BhuP0FFEeGRqQHZ5Jj8RRdwe8yaOsowM_1O0SfqM4r3m7OEsYKCuNzEw\",\"ephemeralKey\":\"BM_HRlieShQHhbO_lMcmmtGxetJZ--cXwnauCw50mDOvnuJdAgtb6Xm-T5Nn4nEyLOihAGrvDkH2Eee7GTCXjvg\",\"salt\":\"ICEiIyQlJicoKSorLC0uLzAxMjM0NTY3ODk6Ozw9Pj8\",\"recipients\":[{\"userID\":\"A0000000-0000-4000-8000-000000000001\",\"keyID\":\"97ab6cd8fef09594d5edfaf11d10b6f7a55e025bbbad924f88ba32edc0c36a79\",\"nonce\":\"MjIyMjIyMjIyMjIy\",\"wrappedKey\":\"BWc7gPVZXOkC5dAMIaENsFi5e2bbxGW3N5SU8hS-rJFEG1h289aQXIBNgDklkFrh\"},{\"userID\":\"B0000000-0000-4000-8000-000000000002\",\"keyID\":\"bde95ab7dc2e39235f5cbeffe497594ce881a3f2935290c38685df26275977dc\",\"nonce\":\"MzMzMzMzMzMzMzMz\",\"wrappedKey\":\"55ItZcU28F9Bzanb8h0ZEkQBv9G4e6qb8IhWKf8OxdhJpw8tKsbkKm0Mjo8lzN9o\"}],\"signature\":\"8WEbbF5UBAbu9ABoQQZ6D2_fo5-QNYnBSFtsuKx5V7HI6h-UIRapT_d3ggGXLic6PsZlnWUm5t-kozNtfxUp_Q\"}"
+}

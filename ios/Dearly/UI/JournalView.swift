@@ -34,7 +34,7 @@ struct JournalView: View {
                     EmptyCard(icon: "book", title: L("Your first page is waiting"), detail: L("Even one sentence is a beginning."))
                 }
                 ForEach(store.state.myJournals) { entry in
-                    Button { editing = entry } label: { JournalRow(entry: entry) }.buttonStyle(.plain)
+                    Button { editing = entry } label: { JournalRow(entry: entry) }.buttonStyle(.plain).disabled(entry.locked == true)
                 }
                 Button { composing = true } label: {
                     Label(L("Write a new page"), systemImage: "plus").font(.subheadline.weight(.semibold)).frame(maxWidth: .infinity).padding(16)
@@ -66,7 +66,7 @@ struct JournalArchiveView: View {
                     if let error { Text(error).foregroundStyle(.red) }
                     if loading { ProgressView() }
                     ForEach(page?.items ?? []) { entry in
-                        Button { editing = entry } label: { JournalRow(entry: entry) }.buttonStyle(.plain)
+                        Button { editing = entry } label: { JournalRow(entry: entry) }.buttonStyle(.plain).disabled(entry.locked == true)
                     }
                     HStack {
                         if cursors.count > 1 {

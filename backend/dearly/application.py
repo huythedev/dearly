@@ -16,6 +16,8 @@ from localization import RequestError, error_response
 from web_support import BrowserSession, mount_web
 
 from .database import Database
+from .account import register_routes as register_account
+from .encryption import register_routes as register_encryption
 from .limits import BodyLimit
 from .routes_auth import register_routes as register_auth
 from .routes_chat import register_routes as register_chat
@@ -82,6 +84,8 @@ def create_app(
         )
 
     register_auth(app, services)
+    register_account(app, services)
+    register_encryption(app, services)
     register_read(app, services)
     register_staff(app, services)
     register_chat(app, services)

@@ -7,6 +7,11 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		419B2D5E3B7E3864412BE0B0 /* ../web/src/fixtures/encryption-v1.json in Resources */ = {isa = PBXBuildFile; fileRef = DE6C0C262BB4B1700932479F; };
+		BDC7C3665A608ABB6F7D518C /* DearlyTests/EncryptionTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 66B5D6B80A74514091F419C9; };
+		A6C4674C197E9F0274D90A0B /* Dearly/UI/PrivacySettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = D32662FACC5A06B2741AF83B; };
+		6FBB6C00EDE48C1C6FEC20D3 /* Dearly/Core/EncryptionVault.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7CBDF28F5C0A07F9680D3F56; };
+		08FAF0F5E2DE0F9D342CBC78 /* Dearly/Core/EndToEndCrypto.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9BF8AE92B41FE2FC7D499339; };
 		F7D4A692A5CE7D4E1DB1EB3A /* Dearly/UI/GuidedTour.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8A651D89649E04DA9DCACC5A /* Dearly/UI/GuidedTour.swift */; };
 		909389F91544B3A64CE1A1EC /* Dearly/Core/GuideProgress.swift in Sources */ = {isa = PBXBuildFile; fileRef = BF2F5809E3CAFA9ED83C2E84 /* Dearly/Core/GuideProgress.swift */; };
 		F264F7CA4FC506052EDA1ABD /* Dearly/UI/AccountSettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 89D176AEC402F25DE7A6D83B; };
@@ -45,6 +50,11 @@
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXFileReference section */
+		DE6C0C262BB4B1700932479F /* ../web/src/fixtures/encryption-v1.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = "../web/src/fixtures/encryption-v1.json"; sourceTree = "<group>"; };
+		66B5D6B80A74514091F419C9 /* DearlyTests/EncryptionTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "DearlyTests/EncryptionTests.swift"; sourceTree = "<group>"; };
+		D32662FACC5A06B2741AF83B /* Dearly/UI/PrivacySettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Dearly/UI/PrivacySettingsView.swift; sourceTree = "<group>"; };
+		7CBDF28F5C0A07F9680D3F56 /* Dearly/Core/EncryptionVault.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Dearly/Core/EncryptionVault.swift; sourceTree = "<group>"; };
+		9BF8AE92B41FE2FC7D499339 /* Dearly/Core/EndToEndCrypto.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Dearly/Core/EndToEndCrypto.swift; sourceTree = "<group>"; };
 		8A651D89649E04DA9DCACC5A /* Dearly/UI/GuidedTour.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Dearly/UI/GuidedTour.swift; sourceTree = "<group>"; };
 		BF2F5809E3CAFA9ED83C2E84 /* Dearly/Core/GuideProgress.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Dearly/Core/GuideProgress.swift; sourceTree = "<group>"; };
 		89D176AEC402F25DE7A6D83B /* Dearly/UI/AccountSettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Dearly/UI/AccountSettingsView.swift; sourceTree = "<group>"; };
@@ -125,6 +135,9 @@
 				D87C01855BA3559CAFFFEA3B /* Dearly/Core/SessionKeychain.swift */,
 				5371C3D7596D92323D5A25CD /* Dearly/Core/DearlyStore.swift */,
 				B0B5C641E1A98A98255B8E27 /* Dearly/Core/Models.swift */,
+				D32662FACC5A06B2741AF83B /* Dearly/UI/PrivacySettingsView.swift */,
+				7CBDF28F5C0A07F9680D3F56 /* Dearly/Core/EncryptionVault.swift */,
+				9BF8AE92B41FE2FC7D499339 /* Dearly/Core/EndToEndCrypto.swift */,
 				A20000000000000000000004 /* Dearly/UI/StaffView.swift */,
 				A20000000000000000000002 /* Dearly/Core/StaffModels.swift */,
 				D9C1C47BC5E2400A410E6EFF /* Dearly/DearlyApp.swift */,
@@ -143,6 +156,8 @@
 			isa = PBXGroup;
 			children = (
 				62B9683CB5DF1C0497D85909 /* DearlyTests/DearlyCoreTests.swift */,
+				DE6C0C262BB4B1700932479F /* ../web/src/fixtures/encryption-v1.json */,
+				66B5D6B80A74514091F419C9 /* DearlyTests/EncryptionTests.swift */,
 				51CFF3C1F0BC59F6187E7040 /* DearlyTests/Fixtures/server-state.json */,
 				A30000000000000000000002 /* staff-responses.json */,
 			);
@@ -241,6 +256,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				26C293A884F54331436242D3 /* DearlyTests/Fixtures/server-state.json in Resources */,
+				419B2D5E3B7E3864412BE0B0 /* ../web/src/fixtures/encryption-v1.json in Resources */,
 				A30000000000000000000001 /* staff-responses.json in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -253,6 +269,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				DAD5CE1CE4A3ABD7C0C80F22 /* DearlyTests/DearlyCoreTests.swift in Sources */,
+				BDC7C3665A608ABB6F7D518C /* DearlyTests/EncryptionTests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -271,6 +288,9 @@
 				6ACC11715F65F81113186C27 /* Dearly/Core/SessionKeychain.swift in Sources */,
 				B78570EBEA90BC87BBD86DA8 /* Dearly/Core/DearlyStore.swift in Sources */,
 				D5367D01CC759B17F3DCBCFC /* Dearly/Core/Models.swift in Sources */,
+				A6C4674C197E9F0274D90A0B /* Dearly/UI/PrivacySettingsView.swift in Sources */,
+				6FBB6C00EDE48C1C6FEC20D3 /* Dearly/Core/EncryptionVault.swift in Sources */,
+				08FAF0F5E2DE0F9D342CBC78 /* Dearly/Core/EndToEndCrypto.swift in Sources */,
 				A20000000000000000000003 /* Dearly/UI/StaffView.swift in Sources */,
 				A20000000000000000000001 /* Dearly/Core/StaffModels.swift in Sources */,
 				D93DB7C32747E042999F0F7B /* Dearly/DearlyApp.swift in Sources */,

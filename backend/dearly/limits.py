@@ -82,7 +82,7 @@ class BodyLimit:
                         return
                     body = message.get("body", b"")
                     total += len(body)
-                    if total > 131072:
+                    if total > 262144:
                         return await error_response(
                             "Request is too large.",
                             413,

@@ -22,6 +22,11 @@ struct AccountSettingsView: View {
                         .font(.caption).foregroundStyle(DearlyTheme.muted)
                 }
                 if store.isOnline {
+                    Section {
+                        NavigationLink { PrivacySettingsView(vault: store.encryption) } label: {
+                            Label(L("Privacy & data"), systemImage: "lock.shield")
+                        }
+                    }
                     Section(L("Your account")) {
                         LabeledContent(L("Nickname"), value: store.me.nickname)
                         LabeledContent(L("Role"), value: store.role.title)

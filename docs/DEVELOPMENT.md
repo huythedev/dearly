@@ -46,6 +46,8 @@ Open `ios/Dearly.xcodeproj` in Xcode, select Dearly, and press **⌘U** for nati
 
 GitHub Actions runs backend/static/dependency checks, web tests/build/audit and desktop/mobile browser flows, both Docker images with custom ports and live chat checks, and iOS Simulator tests. Check the run for the commit being reviewed. CI does not replace physical-device checks, production HTTPS verification, or App Store/TestFlight distribution. [Validation notes](VALIDATION.md) record earlier checks and their scope.
 
+Full CI runs on pull requests, with `workflow_dispatch` for a manual run. It does not repeat after a tested PR merges to `main`. Make code changes through PRs; direct pushes to `main` need an explicit manual run. In-progress runs for the same ref are cancelled when superseded.
+
 ## Architecture notes
 
 The frontend uses same-origin `/v1/...` and `/ws/chat` routes. Nginx keeps public Host/port, Origin, cookies, and WebSocket upgrades intact when proxying to the configured backend. Native iOS uses bearer sessions in Keychain; web uses HttpOnly cookies. See the [API contract](API.md) for authentication, DTOs, staff permissions, and socket frames.
@@ -66,9 +68,13 @@ Web chat sends/receives over WebSocket, with reconnect, deduplication, and an id
 | `ios/Dearly/UI/` | Login/signup, journal, community, companion, garden, settings, and staff screens |
 | `ios/Dearly/Assets.xcassets/` | Appearance-aware light/dark colors and app icon |
 | `ios/Dearly/Localizable.xcstrings` | English source keys and Vietnamese interface translations |
-| `ios/Dearly.xcodeproj` | Native Xcode project; relative source paths remain inside ios/ |
+| `ios/Dearly.xcodeproj` | Native Xcode project; relative project paths, with the shared crypto fixture under web/src/fixtures/ |
 | `web/src/` | Responsive React app, English source copy, Vietnamese translations, themes, and same-origin API/chat client |
 | `web/src/guide/` | Read-only feature tour, spotlight placement and browser-local progress |
+| `web/src/crypto.ts`, `vault.ts`, `Privacy.tsx` | Web Crypto wire format, local key storage, recovery and account data controls |
+| `ios/Dearly/Core/EndToEndCrypto.swift`, `EncryptionVault.swift` | Compatible CryptoKit encryption and separate identity Keychain |
+| `backend/dearly/encryption.py`, `account.py` | Signed ciphertext validation, immutable public key delivery, password-confirmed export/deletion |
+| `web/src/fixtures/encryption-v1.json` | Shared independent test vectors for Python, Web Crypto and CryptoKit |
 | `web/e2e/` | Desktop/mobile browser flow tests |
 | `web/Dockerfile`, `web/docker/` | Independent frontend image, runtime backend address prompt, Nginx REST/WebSocket proxy |
 | `backend/Dockerfile` | API-only image with configurable listen port |

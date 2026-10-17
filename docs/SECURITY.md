@@ -1,5 +1,9 @@
 # Security behavior and audit fixes
 
+## Client encryption and account lifecycle
+
+Updated web/iOS clients encrypt new journal titles/bodies, direct messages and companion passages. The API verifies signatures and ownership without receiving decryption keys. Recovery, historical plaintext limitations, fingerprint verification, download contents and deletion retention are described in the [privacy and recovery guide](ENCRYPTION.md). The [security test report](PRIVACY-AUDIT.md) records the isolated adversarial checks and their limits; this is not an independent cryptographic audit.
+
 ## Anonymous community stories
 
 An anonymous community story uses the story's UUID as its displayed author alias. Private titles and unshared text stay with the author. Author replies use the same story alias. Anonymous stories do not expose matching eligibility or accept companion invitations; users connect through identified profiles instead.
@@ -20,7 +24,7 @@ Management documents, staff list APIs, and staff mutations are restricted by the
 
 ## Request handling
 
-The body reader enforces 128 KiB, a five-second idle deadline, a fifteen-second total deadline, and admission limits of 32 uploads overall and 8 per client IP. A rejected upload gets 429; a timed-out upload gets 408 and a closed connection. Reader slots are released on success, oversized input, disconnection, timeout, and cancellation. Body-free health/state reads do not consume the upload budget.
+The body reader enforces 256 KiB, a five-second idle deadline, a fifteen-second total deadline, and admission limits of 32 uploads overall and 8 per client IP. A rejected upload gets 429; a timed-out upload gets 408 and a closed connection. Reader slots are released on success, oversized input, disconnection, timeout, and cancellation. Body-free health/state reads do not consume the upload budget.
 
 These limits begin after headers arrive. Use a front proxy with header/body deadlines and appropriate buffering, restrict origin access, and configure `--proxy-ips` only for trusted proxies so client-based limits use trustworthy addresses. Keep the single-worker deployment: the application counters are per process.
 

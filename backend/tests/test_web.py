@@ -209,7 +209,7 @@ def test_invalid_socket_frames_never_mutate_and_size_is_bounded(env):
         socket.send_json({'type': 'message.send', 'requestID': 'bad', 'connectionID': cid, 'text': 'Rejected'})
         assert socket.receive_json()['status'] == 400
         assert client.get('/v1/messages', params={'connectionID': cid}, headers=ha).json()['items'] == []
-        socket.send_text('x' * 16385)
+        socket.send_text('x' * 32769)
         with pytest.raises(WebSocketDisconnect) as disconnected:
             socket.receive_json()
         assert disconnected.value.code == 1009

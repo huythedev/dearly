@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { APIError, request } from './api';
 import { mergeByID, type Page, type Profile } from './types';
+import { vault } from './vault';
 
 export function usePage<T extends { id: string | number }, C extends string | number = string>(path: string, onError: (message: string) => void,
   options?: { userID: string; onDenied: (error: APIError) => void }) {
@@ -25,7 +26,9 @@ export function usePage<T extends { id: string | number }, C extends string | nu
         signal: controller.signal, headers: userID ? { 'X-Dearly-User': userID } : undefined,
       });
       if (generation.current !== expected) return;
-      setItems(previous => reset ? page.items : mergeByID(previous, page.items)); setCursor(page.nextCursor);
+      const items = await vault.page(path, page.items);
+      if (generation.current !== expected) return;
+      setItems(previous => reset ? items : mergeByID(previous, items)); setCursor(page.nextCursor);
       if (page.profiles) setProfiles(previous => reset ? page.profiles! : mergeByID(previous, page.profiles!));
     } catch (error) {
       if (expected !== generation.current || controller.signal.aborted) return;

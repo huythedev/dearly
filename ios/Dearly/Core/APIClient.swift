@@ -87,6 +87,29 @@ actor APIClient {
 
     func logout() async throws { _ = try await request(path: "v1/auth/logout", method: "POST") }
 
+    func encryptionIdentity() async throws -> EncryptionIdentity {
+        let (data, _) = try await request(path: "v1/encryption/identity")
+        return try JSONDecoder().decode(EncryptionIdentity.self, from: data)
+    }
+    func publishEncryptionIdentity(_ identity: EncryptionIdentity) async throws -> EncryptionIdentity {
+        struct Input: Encodable { var agreementKey: String; var signingKey: String; var wrappedPrivate: String?; var nonce: String? }
+        let input = Input(agreementKey: identity.agreementKey, signingKey: identity.signingKey, wrappedPrivate: identity.wrappedPrivate, nonce: identity.nonce)
+        let (data, _) = try await request(path: "v1/encryption/identity", method: "POST", body: JSONEncoder().encode(input))
+        return try JSONDecoder().decode(EncryptionIdentity.self, from: data)
+    }
+    func encryptionKey(_ id: UUID) async throws -> EncryptionIdentity {
+        let (data, _) = try await request(path: "v1/encryption/keys/\(id.uuidString)")
+        return try JSONDecoder().decode(EncryptionIdentity.self, from: data)
+    }
+    func exportAccount(password: String) async throws -> Data {
+        struct Input: Encodable { var password: String }
+        return try await request(path: "v1/account/export", method: "POST", body: JSONEncoder().encode(Input(password: password))).0
+    }
+    func deleteAccount(password: String, confirmation: String) async throws {
+        struct Input: Encodable { var password: String; var confirmation: String }
+        _ = try await request(path: "v1/account/delete", method: "POST", body: JSONEncoder().encode(Input(password: password, confirmation: confirmation)))
+    }
+
     static func chatURL(for baseURL: URL) throws -> URL {
         guard var components = URLComponents(url: baseURL, resolvingAgainstBaseURL: false),
               ["https", "http"].contains(components.scheme ?? ""),
@@ -110,7 +133,7 @@ actor APIClient {
         configuration.waitsForConnectivity = false
         let socketSession = URLSession(configuration: configuration, delegate: delegate, delegateQueue: nil)
         let socket = socketSession.webSocketTask(with: url)
-        socket.maximumMessageSize = 16 * 1024
+        socket.maximumMessageSize = 32 * 1024
         defer { socketSession.invalidateAndCancel() }
         try await withTaskCancellationHandler {
             socket.resume()
@@ -123,7 +146,7 @@ actor APIClient {
                 case .data(let value): data = value
                 @unknown default: throw DearlyError.invalid(L("The server returned an invalid response."))
                 }
-                guard data.count <= 16 * 1024 else { throw DearlyError.invalid(L("The server returned an invalid response.")) }
+                guard data.count <= 32 * 1024 else { throw DearlyError.invalid(L("The server returned an invalid response.")) }
                 let event = try JSONDecoder().decode(ChatEvent.self, from: data)
                 if event.type == "ping" {
                     try await socket.send(.string("{\"type\":\"ping\"}"))

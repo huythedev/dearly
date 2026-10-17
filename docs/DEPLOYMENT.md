@@ -117,3 +117,9 @@ docker compose down
 ```
 
 `down` stops the app and preserves its data volume. Adding `--volumes` deletes that volume and its data. Keep SQLite on local disk rather than SMB/NFS, and use the documented single backend worker. Runtime limits and scaling notes are in the [backend reference](../backend/README.md#runtime-behavior-and-limits).
+
+## Encryption/account upgrade
+
+Stop older servers and back up before upgrading to SQLite schema v5. Rebuild backend and frontend, and update the iOS client together. New clients encrypt new private text; old clients cannot interpret ciphertext or send plaintext after encryption is enabled. On phones, use the HTTPS hostname: browser Web Crypto does not work over an ordinary HTTP LAN IP. `localhost:8003` remains suitable for local development.
+
+Ask users to save their recovery code in Settings before changing devices. Identity keys are immutable and cannot be reset by the server. Deletion removes live identifying/authored records and sessions, while backups follow your retention policy. Reapply deletions before bringing an older backup online. See [privacy/recovery](ENCRYPTION.md) and the [test report](PRIVACY-AUDIT.md).

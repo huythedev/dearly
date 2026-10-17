@@ -181,6 +181,8 @@ def apply_staff_action(db, user, kind, p, now):
         ).fetchone()
         if target is None:
             fail("Account not found.", 404)
+        if target["deleted_at"] is not None:
+            fail("This account was deleted.", 409)
         if target["id"] == user["id"] or target["role"] == "admin":
             fail("Use a backend server command to change an admin account.", 403)
         if kind == "staff.user.role":

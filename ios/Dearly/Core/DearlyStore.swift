@@ -3,6 +3,7 @@ import Combine
 
 @MainActor
 final class DearlyStore: ObservableObject {
+    let encryption = EncryptionVault()
     @Published private(set) var state: AppState
     @Published var errorMessage: String?
     @Published var notice: String?
@@ -60,7 +61,11 @@ final class DearlyStore: ObservableObject {
             try SessionKeychain.save(record)
             synchronizer.invalidate()
             generation = UUID(); api = client; etag = tag
-            state = envelope.state; isOnline = true; serverAddress = record.baseURL
+            let expected = generation
+            await encryption.configure(server: record.baseURL, userID: record.userID, client: client)
+            let decoded = await encryption.decoded(envelope.state)
+            guard expected == generation else { return false }
+            state = decoded; isOnline = true; serverAddress = record.baseURL
             serverClockOffset = envelope.serverNow.timeIntervalSinceNow
             lastSync = Date(); errorMessage = nil; syncError = nil
             UserDefaults.standard.set(record.baseURL, forKey: "dearly.server.address")
@@ -78,7 +83,12 @@ final class DearlyStore: ObservableObject {
             let (envelope, tag) = try await client.fetchState(etag: nil)
             guard let envelope, envelope.state.currentUserID == record.userID, envelope.state.profile(record.userID) != nil else { throw DearlyError.invalid(L("This session is invalid.")) }
             synchronizer.invalidate()
-            generation = UUID(); api = client; etag = tag; state = envelope.state
+            generation = UUID(); api = client; etag = tag
+            let expected = generation
+            await encryption.configure(server: record.baseURL, userID: record.userID, client: client)
+            let decoded = await encryption.decoded(envelope.state)
+            guard expected == generation else { return }
+            state = decoded
             isOnline = true; serverAddress = record.baseURL; lastSync = Date()
             serverClockOffset = envelope.serverNow.timeIntervalSinceNow
             startChat()
@@ -103,6 +113,7 @@ final class DearlyStore: ObservableObject {
     }
 
     private func disconnect() {
+        encryption.clearMemory()
         stopChat()
         generation = UUID(); api = nil; etag = nil; synchronizer.invalidate()
         SessionKeychain.clear(); state = .signedOut(); isOnline = false; isBusy = false
@@ -128,7 +139,8 @@ final class DearlyStore: ObservableObject {
                       envelope.state.profile(envelope.state.currentUserID) != nil else {
                     throw DearlyError.invalid(L("The server returned an invalid account profile."))
                 }
-                var updated = envelope.state
+                var updated = await encryption.decoded(envelope.state)
+                guard expected == generation else { return false }
                 // Preserve only already paged immutable messages in the still-active connection.
                 if let connection = updated.activeConnection(for: updated.currentUserID) {
                     let newIDs = Set(updated.messages.map(\.id))
@@ -200,7 +212,11 @@ final class DearlyStore: ObservableObject {
             isChatConnected = true
             _ = await refresh(force: true) // Reconcile anything missed while disconnected.
         case "message":
-            if let message = event.message { state.receiveLiveMessage(message) }
+            if let message = event.message {
+                let decoded = await encryption.message(message)
+                guard generation == expected, chatGeneration == socketID else { return }
+                state.receiveLiveMessage(decoded)
+            }
         case "state.changed":
             _ = await refresh(force: true)
         default: break
@@ -218,7 +234,9 @@ final class DearlyStore: ObservableObject {
         let expected = generation
         defer { if expected == generation { isBusy = false } }
         do {
-            try await client.command(kind: kind, payload: payload)
+            let prepared = try await encryption.prepare(kind, payload: payload, state: state)
+            guard expected == generation else { return false }
+            try await client.command(kind: kind, payload: prepared)
             guard expected == generation else { return false }
             errorMessage = nil
             let synced = await refresh(force: true)
@@ -293,7 +311,8 @@ final class DearlyStore: ObservableObject {
         isBusy = true
         defer { if expected == generation { isBusy = false } }
         do {
-            let page = try await accountRead { try await $0.messages(connectionID: connectionID, before: before) }
+            var page = try await accountRead { try await $0.messages(connectionID: connectionID, before: before) }
+            for index in page.items.indices { page.items[index] = await encryption.message(page.items[index]) }
             guard expected == generation, connection?.id == connectionID else { return false }
             let existing = Set(state.messages.map(\.id))
             state.messages.insert(contentsOf: page.items.filter { !existing.contains($0.id) }, at: 0)
@@ -324,7 +343,43 @@ final class DearlyStore: ObservableObject {
     }
 
     func journalPage(before: UUID?) async throws -> JournalPage {
-        try await accountRead { try await $0.journals(before: before) }
+        let expected = generation
+        var page = try await accountRead { try await $0.journals(before: before) }
+        for index in page.items.indices { page.items[index] = await encryption.journal(page.items[index]) }
+        guard expected == generation else { throw CancellationError() }
+        return page
+    }
+
+    func retryEncryption() async {
+        guard let client = api, isOnline else { return }
+        let uid = state.currentUserID, server = serverAddress
+        encryption.clearMemory()
+        await encryption.configure(server: server, userID: uid, client: client)
+        _ = await refresh(force: true)
+    }
+
+    func downloadData(password: String, decrypt: Bool) async throws -> Data {
+        let expected = generation
+        let data = try await accountRead { try await $0.exportAccount(password: password) }
+        let result = try await encryption.dataExport(data, decrypt: decrypt)
+        guard expected == generation else { throw CancellationError() }
+        return result
+    }
+
+    func deleteAccount(password: String, confirmation: String) async -> Bool {
+        guard !isBusy, !isAuthenticating, let client = api, isOnline else { return false }
+        let expected = generation
+        isBusy = true
+        defer { if expected == generation { isBusy = false } }
+        do {
+            try await client.deleteAccount(password: password, confirmation: confirmation)
+            guard expected == generation else { return false }
+            encryption.forget(); disconnect(); return true
+        } catch {
+            guard expected == generation else { return false }
+            if (error as? APIError)?.status == 401 { disconnect() }
+            errorMessage = error.localizedDescription; return false
+        }
     }
 
     func connectionPage(before: UUID?) async throws -> ConnectionPage {

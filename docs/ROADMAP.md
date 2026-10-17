@@ -10,8 +10,8 @@ The iOS and responsive React web apps connect to a single-node backend with acco
 - Run the backend on each target OS; configure HTTPS, a stable database path, backup/restore, and an OS account with minimal privileges.
 - Design age-verification and consent procedures for the pilot. The CLI flag records manual review rather than automatic document verification. Confirm the product's check-in timezone; the current implementation uses shared UTC.
 - Assign report coverage, violation handling, guidance for sensitive cases, and an appeals process. Staff report screens exist; automatic message filtering and user appeals do not.
-- Add account management/deletion/export, password changes, session revocation across devices, and email/recovery. The username/password prototype is not a complete identity system.
-- Define journal/chat/report retention, backup operations, and administrator access. Server data is stored in SQLite without end-to-end encryption.
+- Account deletion and ownership-filtered data downloads are available. Add password changes, a session/device management screen, and account recovery; the username/password system is still limited.
+- Set retention/backup policies and obtain an independent review of the new journal/chat E2EE format. Add key rotation, forward secrecy and a deliberate migration path for historical plaintext; see [encryption limits](ENCRYPTION.md).
 - Measure performance at expected load; move to a server database/repository and per-user invalidation when multiple nodes are required.
 
 ## Future extensions

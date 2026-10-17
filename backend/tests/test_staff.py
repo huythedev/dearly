@@ -282,7 +282,7 @@ def test_schema_v1_upgrade_preserves_accounts_sessions_journals_and_reports(tmp_
     # Reopening v3 is idempotent, including startup by a second operator process.
     Database(path)
     with app.state.database.connect() as db:
-        assert db.execute('PRAGMA user_version').fetchone()[0] == 4
+        assert db.execute('PRAGMA user_version').fetchone()[0] == 5
         assert db.execute('PRAGMA foreign_key_check').fetchall() == []
         report = db.execute('SELECT * FROM reports WHERE id=?', (rid,)).fetchone()
         assert report['reason'] == 'Legacy report' and report['journal_id'] is None and report['evidence'] == ''

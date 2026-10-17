@@ -14,7 +14,11 @@ def profile_dto(row, now):
     return dict(
         id=row["id"],
         nickname=row["nickname"],
-        age=age_on(row["birth_date"], datetime.fromtimestamp(now, timezone.utc).date()),
+        age=0
+        if row["deleted_at"] is not None
+        else age_on(
+            row["birth_date"], datetime.fromtimestamp(now, timezone.utc).date()
+        ),
         ageVerified=bool(row["age_verified"]),
         symbol=row["symbol"],
         bio=row["bio"],

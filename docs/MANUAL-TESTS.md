@@ -84,3 +84,12 @@ Use synthetic accounts/content for these checks and run the updated backend with
 - Background the iOS app and return. Its socket must stop/restart without accumulating connections; polling remains available while a socket is unavailable.
 - End/block the connection, revoke the session, change age eligibility, or suspend a member while sockets are open. Further messages must be rejected and stale chat must disappear after reconciliation.
 - Verify mobile web account settings include logout and Management for authorized staff. Check desktop/mobile English/Vietnamese, dark/system appearance, keyboard focus, dialogs, sharing previews, and multiline content.
+
+## Encryption and privacy controls
+
+- Save a recovery code, then unlock the same account on a clean Safari profile and an iPhone. Compare journal, companion passage and chat text, including Vietnamese and emoji.
+- Confirm wrong codes do not overwrite keys; locked entries cannot be edited; community still works. Compare both key fingerprints through another trusted channel.
+- Confirm a companion without keys receives a clear setup requirement rather than a plaintext send. Check reconnect/retry, background/foreground and expired sessions.
+- Download encrypted and locally decrypted JSON, save through the iOS file picker, and verify that no password/session/recovery code is in either file. Test cancel/error states and narrow screens.
+- Delete a synthetic account after making a garden, sending messages and receiving comments on a community post. Confirm other sessions close, authored content disappears, the other member retains rewards, and the final admin cannot delete themselves.
+- Check Dynamic Type/VoiceOver for recovery instructions and destructive confirmation; clear sensitive recovery text after leaving the screen or backgrounding the iPhone.

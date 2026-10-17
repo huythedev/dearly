@@ -20,7 +20,7 @@ http {
         server_name _;
         root /usr/share/nginx/html;
         index index.html;
-        client_max_body_size 128k;
+        client_max_body_size 256k;
         client_body_timeout 15s;
         client_header_timeout 15s;
         set $dearly_backend "${DEARLY_BACKEND_URL}";

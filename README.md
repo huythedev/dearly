@@ -38,6 +38,8 @@ On your first login, choose **Show me around** for a short interactive tour on w
 
 You can choose English or Vietnamese and switch between light, dark, and system appearance. The [user guide](docs/USAGE.md) explains sharing, connections, gardens, and settings.
 
+Save your **recovery code** in account settings before using another device. New private journal text and companion conversations use end-to-end encryption. Settings also provides **Download my data** and **Delete my account**. Follow the [privacy and recovery guide](docs/ENCRYPTION.md) for setup and details.
+
 ## Use Dearly on iPhone
 
 Build the app on a Mac with Xcode, then connect it to your Dearly server. Follow the [iOS setup instructions](docs/SETUP.md#ios-app) for the simulator, a physical iPhone, or the public server address.

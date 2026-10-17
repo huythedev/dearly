@@ -23,3 +23,5 @@
 - [Manual device checklist](MANUAL-TESTS.md)
 - [Source audit and module guide](SOURCE-AUDIT.md)
 - [Validation history](VALIDATION.md)
+- [Encryption, recovery, downloads and deletion](ENCRYPTION.md)
+- [Privacy/security test report](PRIVACY-AUDIT.md)

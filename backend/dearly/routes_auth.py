@@ -77,7 +77,7 @@ def register_routes(app, services):
             fail("Sign-in is busy. Please try again shortly.", 429)
         try:
             valid = password_matches(
-                data.password, user["password_hash"] if user else dummy
+                data.password, user["password_hash"] if user and user["deleted_at"] is None else dummy
             )
         finally:
             hashing.release()

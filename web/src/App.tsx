@@ -13,6 +13,7 @@ import { CompanionPage, GardenPage } from './Companion';
 import { StaffPage } from './Staff';
 import { GuidedTour } from './guide/GuidedTour';
 import { hasStaffPermission, staffScope } from './permissions';
+import { EncryptionNotice } from './Privacy';
 
 type Tab = 'journal' | 'community' | 'companion' | 'garden' | 'settings' | 'management';
 const route = () => {
@@ -46,6 +47,7 @@ export function App() {
       </aside>
       <div className="app-content"><header className="app-topbar"><div className={`connection-status ${store.syncError ? 'offline' : ''}`} role="status"><span className="status-dot" />{t(store.syncError ? 'Sync interrupted · retrying' : store.chatStatus === 'connected' ? 'A little more connected' : 'Reconnecting chat…')}</div><div className="topbar-actions"><PreferenceControls /><button data-guide="settings" className="profile-button" onClick={() => navigate('settings')} aria-label={t('Account settings')}><span>{me.nickname}</span><Avatar name={me.nickname} /></button></div></header>
         <main className="page-content" id="main-content">
+          <EncryptionNotice openSettings={() => navigate('settings')} />
           {tab === 'journal' && <JournalPage store={store} />}
           {tab === 'community' && <CommunityPage store={store} write={() => navigate('journal')} />}
           {tab === 'companion' && <CompanionPage store={store} />}
