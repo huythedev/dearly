@@ -16,12 +16,13 @@ Gray-box adversarial testing on disposable SQLite databases, HTTP/TestClient req
 | Parsers/resources | Invalid types, null/array/scalar/duplicate/deeply nested envelopes, oversized frames/bodies, slow/incomplete upload | Controlled 4xx and rollback; existing upload deadlines/admission retained |
 | Data download | Wrong password, switched account, foreign content, anonymous reports, credentials/replay records | Password/account binding; ownership-filtered no-store attachment; bounded-memory spool, two concurrent exports |
 | Deletion | Wrong password/confirmation, all sessions, comments/report copies, foreign keys, final admin, garden rewards | Atomic erasure/redaction and revocation; pseudonymous garden summary retained; final admin protected |
-| Recovery/transport | Wrong code/account, clean second-browser storage, persisted keys, Unicode, encrypted socket + identical REST retry + encrypted reply | Existing identity survives failed recovery; restored content reads correctly; retries do not duplicate writes |
+| Recovery/transport | Wrong code/account, simultaneous first logins across tabs/devices, clean second-browser storage, persisted keys, Unicode, encrypted socket + identical REST retry + encrypted reply | Existing identity survives failed recovery; restored content reads correctly; retries do not duplicate writes |
 
 ## Changes made
 
 - New sensitive writes use client E2EE. Keys are separate from login passwords and never sent unwrapped to the server. [ENCRYPTION.md](ENCRYPTION.md) specifies the format, fingerprint verification and trust limits.
 - Added password-confirmed export/deletion. Export filters ownership and prevents report-based deanonymization. Deletion redacts relevant report/audit text and blocks staff restoration of deleted accounts.
+- Serialized first identity creation in IndexedDB so simultaneous tabs publish one persisted key. A different device winning initialization opens recovery instead of replacing keys. Deleted-account tombstones cannot be reactivated through CLI/staff helpers or authenticated sessions.
 - Preserved exact socket/REST payloads, including optional `clientID`, for idempotency. Legacy plaintext validation remains; encryption-enabled users reject downgrade writes.
 - Raised HTTP bodies from 128 to 256 KiB and socket frames from 16 to 32 KiB for bounded UTF-8 ciphertext/base64 overhead. Timing/concurrency limits remain; Nginx/native/launcher sizes match.
 - CI runs on PRs/manual dispatch and cancels superseded runs. Merging a tested PR no longer repeats the full suite. Direct pushes require a manual run.
@@ -39,7 +40,7 @@ npm --prefix web run build
 npm --prefix web audit
 ```
 
-With browser binaries and a disposable backend, run `npm --prefix web run test:e2e`. Never set `DEARLY_E2E_BASE_URL` to production. Local verification reached **148 backend tests, 28 web unit tests and 56 WebKit desktop/mobile flows**, including real encrypted journal/export/delete requests. Advisory scans found no known dependency vulnerabilities at test time.
+With browser binaries and a disposable backend, run `npm --prefix web run test:e2e`. Never set `DEARLY_E2E_BASE_URL` to production. Local verification reached **148 backend tests, 28 web unit tests and 60 WebKit desktop/mobile flows**, including real encrypted journal/export/delete requests. Advisory scans found no known dependency vulnerabilities at test time.
 
 Required CI covers backend/lint/advisories, Chromium, split Docker/custom ports/retargeted backend, and iOS Simulator. The native suite adds four CryptoKit encryption/recovery/tampering tests to the existing 33. Python, Web Crypto and CryptoKit consume the independent Unicode fixture in `web/src/fixtures/encryption-v1.json`.
 

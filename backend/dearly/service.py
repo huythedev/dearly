@@ -56,7 +56,7 @@ class AppServices:
             fail("Please log in.", 401)
         digest = hashlib.sha256(authorization[7:].encode()).hexdigest()
         user = db.execute(
-            "SELECT u.* FROM users u JOIN sessions s ON s.user_id=u.id WHERE s.token_hash=? AND s.expires>? AND u.suspended=0",
+            "SELECT u.* FROM users u JOIN sessions s ON s.user_id=u.id WHERE s.token_hash=? AND s.expires>? AND u.suspended=0 AND u.deleted_at IS NULL",
             (digest, self.clock()),
         ).fetchone()
         if user is None:

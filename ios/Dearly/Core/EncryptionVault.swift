@@ -76,9 +76,13 @@ final class EncryptionVault: ObservableObject {
                 if saved == nil { saved = try EndToEndCrypto.create(userID: userID) }
                 guard let identity = saved else { throw EndToEndCrypto.invalid() }
                 try EncryptionKeychain.save(identity, key: storageKey)
-                remote = try await client.publishEncryptionIdentity(identity.bundle)
+                do { remote = try await client.publishEncryptionIdentity(identity.bundle) }
+                catch {
+                    guard (error as? APIError)?.status == 409 else { throw error }
+                    remote = try await client.encryptionIdentity()
+                }
                 guard expected == context else { return }
-                guard remote?.fingerprint == identity.bundle.fingerprint else { throw EndToEndCrypto.invalid() }
+                if remote?.fingerprint != identity.bundle.fingerprint || remote?.wrappedPrivate != identity.bundle.wrappedPrivate { saved = nil }
             }
             guard expected == context, let remote else { return }
             try EndToEndCrypto.validate(remote)

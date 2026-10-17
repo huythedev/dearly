@@ -425,6 +425,23 @@ def test_account_deletion_erases_content_revokes_all_sessions_and_preserves_part
         ).status_code
         == 401
     )
+    from dearly.moderation import set_role, set_suspended, verify_age
+    from localization import RequestError
+
+    with app.state.database.connect(write=True) as db:
+        deleted_user = db.execute(
+            "SELECT * FROM users WHERE id=?", (a["userID"],)
+        ).fetchone()
+        for restore in [
+            lambda: set_suspended(db, deleted_user, False, "server-cli", "Restore", 1),
+            lambda: set_role(db, deleted_user, "moderator", "server-cli", "Restore", 1),
+            lambda: verify_age(
+                db, deleted_user, "2000-01-01", "server-cli", "Restore", 1
+            ),
+        ]:
+            with pytest.raises(RequestError) as denied:
+                restore()
+            assert denied.value.status_code == 409
 
 
 def test_last_admin_cannot_delete_until_another_active_admin_exists(env):

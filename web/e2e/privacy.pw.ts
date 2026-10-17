@@ -1,5 +1,82 @@
 import { expect, test } from '@playwright/test';
 import { readFile } from 'node:fs/promises';
+import fixture from '../src/fixtures/encryption-v1.json' with { type: 'json' };
+
+test('another device winning key initialization opens recovery without replacing its keys', async ({ page }) => {
+  const userID = fixture.alice.bundle.userID;
+  await page.addInitScript(id => localStorage.setItem(`dearly.guide.v1:${id}`, 'seen'), userID);
+  await page.routeWebSocket('**/ws/chat', () => {});
+  let initializedElsewhere = false, publishes = 0;
+  await page.route('**/v1/**', route => {
+    const url = route.request().url();
+    if (url.endsWith('/state')) return route.fulfill({ json: { serverNow: 813585600, state: {
+      currentUserID: userID, profiles: [{ id: userID, nickname: 'Recovery friend', age: 25, ageVerified: true,
+        symbol: 'leaf.fill', bio: '', interests: [], support: 'listen', pace: 'Evenings' }],
+      messages: [], connections: [], comments: [], invitations: [], suggestedUserIDs: [],
+      journals: [{ id: fixture.journalID, authorID: userID, title: '', body: fixture.journal, sharedText: '', audience: 'privateOnly',
+        connectionID: null, anonymous: false, commentsEnabled: true, support: 'listen', date: 813585600, listeners: [], canInviteAuthor: false, moderationHidden: false }],
+    } } });
+    if (url.endsWith('/encryption/identity')) {
+      if (route.request().method() === 'POST') {
+        publishes++; initializedElsewhere = true;
+        expect(route.request().postDataJSON().agreementKey).not.toBe(fixture.alice.bundle.agreementKey);
+        return route.fulfill({ status: 409, json: { detail: 'Another device initialized first' } });
+      }
+      return initializedElsewhere ? route.fulfill({ json: fixture.alice.bundle }) : route.fulfill({ status: 404, json: { detail: 'Not initialized' } });
+    }
+    return route.fulfill({ json: { items: [], nextCursor: null } });
+  });
+  await page.goto('/journal');
+  await expect(page.getByRole('heading', { name: 'Locked entry', exact: true })).toBeVisible();
+  await page.getByRole('button', { name: 'Encryption settings', exact: true }).click();
+  await page.getByRole('textbox', { name: 'Recovery code', exact: true }).fill(fixture.alice.recoveryCode);
+  await page.getByRole('button', { name: 'Unlock encryption', exact: true }).click();
+  await expect(page.getByText('Encryption ready', { exact: true })).toBeVisible();
+  await page.getByRole('link', { name: /My journal/ }).click();
+  await expect(page.getByRole('heading', { name: fixture.journalContent.title, exact: true })).toBeVisible();
+  expect(publishes).toBe(1);
+});
+
+test('simultaneous first logins share one persisted encryption identity across tabs', async ({ page, context }) => {
+  await page.goto('/');
+  const signup = await context.request.post('/v1/auth/register', { headers: { 'X-Dearly-Client': 'web' },
+    data: { username: `keyrace_${Date.now()}`, password: 'privacy-test-password', nickname: 'Two tabs', birthDate: '2000-01-01' } });
+  expect(signup.status()).toBe(201);
+  const user = await signup.json();
+  await context.addInitScript(id => localStorage.setItem(`dearly.guide.v1:${id}`, 'seen'), user.userID);
+  let reads = 0, writes = 0;
+  let releaseReads!: () => void, releaseWrites!: () => void;
+  const reading = new Promise<void>(resolve => { releaseReads = resolve; });
+  const writing = new Promise<void>(resolve => { releaseWrites = resolve; });
+  const published: unknown[] = [];
+  await context.route('**/v1/encryption/identity', async route => {
+    if (route.request().method() === 'GET') {
+      const response = await route.fetch();
+      if (++reads <= 2) { if (reads === 2) releaseReads(); await reading; }
+      return route.fulfill({ response });
+    }
+    published.push(route.request().postDataJSON());
+    if (++writes === 2) releaseWrites();
+    await writing;
+    return route.continue();
+  });
+  try {
+    const second = await context.newPage();
+    await Promise.all([page.goto('/journal'), second.goto('/journal')]);
+    for (const tab of [page, second]) await expect(tab.getByRole('button', { name: 'Encryption settings', exact: true })).toBeVisible();
+    expect(published).toHaveLength(2); expect(published[0]).toEqual(published[1]);
+    const codes = [];
+    for (const tab of [page, second]) {
+      await tab.getByRole('button', { name: 'Encryption settings', exact: true }).click();
+      await tab.getByRole('button', { name: 'Show recovery code', exact: true }).click();
+      codes.push(await tab.getByRole('textbox', { name: 'Recovery code', exact: true }).inputValue());
+      await tab.reload();
+      await expect(tab.getByText('Encryption ready', { exact: true })).toBeVisible();
+    }
+    expect(codes[0]).toBe(codes[1]);
+    await second.close();
+  } finally { releaseReads(); releaseWrites(); }
+});
 
 test('private ciphertext, recovery on another device, data download and permanent deletion', async ({ page, context, browser }) => {
   const username = `privacy_${Date.now()}`, password = 'privacy-test-password';

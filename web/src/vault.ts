@@ -30,6 +30,27 @@ async function stored<T>(key: string, value?: T, remove = false): Promise<T | un
   } finally { db.close(); }
 }
 
+async function claimIdentity(key: string, candidate: LocalIdentity): Promise<LocalIdentity> {
+  const db = await database();
+  try {
+    return await new Promise((resolve, reject) => {
+      // A read/write transaction serializes competing first logins in other tabs.
+      // Every publisher must use the same persisted winner before contacting the API.
+      const transaction = db.transaction('keys', 'readwrite');
+      const keys = transaction.objectStore('keys');
+      const read = keys.get(key);
+      let winner = candidate;
+      read.onsuccess = () => {
+        if (read.result) winner = read.result as LocalIdentity;
+        else keys.add(candidate, key);
+      };
+      transaction.oncomplete = () => resolve(winner);
+      transaction.onerror = () => reject(transaction.error ?? new Error('Could not save encryption keys.'));
+      transaction.onabort = () => reject(transaction.error ?? new Error('Could not save encryption keys.'));
+    });
+  } finally { db.close(); }
+}
+
 class EncryptionVault {
   private userID = '';
   private local: LocalIdentity | null = null;
@@ -73,12 +94,20 @@ class EncryptionVault {
         } else {
           local ??= await createIdentity(userID);
           // Persist before publishing. A failed IndexedDB write must not strand an account.
-          await stored(this.storageKey(userID), local);
+          local = await claimIdentity(this.storageKey(userID), local);
           if (!current()) return;
           const { agreementKey, signingKey, wrappedPrivate, nonce } = local.bundle;
-          bundle = await request<IdentityBundle>('encryption/identity', { method: 'POST', headers, signal, body: JSON.stringify({ agreementKey, signingKey, wrappedPrivate, nonce }) });
+          try {
+            bundle = await request<IdentityBundle>('encryption/identity', { method: 'POST', headers, signal, body: JSON.stringify({ agreementKey, signingKey, wrappedPrivate, nonce }) });
+          } catch (error) {
+            if (!(error instanceof APIError && error.status === 409)) throw error;
+            // Another device may have initialized the account first. Recover its
+            // immutable identity; do not replace it or silently use our losing key.
+            bundle = await request<IdentityBundle>('encryption/identity', { headers, signal });
+          }
           await validateIdentity(bundle);
-          if (bundle.fingerprint !== local.bundle.fingerprint) throw new Error('Encryption keys changed. Reload and use your recovery code.');
+          if (bundle.userID !== userID) throw new Error('Encryption identity belongs to a different account.');
+          if (bundle.fingerprint !== local.bundle.fingerprint || bundle.wrappedPrivate !== local.bundle.wrappedPrivate) local = null;
         }
         if (!current()) return;
         this.bundle = bundle; this.local = local;

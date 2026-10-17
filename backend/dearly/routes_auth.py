@@ -81,7 +81,7 @@ def register_routes(app, services):
             )
         finally:
             hashing.release()
-        if not valid or user is None or user["suspended"]:
+        if not valid or user is None or user["suspended"] or user["deleted_at"] is not None:
             fail("Incorrect username or password.", 401)
         with database.connect(write=True) as db:
             if db.execute(
