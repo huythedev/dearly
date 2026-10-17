@@ -93,7 +93,7 @@ def create_app(
         else Path(__file__).resolve().parents[2] / "web" / "dist"
     )
     if (directory / "index.html").is_file():
-        mount_web(app, directory)
+        mount_web(app, directory, authorize_management=services.staff_access)
     elif selected_web:
         raise ValueError(
             "The selected web directory has no index.html. Run npm run build in web first."

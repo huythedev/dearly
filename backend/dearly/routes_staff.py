@@ -8,15 +8,25 @@ from fastapi import Header
 from fastapi.responses import JSONResponse
 
 from .constants import PRIVATE_HEADERS, SWIFT_EPOCH
-from .moderation import require_permission
 from .serialization import staff_report_dto
 from .validation import fail, identifier
 
+STAFF_HEADERS = {**PRIVATE_HEADERS, "Vary": "Authorization, Cookie, X-Dearly-User"}
+
 
 def register_routes(app, services):
-    authenticate = services.authenticate
+    authenticate = services.staff_user
     database = services.database
     limiter = services.limiter
+
+    @app.get("/v1/staff/access")
+    def staff_access(
+        authorization: str | None = Header(default=None),
+        x_dearly_user: str | None = Header(default=None),
+    ):
+        return JSONResponse(
+            services.staff_access(authorization, x_dearly_user), headers=STAFF_HEADERS
+        )
 
     @app.get("/v1/staff/reports")
     def staff_reports(
@@ -24,12 +34,12 @@ def register_routes(app, services):
         before: str | None = None,
         limit: int = 30,
         authorization: str | None = Header(default=None),
+        x_dearly_user: str | None = Header(default=None),
     ):
         if status not in ("open", "reviewed", "dismissed") or not 1 <= limit <= 50:
             fail("Invalid report filter.")
         with database.connect() as db:
-            user = authenticate(db, authorization)
-            require_permission(user, "reports.read")
+            user = authenticate(db, authorization, "reports.read", x_dearly_user)
             limiter.check("read:" + user["id"], 60, 1)
             where = "status=?"
             args = [status]
@@ -51,7 +61,7 @@ def register_routes(app, services):
                     items=[staff_report_dto(db, r) for r in page],
                     nextCursor=page[-1]["id"] if len(rows) > limit else None,
                 ),
-                headers=PRIVATE_HEADERS,
+                headers=STAFF_HEADERS,
             )
 
     @app.get("/v1/staff/users")
@@ -60,12 +70,12 @@ def register_routes(app, services):
         before: str | None = None,
         limit: int = 30,
         authorization: str | None = Header(default=None),
+        x_dearly_user: str | None = Header(default=None),
     ):
         if not 1 <= limit <= 50 or len(q) > 80:
             fail("Invalid account filter.")
         with database.connect() as db:
-            user = authenticate(db, authorization)
-            require_permission(user, "users.read")
+            user = authenticate(db, authorization, "users.read", x_dearly_user)
             limiter.check("read:" + user["id"], 60, 1)
             query = (
                 q.strip().replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_")
@@ -104,7 +114,7 @@ def register_routes(app, services):
                     items=items,
                     nextCursor=page[-1]["id"] if len(rows) > limit else None,
                 ),
-                headers=PRIVATE_HEADERS,
+                headers=STAFF_HEADERS,
             )
 
     @app.get("/v1/staff/audit")
@@ -112,12 +122,12 @@ def register_routes(app, services):
         before: int | None = None,
         limit: int = 30,
         authorization: str | None = Header(default=None),
+        x_dearly_user: str | None = Header(default=None),
     ):
         if not 1 <= limit <= 50 or (before is not None and before < 1):
             fail("Invalid page cursor.")
         with database.connect() as db:
-            user = authenticate(db, authorization)
-            require_permission(user, "audit.read")
+            user = authenticate(db, authorization, "audit.read", x_dearly_user)
             limiter.check("read:" + user["id"], 60, 1)
             rows = db.execute(
                 """SELECT a.*,u.nickname AS actor_name FROM audit_log a LEFT JOIN users u ON u.id=a.actor_id
@@ -142,5 +152,5 @@ def register_routes(app, services):
                     items=items,
                     nextCursor=page[-1]["id"] if len(rows) > limit else None,
                 ),
-                headers=PRIVATE_HEADERS,
+                headers=STAFF_HEADERS,
             )

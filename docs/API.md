@@ -15,11 +15,12 @@ The web client uses the frontend origin with relative `/v1/...` paths. In split 
 | GET `/v1/messages` | connectionID, optional before ID, limit 1–100 | items in ascending time order, nextCursor |
 | GET `/v1/journals` | optional before ID, limit 1–60 | Own journals in descending time order, nextCursor |
 | GET `/v1/connections` | optional before ID, limit 1–50 (default 20) | Own saved gardens; items, profiles, nextCursor |
+| GET `/v1/staff/access` | Optional X-Dearly-User | userID, currentUserRole, permissions; requires reports.read |
 | GET `/v1/staff/reports` | status open/reviewed/dismissed (default open), before UUID, limit 1–50 | Report page; requires reports.read |
 | GET `/v1/staff/users` | q: username/nickname prefix, before UUID, limit 1–50 | Account page; requires users.read |
 | GET `/v1/staff/audit` | before: integer event ID, limit 1–50 | Audit page; requires audit.read |
 
-Browser mutations also send `X-Dearly-User` with the `currentUserID` from their originating snapshot. On `/v1/actions`, a supplied ID must exactly match the authenticated account; a mismatch returns 409 before writing or recording the request ID. This prevents a retry from executing under a different account after another tab changes the shared cookie. It does not replace authentication. Existing bearer clients may omit the header.
+Browser mutations also send `X-Dearly-User` with the `currentUserID` from their originating snapshot. On `/v1/actions`, a supplied ID must exactly match the authenticated account; a mismatch returns 409 before writing or recording the request ID. This prevents a retry from executing under a different account after another tab changes the shared cookie. It does not replace authentication. Existing bearer clients may omit the header. Web staff authorization/list requests also send this header. A mismatch returns 409 before returning staff records; native bearer clients may continue to omit it.
 
 JSON dates are **seconds since 2001-01-01 UTC**, matching the default Swift JSONEncoder/JSONDecoder Date representation. Native DTOs do not use the Unix epoch. `birthDate` is a Gregorian date string rather than a timestamp. IDs are UUIDs. Check-in days use YYYY-MM-DD in server UTC.
 
@@ -89,6 +90,10 @@ Each action POST has this form:
 Reuse `requestID` when retrying the same mutation. The server stores the result and payload hash atomically for 7 days; reusing an ID with a different payload returns 409. Check-ins also have a unique `(connection, day, user)` constraint independent of retry keys. The server does not accept client-declared days, streaks, rewards, or members.
 
 ## Staff roles and payloads
+
+The production `/management` document and its subpaths require a current moderator/admin session: guests receive 401 and regular members receive 403. FastAPI hosting enforces this before serving HTML; the separate frontend uses an internal Nginx authorization subrequest to `/v1/staff/access`. Authorization errors or an unavailable backend never fall back to the management document. Protected HTML and staff responses use `Cache-Control: no-store`.
+
+The web console checks `/v1/staff/access` before mounting controls or reading records, and rechecks when returning to a visible tab or a page restored from browser history. Clients require both a recognized staff role and an explicit permission within that role. Permission changes discard pending forms. Staff read/write denials close the console and discard its loaded records even if the following snapshot refresh fails.
 
 `state.currentUserRole` is `user`, `moderator`, or `admin`; `state.permissions` contains only the current account's permission strings. Roles are never accepted from registration or public profile updates. Older state payloads omit these fields; the iOS app treats that as no staff access. The personal snapshot format remains `schemaVersion=1`; SQLite storage migrates separately to `user_version=4`.
 

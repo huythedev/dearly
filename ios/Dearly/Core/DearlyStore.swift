@@ -36,7 +36,7 @@ final class DearlyStore: ObservableObject {
     }
     var me: Profile { state.currentUser }
     var role: AccountRole { AccountRole(rawValue: state.currentUserRole ?? "") ?? .user }
-    func hasPermission(_ permission: String) -> Bool { isOnline && (state.permissions?.contains(permission) ?? false) }
+    func hasPermission(_ permission: String) -> Bool { isOnline && role.allows(permission, granted: state.permissions) }
     var connection: Connection? { state.activeConnection(for: me.id) }
     var partner: Profile? { connection?.members.first(where: { $0 != me.id }).flatMap { state.profile($0) } }
 
@@ -208,7 +208,7 @@ final class DearlyStore: ObservableObject {
     }
 
     @discardableResult
-    private func execute(_ kind: String, _ payload: CommandPayload) async -> Bool {
+    private func execute(_ kind: String, _ payload: CommandPayload, staff: Bool = false) async -> Bool {
         guard !isBusy, !isAuthenticating else { return false }
         guard let client = api, isOnline else {
             errorMessage = L("Please log in to continue.")
@@ -227,6 +227,7 @@ final class DearlyStore: ObservableObject {
             return true
         } catch {
             if expected == generation {
+                if staff && (error as? APIError)?.status == 403 { state.permissions = [] }
                 if (error as? APIError)?.status == 401 { disconnect() }
                 errorMessage = error.localizedDescription
             }
@@ -343,7 +344,7 @@ final class DearlyStore: ObservableObject {
         } catch {
             if expected == generation {
                 if (error as? APIError)?.status == 401 { disconnect() }
-                if (error as? APIError)?.status == 403 { _ = await refresh(force: true) }
+                if (error as? APIError)?.status == 403 { state.permissions = []; _ = await refresh(force: true) }
             }
             throw error
         }
@@ -359,7 +360,14 @@ final class DearlyStore: ObservableObject {
         try await staffRead("audit.read") { try await $0.staffAudit(before: before) }
     }
     func staffCommand(_ kind: String, payload: CommandPayload) async -> Bool {
-        let success = await execute(kind, payload)
+        let permissions = ["staff.report.review": "reports.review", "staff.report.hide": "reports.hide",
+                           "staff.report.restore": "reports.hide", "staff.user.role": "roles.manage",
+                           "staff.user.suspend": "users.suspend", "staff.user.verify_age": "users.verify_age"]
+        guard let permission = permissions[kind], hasPermission(permission) else {
+            errorMessage = L("Access denied.")
+            return false
+        }
+        let success = await execute(kind, payload, staff: true)
         if !success, isOnline { _ = await refresh(force: true) }
         return success
     }

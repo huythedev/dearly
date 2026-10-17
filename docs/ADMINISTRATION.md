@@ -30,6 +30,20 @@ For a Python-only backend, run from `backend`:
 
 For a custom database, put `--db /path/to/dearly.sqlite3` **before** `set-role`, or use the same `DEARLY_DB` environment variable as the server. The CLI can also set `--role moderator` or `--role user`. There is no default admin password or public admin-registration endpoint. Changes appear on the next sync; use **Sync now** in settings if needed. The last active admin cannot be demoted or suspended.
 
+## Access to Management
+
+Management is available only to signed-in moderators and admins. Regular members do not see its menu entry and cannot open its URL or APIs. If your session has expired, open the normal Dearly address and log in first.
+
+Dearly checks your current server permissions before opening the console. Removing staff access closes its controls; changing roles also closes pending management forms. A moderator can still verify reviewed ages, while role changes, suspension, and the audit log remain admin permissions.
+
+When installing this access-control update, rebuild **both** Docker services after pulling the latest code:
+
+```bash
+docker compose up -d --build frontend backend
+```
+
+For the technical findings and regression coverage, see the [Management access audit](MANAGEMENT-AUDIT.md).
+
 ## Staff roles
 
 | Function | User | Moderator | Admin |

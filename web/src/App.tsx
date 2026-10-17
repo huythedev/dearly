@@ -12,6 +12,7 @@ import { CommunityPage } from './Community';
 import { CompanionPage, GardenPage } from './Companion';
 import { StaffPage } from './Staff';
 import { GuidedTour } from './guide/GuidedTour';
+import { hasStaffPermission, staffScope } from './permissions';
 
 type Tab = 'journal' | 'community' | 'companion' | 'garden' | 'settings' | 'management';
 const route = () => {
@@ -41,7 +42,7 @@ export function App() {
           {links.map(item => <a key={item.id} href={`/${item.id}`} onClick={e => { e.preventDefault(); navigate(item.id); }} className={tab === item.id ? 'active' : ''} aria-current={tab === item.id ? 'page' : undefined}><item.icon size={20} /><span><strong>{t(item.title)}</strong><small>{t(item.subtitle)}</small></span>{tab === item.id && <ChevronRight size={14} />}</a>)}
         </nav>
         <div className="sidebar-note"><span className="tiny-star">✳</span><p>{t('You don’t have to grow all at once.')}</p><span>{t('A little, every day, is enough.')}</span></div>
-        <div className="sidebar-bottom">{state.permissions?.includes('reports.read') && <button className={tab === 'management' ? 'text-button active' : 'text-button'} onClick={() => navigate('management')}><ShieldCheck size={17} />{t('Management')}</button>}<button className="text-button" onClick={() => navigate('settings')}><Settings size={17} />{t('Settings')}</button><button className="text-button" disabled={store.busy} onClick={() => void store.logout()}><LogOut size={17} />{t('Log out')}</button><p>{t('A space for companionship.')}<br />{t('Always at your own pace.')}</p></div>
+        <div className="sidebar-bottom">{hasStaffPermission(state, 'reports.read') && <button className={tab === 'management' ? 'text-button active' : 'text-button'} onClick={() => navigate('management')}><ShieldCheck size={17} />{t('Management')}</button>}<button className="text-button" onClick={() => navigate('settings')}><Settings size={17} />{t('Settings')}</button><button className="text-button" disabled={store.busy} onClick={() => void store.logout()}><LogOut size={17} />{t('Log out')}</button><p>{t('A space for companionship.')}<br />{t('Always at your own pace.')}</p></div>
       </aside>
       <div className="app-content"><header className="app-topbar"><div className={`connection-status ${store.syncError ? 'offline' : ''}`} role="status"><span className="status-dot" />{t(store.syncError ? 'Sync interrupted · retrying' : store.chatStatus === 'connected' ? 'A little more connected' : 'Reconnecting chat…')}</div><div className="topbar-actions"><PreferenceControls /><button data-guide="settings" className="profile-button" onClick={() => navigate('settings')} aria-label={t('Account settings')}><span>{me.nickname}</span><Avatar name={me.nickname} /></button></div></header>
         <main className="page-content" id="main-content">
@@ -50,7 +51,7 @@ export function App() {
           {tab === 'companion' && <CompanionPage store={store} />}
           {tab === 'garden' && <GardenPage store={store} find={() => navigate('companion')} />}
           {tab === 'settings' && <SettingsPage store={store} me={me} manage={() => navigate('management')} />}
-          {tab === 'management' && (state.permissions?.includes('reports.read') ? <StaffPage store={store} /> : <p>{t('You do not have access to management.')}</p>)}
+          {tab === 'management' && (hasStaffPermission(state, 'reports.read') ? <StaffPage key={staffScope(state)} store={store} /> : <p>{t('You do not have access to management.')}</p>)}
         </main><footer className="app-footer"><Leaf size={13} />{t('A little space. A little connection. A little growth.')}</footer>
       </div>
     </div></GuidedTour> : <Auth store={store} />}

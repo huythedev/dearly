@@ -10,9 +10,34 @@ from starlette.websockets import WebSocketDisconnect
 
 from server import create_app
 from test_api import action, pair, register
+from test_staff import grant
 
 
 WEB = {'X-Dearly-Client': 'web', 'Origin': 'http://testserver'}
+
+
+def test_management_documents_require_current_staff_access_including_browser_cookies(tmp_path):
+    dist = tmp_path / 'dist'; dist.mkdir()
+    (dist / 'index.html').write_text('<html>DEARLY MANAGEMENT SHELL</html>')
+    app = create_app(tmp_path / 'db.sqlite3', web_dir=dist)
+    with TestClient(app) as client:
+        env = client, app, [0]
+        member, hm = register(env, 'member', verified=False)
+        mod, hs = register(env, 'mod', verified=False)
+        grant(env, mod['userID'], 'moderator')
+        for path in ['/management', '/management/', '/management/accounts', '/management?section=users']:
+            for headers, status in [({}, 401), (hm, 403), (hs, 200)]:
+                response = client.get(path, headers=headers)
+                assert response.status_code == status
+                assert response.headers['cache-control'] == 'no-store'
+                assert ('DEARLY MANAGEMENT SHELL' in response.text) == (status == 200)
+        response = client.post('/v1/auth/login', headers=WEB, json={'username': 'mod', 'password': 'test-password-123'})
+        assert response.status_code == 200
+        assert client.get('/management').status_code == 200
+        grant(env, mod['userID'], 'user')
+        assert client.get('/management').status_code == 403
+        client.post('/v1/auth/logout', headers=WEB)
+        assert client.get('/management').status_code == 401
 
 
 @pytest.mark.parametrize('endpoint', ['register', 'login'])

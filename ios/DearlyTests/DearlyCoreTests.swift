@@ -437,6 +437,21 @@ final class DearlyCoreTests: XCTestCase {
         XCTAssertEqual(envelope.serverNow.timeIntervalSince1970, 1791892800, accuracy: 1)
     }
 
+    func testStaffPermissionsRequireBothRoleAndGrant() {
+        let all = ["reports.read", "users.read", "users.verify_age", "roles.manage", "users.suspend", "audit.read"]
+        for permission in all {
+            XCTAssertFalse(AccountRole.user.allows(permission, granted: all))
+            XCTAssertFalse(AccountRole.admin.allows(permission, granted: nil))
+            XCTAssertFalse(AccountRole.admin.allows(permission, granted: []))
+        }
+        XCTAssertTrue(AccountRole.moderator.allows("users.verify_age", granted: all))
+        XCTAssertFalse(AccountRole.moderator.allows("roles.manage", granted: all))
+        XCTAssertFalse(AccountRole.moderator.allows("users.suspend", granted: all))
+        XCTAssertFalse(AccountRole.moderator.allows("audit.read", granted: all))
+        XCTAssertTrue(AccountRole.admin.allows("roles.manage", granted: all))
+        XCTAssertFalse(AccountRole.admin.allows("unknown", granted: ["unknown"]))
+    }
+
     func testStaffAPIResponsesDecodeWithoutPrivateContent() throws {
         struct Fixture: Decodable {
             var envelope: StateEnvelope

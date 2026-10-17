@@ -29,7 +29,7 @@ def cli(env, *args, expected=0):
     return result
 
 
-@pytest.mark.parametrize('endpoint', ['reports', 'users', 'audit'])
+@pytest.mark.parametrize('endpoint', ['access', 'reports', 'users', 'audit'])
 def test_staff_reads_require_auth_and_role(env, endpoint):
     client, _, _ = env
     _, h = register(env, 'member')
@@ -38,6 +38,38 @@ def test_staff_reads_require_auth_and_role(env, endpoint):
     snapshot = state(client, h)
     assert snapshot['currentUserRole'] == 'user' and snapshot['permissions'] == []
     assert all('role' not in p for p in snapshot['profiles'])
+
+
+@pytest.mark.parametrize('endpoint', ['access', 'reports', 'users', 'audit'])
+def test_staff_reads_are_bound_to_the_requesting_account_and_live_role(env, endpoint):
+    client, _, _ = env
+    admin, headers = register(env, 'admin'); other, _ = register(env, 'other')
+    grant(env, admin['userID'], 'admin')
+    path = '/v1/staff/' + endpoint
+    assert client.get(path, headers={**headers, 'X-Dearly-User': other['userID']}).status_code == 409
+    response = client.get(path, headers={**headers, 'X-Dearly-User': admin['userID']})
+    assert response.status_code == 200 and response.headers['cache-control'] == 'no-store'
+    if endpoint == 'access':
+        assert set(response.json()) == {'userID', 'currentUserRole', 'permissions'}
+        assert response.json()['currentUserRole'] == 'admin'
+        assert response.json()['userID'] == admin['userID']
+    grant(env, other['userID'], 'admin')
+    grant(env, admin['userID'], 'moderator')
+    assert client.get(path, headers=headers).status_code == (403 if endpoint == 'audit' else 200)
+    grant(env, admin['userID'], 'user')
+    assert client.get(path, headers=headers).status_code == 403
+
+
+def test_staff_access_rejects_forged_role_headers_and_revoked_or_suspended_sessions(env):
+    client, app, _ = env
+    member, hm = register(env, 'member'); mod, hs = register(env, 'mod')
+    assert client.get('/v1/staff/access', headers={**hm, 'X-Role': 'admin', 'X-Permissions': 'reports.read'}).status_code == 403
+    grant(env, mod['userID'], 'moderator')
+    with app.state.database.connect(write=True) as db:
+        db.execute('UPDATE users SET suspended=1 WHERE id=?', (mod['userID'],))
+    assert client.get('/v1/staff/access', headers=hs).status_code == 401
+    client.post('/v1/auth/logout', headers=hm)
+    assert client.get('/v1/staff/access', headers=hm).status_code == 401
 
 
 def test_registration_and_profile_cannot_assign_roles(env):

@@ -2,6 +2,12 @@ import Foundation
 
 enum AccountRole: String, Codable, CaseIterable {
     case user, moderator, admin
+    func allows(_ permission: String, granted: [String]?) -> Bool {
+        let moderator: Set<String> = ["reports.read", "reports.review", "reports.hide", "users.read", "users.verify_age"]
+        let admin = moderator.union(["roles.manage", "users.suspend", "audit.read"])
+        let allowed: Set<String> = self == .admin ? admin : self == .moderator ? moderator : []
+        return allowed.contains(permission) && (granted?.contains(permission) ?? false)
+    }
     var title: String {
         switch self {
         case .user: return L("Member")

@@ -96,7 +96,7 @@ export function useDearly() {
     };
   }, [userID, refresh, expire]);
 
-  const run = async (perform: (signal: AbortSignal) => Promise<unknown>) => {
+  const run = async (perform: (signal: AbortSignal) => Promise<unknown>, onDenied?: (error: APIError) => void) => {
     if (operation.current) return false;
     const controller = operation.current = new AbortController();
     const expected = generation.current;
@@ -105,6 +105,7 @@ export function useDearly() {
     try { await perform(controller.signal); return current(); }
     catch (error) {
       if (!current()) return false;
+      if (error instanceof APIError && [401, 403, 409].includes(error.status)) onDenied?.(error);
       if (error instanceof APIError && error.status === 401) expire();
       setError(error instanceof Error ? error.message : 'Something went wrong. Please try again.');
       return false;
@@ -128,7 +129,7 @@ export function useDearly() {
       if (okay) expire();
       return okay;
     },
-    act: (kind: string, payload: Record<string, unknown>) => run(async signal => {
+    act: (kind: string, payload: Record<string, unknown>, onDenied?: (error: APIError) => void) => run(async signal => {
       const userID = envelope?.state.currentUserID;
       if (!userID) throw new APIError(401, 'Please log in.');
       const value = command(kind, payload);
@@ -140,7 +141,7 @@ export function useDearly() {
         }
       } else await sendCommand(value, signal, userID);
       if (!signal.aborted) await refresh(true);
-    }),
+    }, onDenied),
   };
 }
 

@@ -37,6 +37,12 @@ assert.equal((await fetch(`${origin}/assets/.hidden.js`, options())).status, 404
 assert.equal((await fetch(`${origin}/v1/missing`, options())).status, 404);
 assert.equal((await fetch(`${backend}/`, options())).status, 404, 'Backend image must remain API-only.');
 assert.equal((await fetch(`${backend}/health`, options())).status, 200);
+for (const path of ['/management', '/management/', '/management/accounts']) {
+  const blocked = await fetch(`${origin}${path}`, options());
+  assert.equal(blocked.status, 401);
+  assert.match(blocked.headers.get('Cache-Control') ?? '', /no-store/);
+}
+assert.equal((await fetch(`${origin}/_dearly_staff_access`, options())).status, 404);
 
 const suffix = randomUUID().slice(0, 8);
 const password = 'container-test-password';
@@ -86,6 +92,24 @@ try {
 const login = await json('/v1/auth/login', { method: 'POST', headers: { Origin: origin, 'X-Dearly-Client': 'web' }, body: JSON.stringify({ username: first.username, password }) });
 assert.equal(login.value.token, undefined);
 const cookie = login.response.headers.get('set-cookie').split(';')[0];
+for (const path of ['/management', '/management/', '/management/accounts', '/v1/staff/access', '/v1/staff/users', '/v1/staff/reports', '/v1/staff/audit']) {
+  assert.equal((await fetch(`${origin}${path}`, { ...options(), headers: { Cookie: cookie } })).status, 403);
+}
+execFileSync('docker', ['compose', 'exec', '-T', 'backend', 'python', 'run.py', 'set-role', '--username', first.username, '--role', 'moderator', '--reason', 'Disposable staff routing check'], { stdio: 'pipe' });
+for (const path of ['/management', '/management/', '/management/accounts']) {
+  const authorized = await fetch(`${origin}${path}`, { ...options(), headers: { Cookie: cookie } });
+  assert.equal(authorized.status, 200);
+  assert.match(authorized.headers.get('Content-Type') ?? '', /text\/html/);
+  assert.match(authorized.headers.get('Cache-Control') ?? '', /no-store/);
+  assert.match(await authorized.text(), /Dearly/);
+}
+const access = await json('/v1/staff/access', { headers: { Cookie: cookie, 'X-Dearly-User': first.userID } });
+assert.equal(access.value.userID, first.userID);
+assert.equal(access.value.currentUserRole, 'moderator');
+assert.ok(!access.value.permissions.includes('roles.manage'));
+execFileSync('docker', ['compose', 'exec', '-T', 'backend', 'python', 'run.py', 'set-role', '--username', first.username, '--role', 'user', '--reason', 'Revoke disposable staff access'], { stdio: 'pipe' });
+assert.equal((await fetch(`${origin}/management`, { ...options(), headers: { Cookie: cookie } })).status, 403);
+
 assert.match(login.response.headers.get('set-cookie'), /HttpOnly/i);
 const state = await json('/v1/state', { headers: { Cookie: cookie } });
 assert.equal(state.value.state.currentUserID, first.userID);

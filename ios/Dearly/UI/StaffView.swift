@@ -4,6 +4,7 @@ import SwiftUI
 struct StaffConsoleView: View {
     @AppStorage("dearly.language") private var language = "en"
     @EnvironmentObject private var store: DearlyStore
+    @Environment(\.scenePhase) private var scenePhase
     @State private var section = "reports"
     @State private var status: ReportStatus = .open
     @State private var query = ""
@@ -15,10 +16,19 @@ struct StaffConsoleView: View {
     @State private var loading = false
     @State private var failure: String?
     @State private var requestID = UUID()
+    @State private var accessRequest = UUID()
+    @State private var checkingAccess = true
+    @State private var accessChecked = false
+
+    private var accessScope: String {
+        "\(store.state.currentUserID):\(store.state.currentUserRole ?? ""):\((store.state.permissions ?? []).sorted().joined(separator: ","))"
+    }
 
     var body: some View {
         Group {
-            if store.hasPermission("reports.read") {
+            if checkingAccess {
+                ProgressView()
+            } else if accessChecked && store.hasPermission("reports.read") {
                 List {
                     Section {
                         Text(store.role.title).font(.headline).foregroundStyle(DearlyTheme.forest)
@@ -104,19 +114,36 @@ struct StaffConsoleView: View {
             }
         }
         .navigationTitle(L("Dearly management")).navigationBarTitleDisplayMode(.inline)
-        .onAppear { Task { await load() } }
-        .onDisappear { requestID = UUID() }
+        .onAppear { Task { await authorizeAndLoad() } }
+        .onDisappear { requestID = UUID(); accessRequest = UUID(); accessChecked = false }
         .onChange(of: section) { _, _ in Task { await load() } }
         .onChange(of: status) { _, _ in Task { await load() } }
         .onChange(of: query) { _, _ in
             // A cursor belongs to the search that produced it.
             requestID = UUID(); users = []; nextID = nil; loading = false; failure = nil
         }
-        .onChange(of: store.state.permissions) { _, _ in
-            reports = []; users = []; audit = []; section = "reports"
-            Task { await load() }
+        .onChange(of: accessScope) { _, _ in
+            reports = []; users = []; audit = []; section = "reports"; accessChecked = false
+            Task { await authorizeAndLoad() }
         }
-        .refreshable { await load() }
+        .onChange(of: scenePhase) { _, phase in
+            if phase == .active { Task { await authorizeAndLoad() } }
+            else { requestID = UUID(); accessRequest = UUID(); accessChecked = false; reports = []; users = []; audit = [] }
+        }
+        .refreshable { await authorizeAndLoad() }
+    }
+
+    private func authorizeAndLoad() async {
+        guard scenePhase == .active else { accessChecked = false; checkingAccess = false; return }
+        let expected = UUID(); accessRequest = expected; requestID = UUID()
+        checkingAccess = true; accessChecked = false
+        reports = []; users = []; audit = []; nextID = nil; nextAuditID = nil
+        let synced = await store.refresh(force: true)
+        guard expected == accessRequest else { return }
+        checkingAccess = false
+        guard synced, store.hasPermission("reports.read") else { return }
+        accessChecked = true
+        await load()
     }
 
     private func load(next: Bool = false) async {
@@ -143,7 +170,10 @@ struct StaffConsoleView: View {
                 reports = page.items; nextID = page.nextCursor
             }
         } catch {
-            if requestID == expected { failure = error.localizedDescription }
+            if requestID == expected {
+                failure = error.localizedDescription
+                if [401, 403].contains((error as? APIError)?.status ?? 0) { accessChecked = false }
+            }
         }
     }
 }
@@ -194,6 +224,8 @@ private struct StaffReportView: View {
             } else { ContentUnavailableView(L("Access denied"), systemImage: "lock.shield") }
         }
         .navigationTitle(L("Report details"))
+        .onChange(of: store.state.permissions) { _, _ in confirmHide = false; confirmRestore = false; reason = "" }
+        .onChange(of: store.role) { _, _ in confirmHide = false; confirmRestore = false; reason = "" }
         .confirmationDialog(L("Hide this community post?"), isPresented: $confirmHide, titleVisibility: .visible) {
             Button(L("Hide post"), role: .destructive) {
                 Task {
@@ -271,6 +303,8 @@ private struct StaffUserView: View {
             } else { ContentUnavailableView(L("Access denied"), systemImage: "lock.shield") }
         }
         .navigationTitle(L("Manage account"))
+        .onChange(of: store.state.permissions) { _, _ in pending = nil; reason = "" }
+        .onChange(of: store.role) { _, _ in pending = nil; reason = "" }
         .onAppear { birthDate = user.birthDate; role = user.role }
         .confirmationDialog(L("Confirm change"), isPresented: Binding(get: { pending != nil }, set: { if !$0 { pending = nil } }), titleVisibility: .visible) {
             let operation = pending ?? ""

@@ -14,6 +14,10 @@ A staff hide creates a durable restriction in `moderation_holds`, independently 
 
 The v3 migration reconstructs these restrictions from earlier `report.hide` audit events. It also removes legacy pending anonymous invitations. Back up before upgrading and stop the older server before starting the new code.
 
+## Management access
+
+Management documents, staff list APIs, and staff mutations are restricted by the current server-side role. The web console also requires a fresh staff authorization response before displaying controls. Both clients check the role and its explicit grants; stale permission arrays alone do not expose Management. Account-bound web reads, immediate clearing after a denial, and resetting pending dialogs on permission changes prevent old staff screens from surviving account/role changes. See the [Management access audit](MANAGEMENT-AUDIT.md) for the verified scope and fixes.
+
 ## Request handling
 
 The body reader enforces 128 KiB, a five-second idle deadline, a fifteen-second total deadline, and admission limits of 32 uploads overall and 8 per client IP. A rejected upload gets 429; a timed-out upload gets 408 and a closed connection. Reader slots are released on success, oversized input, disconnection, timeout, and cancellation. Body-free health/state reads do not consume the upload budget.
