@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { APIError, command, fetchState, request, sendCommand } from './api';
 import { ChatTransport, type ChatStatus } from './chat';
 import { RefreshQueue } from './synchronization';
+import { vault } from './vault';
 import { activeConnection, mergeByID, type Envelope } from './types';
 
 export function useDearly() {
@@ -18,6 +19,7 @@ export function useDearly() {
   const chat = useRef<ChatTransport | null>(null);
 
   const expire = useCallback(() => {
+    vault.clearMemory();
     generation.current++;
     etag.current = null;
     queue.current?.invalidate();
@@ -39,7 +41,10 @@ export function useDearly() {
       if (!current()) return;
       etag.current = result.etag;
       if (result.envelope) {
-        const updated = result.envelope;
+        await vault.initialize(result.envelope.state.currentUserID, signal);
+        if (!current()) return;
+        const updated = await vault.envelope(result.envelope);
+        if (!current()) return;
         setEnvelope(previous => {
           if (!current()) return previous;
           const connection = activeConnection(updated.state);
@@ -74,11 +79,11 @@ export function useDearly() {
       status: status => { if (current()) setChatStatus(status); },
       changed: () => { if (current()) void refresh(true); },
       sessionRejected: () => { if (current()) void refresh(true); },
-      message: message => setEnvelope(previous => {
+      message: message => { void vault.message(message).then(message => setEnvelope(previous => {
         if (!current() || !previous || activeConnection(previous.state)?.id !== message.connectionID) return previous;
         return { ...previous, state: { ...previous.state, messages: mergeByID(previous.state.messages, [message])
           .sort((a, b) => a.date - b.date || a.id.localeCompare(b.id)).slice(-500) } };
-      }),
+      })); },
     });
     chat.current = transport;
     setChatStatus('connecting');
@@ -129,10 +134,16 @@ export function useDearly() {
       if (okay) expire();
       return okay;
     },
+    deleteAccount: (password: string, confirmation: string) => run(async signal => {
+      const userID = envelope!.state.currentUserID;
+      await request('account/delete', { method: 'POST', signal, headers: { 'X-Dearly-User': userID }, body: JSON.stringify({ password, confirmation }) });
+      // A storage error must not keep a deleted account visible or signed in.
+      try { await vault.forget(userID); } finally { expire(); }
+    }),
     act: (kind: string, payload: Record<string, unknown>, onDenied?: (error: APIError) => void) => run(async signal => {
       const userID = envelope?.state.currentUserID;
       if (!userID) throw new APIError(401, 'Please log in.');
-      const value = command(kind, payload);
+      const value = command(kind, await vault.prepare(kind, payload, envelope!));
       if (kind === 'message.send' && chat.current) {
         try { await chat.current.send(value); }
         catch (error) {

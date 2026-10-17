@@ -67,13 +67,16 @@ struct RootView: View {
         NavigationStack {
             content()
                 .safeAreaInset(edge: .top, spacing: 0) {
-                    if store.isOnline {
-                        HStack(spacing: 7) {
-                            Image(systemName: store.syncError == nil ? "network" : "wifi.exclamationmark")
-                            Text(store.syncError == nil ? LF("Connected · %1$@", String(describing: store.me.nickname)) : L("Sync interrupted · Reconnecting automatically"))
-                            Spacer()
-                            if store.isBusy { ProgressView().controlSize(.small) }
-                        }.font(.caption2).foregroundStyle(DearlyTheme.forest).padding(.horizontal, 22).padding(.vertical, 7).background(DearlyTheme.sage.opacity(0.6))
+                    VStack(spacing: 0) {
+                        EncryptionNoticeView(vault: store.encryption) { showSettings = true }
+                        if store.isOnline {
+                            HStack(spacing: 7) {
+                                Image(systemName: store.syncError == nil ? "network" : "wifi.exclamationmark")
+                                Text(store.syncError == nil ? LF("Connected · %1$@", String(describing: store.me.nickname)) : L("Sync interrupted · Reconnecting automatically"))
+                                Spacer()
+                                if store.isBusy { ProgressView().controlSize(.small) }
+                            }.font(.caption2).foregroundStyle(DearlyTheme.forest).padding(.horizontal, 22).padding(.vertical, 7).background(DearlyTheme.sage.opacity(0.6))
+                        }
                     }
                 }
                 .background(DearlyTheme.cream.ignoresSafeArea())

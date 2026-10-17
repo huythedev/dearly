@@ -46,7 +46,7 @@ def register_routes(app, services):
         try:
             await websocket.accept()
             raw = await asyncio.wait_for(websocket.receive_text(), timeout=5)
-            if len(raw.encode()) > 16384:
+            if len(raw.encode()) > 32768:
                 await close_socket(websocket, 1009)
                 return
             frame = json.loads(raw)
@@ -75,7 +75,7 @@ def register_routes(app, services):
                         continue
                     if incoming in done:
                         raw = incoming.result()
-                        if len(raw.encode()) > 16384:
+                        if len(raw.encode()) > 32768:
                             await close_socket(websocket, 1009)
                             return
                         frame = json.loads(raw)
@@ -95,6 +95,11 @@ def register_routes(app, services):
                                         "kind": "message.send",
                                         "payload": {
                                             "connectionID": frame.get("connectionID"),
+                                            **(
+                                                {"clientID": frame["clientID"]}
+                                                if "clientID" in frame
+                                                else {}
+                                            ),
                                             "text": frame.get("text"),
                                         },
                                     }

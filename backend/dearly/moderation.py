@@ -30,6 +30,8 @@ def protect_last_admin(db, user):
 
 
 def set_role(db, user, role, actor, reason, now):
+    if user["deleted_at"] is not None:
+        fail("This account was deleted.", 409)
     if role not in ROLE_PERMISSIONS:
         fail("Invalid role.")
     if user["role"] == role:
@@ -48,6 +50,8 @@ def set_role(db, user, role, actor, reason, now):
 
 
 def set_suspended(db, user, suspended, actor, reason, now):
+    if user["deleted_at"] is not None:
+        fail("This account was deleted.", 409)
     if bool(user["suspended"]) == suspended:
         return
     uid = user["id"]
@@ -74,6 +78,8 @@ def set_suspended(db, user, suspended, actor, reason, now):
 
 
 def verify_age(db, user, birth, actor, reason, now):
+    if user["deleted_at"] is not None:
+        fail("This account was deleted.", 409)
     birth = validate_birth(birth, now)
     uid = user["id"]
     db.execute("UPDATE users SET birth_date=?,age_verified=1 WHERE id=?", (birth, uid))
@@ -181,6 +187,8 @@ def apply_staff_action(db, user, kind, p, now):
         ).fetchone()
         if target is None:
             fail("Account not found.", 404)
+        if target["deleted_at"] is not None:
+            fail("This account was deleted.", 409)
         if target["id"] == user["id"] or target["role"] == "admin":
             fail("Use a backend server command to change an admin account.", 403)
         if kind == "staff.user.role":

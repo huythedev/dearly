@@ -400,3 +400,13 @@ select { cursor: pointer; }
   *, *::before, *::after { animation-duration: .01ms !important; transition-duration: .01ms !important; scroll-behavior: auto !important; }
 }
 .account-actions { margin-top: 20px; }
+/* Account privacy controls must fit narrow Safari viewports. */
+.privacy-card { min-width: 0; }
+.privacy-card h2 { display: flex; align-items: center; gap: .5rem; }
+.privacy-card details { margin-top: 1.25rem; }
+.privacy-card summary { cursor: pointer; }
+.recovery-code, .fingerprint { font-family: ui-monospace, monospace; overflow-wrap: anywhere; word-break: break-all; max-width: 100%; }
+.fingerprint { display: block; padding: .75rem; background: var(--background); border: 1px solid var(--border); border-radius: 10px; font-size: .8rem; user-select: all; }
+.danger-text { color: var(--danger, #b34040); }
+.encryption-notice { display: flex; align-items: center; flex-wrap: wrap; gap: .6rem; margin-bottom: 1.5rem; padding: .9rem 1rem; border: 1px solid var(--border); border-radius: 14px; background: var(--surface); font-size: .85rem; }
+.encryption-notice span { flex: 1 1 14rem; }

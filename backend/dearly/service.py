@@ -27,6 +27,8 @@ def password_hash(password: str) -> str:
 
 
 def password_matches(password: str, encoded: str) -> bool:
+    if not encoded.startswith("pbkdf2-sha256$"):
+        return False
     _, rounds, salt, expected = encoded.split("$")
     digest = hashlib.pbkdf2_hmac(
         "sha256", password.encode(), bytes.fromhex(salt), int(rounds)
@@ -42,6 +44,7 @@ class AppServices:
         self.clock = clock
         self.limiter = Limiter()
         self.hashing = threading.BoundedSemaphore(2)
+        self.exports = threading.BoundedSemaphore(2)
         self.hub = ChatHub()
 
     def authenticate(self, db, authorization):
@@ -53,7 +56,7 @@ class AppServices:
             fail("Please log in.", 401)
         digest = hashlib.sha256(authorization[7:].encode()).hexdigest()
         user = db.execute(
-            "SELECT u.* FROM users u JOIN sessions s ON s.user_id=u.id WHERE s.token_hash=? AND s.expires>? AND u.suspended=0",
+            "SELECT u.* FROM users u JOIN sessions s ON s.user_id=u.id WHERE s.token_hash=? AND s.expires>? AND u.suspended=0 AND u.deleted_at IS NULL",
             (digest, self.clock()),
         ).fetchone()
         if user is None:
@@ -68,6 +71,26 @@ class AppServices:
         self.limiter.check("auth-ip:" + ip, 12, 1 / 10)
         self.limiter.check("auth-user:" + username.lower(), 8, 1 / 15)
 
+    def account_user(self, db, authorization, expected_user=None):
+        user = self.authenticate(db, authorization)
+        if expected_user is not None and expected_user != user["id"]:
+            fail("Your account changed. Reload the page before trying again.", 409)
+        return user
+
+    def confirm_password(self, authorization, expected_user, password):
+        with self.database.connect() as db:
+            user = self.account_user(db, authorization, expected_user)
+        self.limiter.check("privacy:" + user["id"], 5, 1 / 60)
+        if not self.hashing.acquire(blocking=False):
+            fail("Sign-in is busy. Please try again shortly.", 429)
+        try:
+            valid = password_matches(password, user["password_hash"])
+        finally:
+            self.hashing.release()
+        if not valid:
+            fail("Incorrect password.", 403)
+        return user
+
     def staff_user(self, db, authorization, permission, expected_user=None):
         user = self.authenticate(db, authorization)
         require_permission(user, permission)
@@ -80,7 +103,8 @@ class AppServices:
             user = self.staff_user(db, authorization, "reports.read", expected_user)
             self.limiter.check("read:" + user["id"], 60, 1)
             return dict(
-                userID=user["id"], currentUserRole=user["role"],
+                userID=user["id"],
+                currentUserRole=user["role"],
                 permissions=sorted(ROLE_PERMISSIONS[user["role"]]),
             )
 

@@ -6,6 +6,7 @@ export interface Profile {
   bio: string; interests: string[]; support: Support; pace: string;
 }
 export interface Journal {
+  encrypted?: boolean; locked?: boolean;
   id: string; authorID: string; title: string; body: string; sharedText: string;
   audience: Audience; connectionID: string | null; anonymous: boolean;
   commentsEnabled: boolean; support: Support; date: number; listeners: string[];
@@ -13,7 +14,7 @@ export interface Journal {
 }
 export interface Comment { id: string; journalID: string; authorID: string; text: string; date: number }
 export interface Invitation { id: string; senderID: string; recipientID: string; date: number }
-export interface Message { id: string; connectionID: string; senderID: string; text: string; date: number }
+export interface Message { id: string; connectionID: string; senderID: string; text: string; date: number; encrypted?: boolean; locked?: boolean }
 export interface Connection {
   id: string; members: string[]; startedAt: number; endedAt: number | null; paused: boolean;
   checkIns: Record<string, string[]>; bestStreak: number; serverTotalDays: number; serverCurrentStreak: number;

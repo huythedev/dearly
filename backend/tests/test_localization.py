@@ -59,7 +59,7 @@ def test_dynamic_field_errors_and_validation_use_translated_templates(env):
 def test_upload_rejection_uses_selected_language(env):
     client, _, _ = env
     for language, expected in [('en', 'Request is too large.'), ('vi', 'Yêu cầu quá lớn.')]:
-        response = client.post('/v1/actions', headers={'Accept-Language': language}, content=b'x' * 131073)
+        response = client.post('/v1/actions', headers={'Accept-Language': language}, content=b'x' * 262145)
         assert response.status_code == 413
         assert response.json()['detail'] == expected
         assert response.headers['Content-Language'] == language
@@ -98,7 +98,7 @@ def test_v3_upgrade_migrates_only_support_and_preserves_private_content(env):
     for _ in range(2):
         database = Database(app.state.database.path)
         with database.connect() as db:
-            assert db.execute('PRAGMA user_version').fetchone()[0] == 4
+            assert db.execute('PRAGMA user_version').fetchone()[0] == 5
             assert not db.execute('PRAGMA foreign_key_check').fetchall()
             profile = db.execute('SELECT * FROM users WHERE id=?', (user['userID'],)).fetchone()
             assert profile['support'] == 'relate'

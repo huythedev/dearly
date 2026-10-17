@@ -51,7 +51,7 @@ def main():
         import uvicorn
         uvicorn.run(create_app(args.db,body_idle_timeout=args.body_idle_timeout,body_total_timeout=args.body_total_timeout,web_dir=args.web_dir),
                     host=args.host,port=args.port,workers=1,loop='asyncio',http='h11',
-                    ws='wsproto',ws_max_size=16384,ws_max_queue=8,
+                    ws='wsproto',ws_max_size=32768,ws_max_queue=8,
                     limit_concurrency=64,timeout_keep_alive=5,proxy_headers=bool(args.proxy_ips),forwarded_allow_ips=args.proxy_ips,
                     ssl_certfile=args.cert,ssl_keyfile=args.key)
         return

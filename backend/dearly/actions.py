@@ -6,6 +6,7 @@ import json
 from datetime import datetime, timedelta, timezone
 
 from .moderation import apply_staff_action
+from .encryption import validate_content
 from .policies import active, can_invite, eligible, get_journal
 from .validation import bool_field, fail, identifier, new_id, support_field, text_field
 
@@ -15,14 +16,30 @@ def apply_action(db, user, kind, p, now):
     if kind.startswith("staff."):
         return apply_staff_action(db, user, kind, p, now)
     if kind == "journal.save":
-        jid = identifier(p.get("id")) if p.get("id") else new_id()
+        jid = (
+            identifier(p.get("id") or p.get("clientID"))
+            if p.get("id") or p.get("clientID")
+            else new_id()
+        )
         old = db.execute("SELECT * FROM journals WHERE id=?", (jid,)).fetchone()
         if old and old["author_id"] != uid:
             fail("You cannot edit this post.", 403)
         if p.get("id") and old is None:
             fail("The journal entry to edit could not be found.", 404)
-        body = text_field(p, "body", 20000)
+        if p.get("clientID") and old is not None:
+            fail("This journal ID already exists.", 409)
+        sealed_body = isinstance(p.get("body"), str) and p["body"].startswith(
+            "dearly:e2ee:1:"
+        )
+        body = text_field(p, "body", 180000 if sealed_body else 20000)
+        encrypted = validate_content(
+            db, body, purpose="journal", resource=jid, sender=uid, members=[uid]
+        )
+        if not encrypted and len(body) > 20000:
+            fail("Journal entries can contain up to 20000 characters.")
         title = text_field(p, "title", 160, default="", empty=True)
+        if encrypted and title:
+            fail("Put the title inside the encrypted journal.")
         audience = p.get("audience", "privateOnly")
         if audience not in ("privateOnly", "companion", "community"):
             fail("Invalid sharing option.")
@@ -36,8 +53,10 @@ def apply_action(db, user, kind, p, now):
                 "Sharing is restricted for this entry. You can still save privately; contact staff for a review.",
                 403,
             )
-        excerpt = text_field(p, "sharedText", 20000, default="", empty=True)
-        if audience != "privateOnly" and (not excerpt or excerpt not in body):
+        excerpt = text_field(p, "sharedText", 120000, default="", empty=True)
+        if audience != "privateOnly" and (
+            not excerpt or (not encrypted and excerpt not in body)
+        ):
             fail("The shared passage must be part of your journal entry.")
         support = support_field(p)
         conn = active(db, uid) if audience == "companion" else None
@@ -45,6 +64,22 @@ def apply_action(db, user, kind, p, now):
             fail("You don’t have a connection yet.")
         if conn and not eligible(db, conn["first_id"], conn["second_id"], now):
             fail("The age groups for this connection need to be reviewed.", 403)
+        if conn:
+            sealed = validate_content(
+                db,
+                excerpt,
+                purpose="passage",
+                resource=jid,
+                sender=uid,
+                members=[conn["first_id"], conn["second_id"]],
+                connection=conn["id"],
+            )
+            if sealed != encrypted:
+                fail("Encrypt both the journal and the shared passage.")
+        if audience == "community" and (
+            len(excerpt) > 20000 or excerpt.startswith("dearly:e2ee:")
+        ):
+            fail("Community passages must be readable and at most 20000 characters.")
         values = (
             jid,
             uid,
@@ -193,10 +228,24 @@ def apply_action(db, user, kind, p, now):
         ):
             fail("The age groups for this connection need to be reviewed.", 403)
         if kind == "message.send":
-            mid = new_id()
+            mid = identifier(p["clientID"]) if p.get("clientID") else new_id()
+            text = text_field(p, "text", 26000)
+            encrypted = validate_content(
+                db,
+                text,
+                purpose="message",
+                resource=mid,
+                sender=uid,
+                members=[conn["first_id"], conn["second_id"]],
+                connection=cid,
+            )
+            if not encrypted and len(text) > 4000:
+                fail("Messages can contain up to 4000 characters.")
+            if db.execute("SELECT 1 FROM messages WHERE id=?", (mid,)).fetchone():
+                fail("This message ID already exists.", 409)
             db.execute(
                 "INSERT INTO messages VALUES(?,?,?,?,?)",
-                (mid, cid, uid, text_field(p, "text", 4000), now),
+                (mid, cid, uid, text, now),
             )
             return {"id": mid}
         if kind == "connection.leave":

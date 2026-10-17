@@ -79,6 +79,10 @@ CREATE INDEX IF NOT EXISTS users_created ON users(created DESC,id DESC);
 CREATE TABLE IF NOT EXISTS audit_log (
  id INTEGER PRIMARY KEY AUTOINCREMENT, actor_id TEXT NOT NULL, action TEXT NOT NULL,
  target_id TEXT NOT NULL, detail TEXT NOT NULL, created REAL NOT NULL);
+CREATE TABLE IF NOT EXISTS encryption_keys (
+ user_id TEXT PRIMARY KEY REFERENCES users(id), agreement_key TEXT NOT NULL,
+ signing_key TEXT NOT NULL, fingerprint TEXT NOT NULL, wrapped_private TEXT NOT NULL,
+ nonce TEXT NOT NULL, created REAL NOT NULL);
 """
 
 
@@ -89,7 +93,7 @@ class Database:
         # WAL configuration must precede any explicit transaction.
         with sqlite3.connect(str(self.path), timeout=5) as db:
             version = db.execute("PRAGMA user_version").fetchone()[0]
-            if version not in (0, 1, 2, 3, 4):
+            if version not in (0, 1, 2, 3, 4, 5):
                 raise RuntimeError(
                     "Unsupported database schema. Back up before upgrading."
                 )
@@ -148,6 +152,13 @@ class Database:
                     )
                 db.execute("PRAGMA user_version=4")
                 changed(db)
+            if db.execute("PRAGMA user_version").fetchone()[0] < 5:
+                if not any(
+                    row[1] == "deleted_at"
+                    for row in db.execute("PRAGMA table_info(users)")
+                ):
+                    db.execute("ALTER TABLE users ADD COLUMN deleted_at REAL")
+                db.execute("PRAGMA user_version=5")
         db.close()
 
     @contextmanager

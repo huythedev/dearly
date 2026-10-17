@@ -81,7 +81,7 @@ def register_routes(app, services):
                 q.strip().replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_")
                 + "%"
             )
-            where = "(username LIKE ? ESCAPE '\\' OR nickname LIKE ? ESCAPE '\\')"
+            where = "deleted_at IS NULL AND (username LIKE ? ESCAPE '\\' OR nickname LIKE ? ESCAPE '\\')"
             args = [query, query]
             if before:
                 cursor = db.execute(

@@ -69,6 +69,12 @@ Choose **System**, **Light**, or **Dark** appearance in settings. Your language 
 
 Account settings show your age-verification status and provide **Sync now** and **Log out**. On mobile web, staff can also open **Management** from settings. Journals, messages, and account changes require the server; there is no offline demo mode.
 
+## Recovery codes, downloads, and account deletion
+
+Save your recovery code from **Settings → Encryption & recovery** on web or **avatar → Privacy & data** on iOS. Enter the same code on a new device to unlock private journal text and companion conversations. Both companions need an updated client. Previously saved plaintext is not automatically migrated.
+
+The same settings provide **Download my data** and **Delete my account**. Both require your current password; deletion also requires typing `DELETE`. See the [privacy and recovery guide](ENCRYPTION.md) for what each action includes and what remains in shared garden history.
+
 ## Get help
 
 For connection issues, follow [troubleshooting](SETUP.md#troubleshooting). For age review, reports, or account restrictions, contact the administrator of your Dearly server. Staff have tools for reviewing reported public excerpts; those tools do not expose other people's private journal bodies or chat transcripts. Authorized staff can identify accounts involved in reports, including anonymous posts.

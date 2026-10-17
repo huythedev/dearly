@@ -230,7 +230,7 @@ def test_size_and_excerpt_limits(env):
     _,h=register(env,'alice')
     action(client,h,'journal.save',dict(body='x'*20001),expected=400)
     action(client,h,'journal.save',dict(body='original',sharedText='different',audience='community'),expected=400)
-    r=client.post('/v1/actions',headers={**h,'Content-Type':'application/json'},content='x'*140000)
+    r=client.post('/v1/actions',headers={**h,'Content-Type':'application/json'},content='x'*270000)
     assert r.status_code==413
 
 def test_concurrent_accepts_one_active_connection(env):

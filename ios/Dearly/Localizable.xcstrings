@@ -7410,6 +7410,1417 @@
           }
         }
       }
+    },
+    "Check your journal title and text length." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Check your journal title and text length."
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Kiểm tra tiêu đề và độ dài nội dung nhật ký."
+          }
+        }
+      }
+    },
+    "Community passages must be readable and at most 20000 characters." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Community passages must be readable and at most 20000 characters."
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Đoạn đăng cộng đồng phải đọc được và không quá 20000 ký tự."
+          }
+        }
+      }
+    },
+    "Compare these fingerprints with your companion through another trusted channel. A match helps confirm who holds the keys." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Compare these fingerprints with your companion through another trusted channel. A match helps confirm who holds the keys."
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Đối chiếu mã vân tay này với người đồng hành qua một kênh đáng tin cậy khác. Mã trùng khớp giúp xác nhận người giữ khóa."
+          }
+        }
+      }
+    },
+    "Could not save encryption keys." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Could not save encryption keys."
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Không thể lưu khóa mã hóa."
+          }
+        }
+      }
+    },
+    "Current password" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Current password"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Mật khẩu hiện tại"
+          }
+        }
+      }
+    },
+    "Data downloads are busy. Please try again shortly." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Data downloads are busy. Please try again shortly."
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Hệ thống tải dữ liệu đang bận. Vui lòng thử lại sau."
+          }
+        }
+      }
+    },
+    "Decrypt content on this device" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Decrypt content on this device"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Giải mã nội dung trên thiết bị này"
+          }
+        }
+      }
+    },
+    "Delete my account" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Delete my account"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Xóa tài khoản của tôi"
+          }
+        }
+      }
+    },
+    "Download data" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Download data"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tải dữ liệu"
+          }
+        }
+      }
+    },
+    "Download my data" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Download my data"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tải dữ liệu của tôi"
+          }
+        }
+      }
+    },
+    "Download the content you created and your account details, or permanently delete your account. Both require your current password." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Download the content you created and your account details, or permanently delete your account. Both require your current password."
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tải nội dung bạn đã tạo cùng thông tin tài khoản, hoặc xóa tài khoản vĩnh viễn. Cả hai thao tác đều cần mật khẩu hiện tại."
+          }
+        }
+      }
+    },
+    "Download your data" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Download your data"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tải dữ liệu của bạn"
+          }
+        }
+      }
+    },
+    "Duplicate field in encrypted data." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Duplicate field in encrypted data."
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Dữ liệu mã hóa có trường bị trùng."
+          }
+        }
+      }
+    },
+    "Encrypt both the journal and the shared passage." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Encrypt both the journal and the shared passage."
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Hãy mã hóa cả nhật ký và đoạn chia sẻ."
+          }
+        }
+      }
+    },
+    "Encrypted content belongs to a different resource." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Encrypted content belongs to a different resource."
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nội dung mã hóa thuộc về một mục khác."
+          }
+        }
+      }
+    },
+    "Encrypted content could not be verified." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Encrypted content could not be verified."
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Không thể xác minh nội dung được mã hóa."
+          }
+        }
+      }
+    },
+    "Encrypted content signature is invalid." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Encrypted content signature is invalid."
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Chữ ký của nội dung mã hóa không hợp lệ."
+          }
+        }
+      }
+    },
+    "Encrypted content. Unlock encryption in Settings." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Encrypted content. Unlock encryption in Settings."
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nội dung được mã hóa. Hãy mở khóa trong Cài đặt."
+          }
+        }
+      }
+    },
+    "Encrypted text stays encrypted in the download. Keep your recovery code to read it later." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Encrypted text stays encrypted in the download. Keep your recovery code to read it later."
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nội dung được mã hóa sẽ giữ nguyên trong tệp. Hãy lưu mã khôi phục để đọc lại sau."
+          }
+        }
+      }
+    },
+    "Encryption & recovery" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Encryption & recovery"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Mã hóa và khôi phục"
+          }
+        }
+      }
+    },
+    "Encryption has not been enabled for this account." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Encryption has not been enabled for this account."
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tài khoản này chưa bật mã hóa."
+          }
+        }
+      }
+    },
+    "Encryption identity belongs to a different account." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Encryption identity belongs to a different account."
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Danh tính mã hóa thuộc tài khoản khác."
+          }
+        }
+      }
+    },
+    "Encryption is not ready. Open Settings and try again." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Encryption is not ready. Open Settings and try again."
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Mã hóa chưa sẵn sàng. Hãy mở Cài đặt và thử lại."
+          }
+        }
+      }
+    },
+    "Encryption is unavailable." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Encryption is unavailable."
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Mã hóa chưa khả dụng."
+          }
+        }
+      }
+    },
+    "Encryption key not found." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Encryption key not found."
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Không tìm thấy khóa mã hóa."
+          }
+        }
+      }
+    },
+    "Encryption key not found. Unlock encryption first." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Encryption key not found. Unlock encryption first."
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Không tìm thấy khóa. Hãy mở khóa mã hóa trước."
+          }
+        }
+      }
+    },
+    "Encryption keys already exist. Use your recovery code on this device." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Encryption keys already exist. Use your recovery code on this device."
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Khóa mã hóa đã tồn tại. Hãy dùng mã khôi phục trên thiết bị này."
+          }
+        }
+      }
+    },
+    "Encryption keys changed. Reload and use your recovery code." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Encryption keys changed. Reload and use your recovery code."
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Khóa mã hóa đã thay đổi. Hãy tải lại và dùng mã khôi phục."
+          }
+        }
+      }
+    },
+    "Encryption needs HTTPS. Open Dearly using its secure address." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Encryption needs HTTPS. Open Dearly using its secure address."
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Mã hóa cần HTTPS. Hãy mở Dearly bằng địa chỉ bảo mật."
+          }
+        }
+      }
+    },
+    "Encryption ready" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Encryption ready"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Mã hóa đã sẵn sàng"
+          }
+        }
+      }
+    },
+    "Encryption settings" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Encryption settings"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Cài đặt mã hóa"
+          }
+        }
+      }
+    },
+    "End-to-end encryption is required. Update or unlock your app." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "End-to-end encryption is required. Update or unlock your app."
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Cần mã hóa đầu cuối. Hãy cập nhật hoặc mở khóa ứng dụng."
+          }
+        }
+      }
+    },
+    "Enter a message for your current companion." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Enter a message for your current companion."
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nhập tin nhắn cho người đồng hành hiện tại."
+          }
+        }
+      }
+    },
+    "Enter your Dearly recovery code." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Enter your Dearly recovery code."
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nhập mã khôi phục Dearly của bạn."
+          }
+        }
+      }
+    },
+    "Hide" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Hide"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ẩn"
+          }
+        }
+      }
+    },
+    "I saved my recovery code" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "I saved my recovery code"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tôi đã lưu mã khôi phục"
+          }
+        }
+      }
+    },
+    "Incorrect password." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Incorrect password."
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Mật khẩu không đúng."
+          }
+        }
+      }
+    },
+    "Invalid encrypted data." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Invalid encrypted data."
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Dữ liệu mã hóa không hợp lệ."
+          }
+        }
+      }
+    },
+    "Invalid encrypted recipients." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Invalid encrypted recipients."
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Danh sách người nhận mã hóa không hợp lệ."
+          }
+        }
+      }
+    },
+    "Invalid encryption identity." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Invalid encryption identity."
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Danh tính mã hóa không hợp lệ."
+          }
+        }
+      }
+    },
+    "Invalid encryption key." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Invalid encryption key."
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Khóa mã hóa không hợp lệ."
+          }
+        }
+      }
+    },
+    "Journal entries can contain up to 20000 characters." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Journal entries can contain up to 20000 characters."
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nhật ký có thể chứa tối đa 20000 ký tự."
+          }
+        }
+      }
+    },
+    "Keep your recovery code somewhere safe. You need it on a new browser or iPhone. Dearly cannot recover it for you." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Keep your recovery code somewhere safe. You need it on a new browser or iPhone. Dearly cannot recover it for you."
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Hãy lưu mã khôi phục ở nơi an toàn. Bạn cần mã này khi dùng trình duyệt hoặc iPhone mới. Dearly không thể lấy lại mã giúp bạn."
+          }
+        }
+      }
+    },
+    "Locked entry" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Locked entry"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Trang nhật ký đang khóa"
+          }
+        }
+      }
+    },
+    "Messages can contain up to 4000 characters." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Messages can contain up to 4000 characters."
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tin nhắn có thể chứa tối đa 4000 ký tự."
+          }
+        }
+      }
+    },
+    "New journal text, private titles, companion passages and messages are encrypted on your device. Community passages are public. Older content stays as it was until you edit and save it." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "New journal text, private titles, companion passages and messages are encrypted on your device. Community passages are public. Older content stays as it was until you edit and save it."
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nội dung và tiêu đề nhật ký mới, đoạn chia sẻ riêng và tin nhắn được mã hóa trên thiết bị của bạn. Đoạn đăng cộng đồng là công khai. Nội dung cũ giữ nguyên cho đến khi bạn sửa và lưu lại."
+          }
+        }
+      }
+    },
+    "Permanently delete" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Permanently delete"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Xóa vĩnh viễn"
+          }
+        }
+      }
+    },
+    "Permanently delete your account?" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Permanently delete your account?"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Xóa tài khoản vĩnh viễn?"
+          }
+        }
+      }
+    },
+    "Please wait…" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Please wait…"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Vui lòng đợi…"
+          }
+        }
+      }
+    },
+    "Preparing encryption…" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Preparing encryption…"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Đang chuẩn bị mã hóa…"
+          }
+        }
+      }
+    },
+    "Privacy & data" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Privacy & data"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Quyền riêng tư và dữ liệu"
+          }
+        }
+      }
+    },
+    "Put the title inside the encrypted journal." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Put the title inside the encrypted journal."
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tiêu đề phải nằm trong nội dung nhật ký được mã hóa."
+          }
+        }
+      }
+    },
+    "Recovery code" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Recovery code"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Mã khôi phục"
+          }
+        }
+      }
+    },
+    "Save your recovery code to open encrypted content on another device." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Save your recovery code to open encrypted content on another device."
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Lưu mã khôi phục để mở nội dung được mã hóa trên thiết bị khác."
+          }
+        }
+      }
+    },
+    "Secure key storage is unavailable. Allow website storage and try again." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Secure key storage is unavailable. Allow website storage and try again."
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Không thể lưu khóa an toàn. Hãy cho phép trang web lưu dữ liệu và thử lại."
+          }
+        }
+      }
+    },
+    "Secure key storage is unavailable. Unlock your iPhone and try again." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Secure key storage is unavailable. Unlock your iPhone and try again."
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Không thể truy cập nơi lưu khóa an toàn. Hãy mở khóa iPhone và thử lại."
+          }
+        }
+      }
+    },
+    "Show companion fingerprint" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Show companion fingerprint"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Hiện mã vân tay của người đồng hành"
+          }
+        }
+      }
+    },
+    "Show recovery code" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Show recovery code"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Hiện mã khôi phục"
+          }
+        }
+      }
+    },
+    "Sign in before unlocking encryption." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sign in before unlocking encryption."
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Hãy đăng nhập trước khi mở khóa mã hóa."
+          }
+        }
+      }
+    },
+    "The downloaded file will contain readable private text. Encrypted originals are also included." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The downloaded file will contain readable private text. Encrypted originals are also included."
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tệp tải về sẽ chứa nội dung riêng tư có thể đọc được, kèm bản gốc được mã hóa."
+          }
+        }
+      }
+    },
+    "The recovery code does not match this account." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The recovery code does not match this account."
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Mã khôi phục không khớp với tài khoản này."
+          }
+        }
+      }
+    },
+    "This account was deleted." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "This account was deleted."
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tài khoản này đã bị xóa."
+          }
+        }
+      }
+    },
+    "This device needs your recovery code. Your account can still use community features while encryption is locked." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "This device needs your recovery code. Your account can still use community features while encryption is locked."
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Thiết bị này cần mã khôi phục. Bạn vẫn có thể dùng các tính năng cộng đồng khi mã hóa đang khóa."
+          }
+        }
+      }
+    },
+    "This encrypted content is not addressed to you." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "This encrypted content is not addressed to you."
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nội dung mã hóa này không gửi cho bạn."
+          }
+        }
+      }
+    },
+    "This encryption version is not supported. Update your app." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "This encryption version is not supported. Update your app."
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Phiên bản mã hóa này chưa được hỗ trợ. Hãy cập nhật ứng dụng."
+          }
+        }
+      }
+    },
+    "This journal ID already exists." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "This journal ID already exists."
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ID trang nhật ký này đã tồn tại."
+          }
+        }
+      }
+    },
+    "This message ID already exists." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "This message ID already exists."
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ID tin nhắn này đã tồn tại."
+          }
+        }
+      }
+    },
+    "Try again" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Try again"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Thử lại"
+          }
+        }
+      }
+    },
+    "Type DELETE to confirm" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Type DELETE to confirm"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nhập DELETE để xác nhận"
+          }
+        }
+      }
+    },
+    "Unlock encryption" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Unlock encryption"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Mở khóa mã hóa"
+          }
+        }
+      }
+    },
+    "Unlock encryption in Settings with your recovery code first." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Unlock encryption in Settings with your recovery code first."
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Hãy mở khóa mã hóa trong Cài đặt bằng mã khôi phục trước."
+          }
+        }
+      }
+    },
+    "Unlock your encrypted journal and chat with your recovery code." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Unlock your encrypted journal and chat with your recovery code."
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Mở khóa nhật ký và trò chuyện được mã hóa bằng mã khôi phục."
+          }
+        }
+      }
+    },
+    "Verify encryption keys" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Verify encryption keys"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Xác minh khóa mã hóa"
+          }
+        }
+      }
+    },
+    "Your account changed." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Your account changed."
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tài khoản của bạn đã thay đổi."
+          }
+        }
+      }
+    },
+    "Your account changed. Sign in and try again." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Your account changed. Sign in and try again."
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tài khoản đã thay đổi. Hãy đăng nhập và thử lại."
+          }
+        }
+      }
+    },
+    "Your companion must enable encryption in an updated app first." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Your companion must enable encryption in an updated app first."
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Người đồng hành cần bật mã hóa bằng phiên bản ứng dụng mới trước."
+          }
+        }
+      }
+    },
+    "Your companion’s encryption key changed. Stop sharing and verify their fingerprint." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Your companion’s encryption key changed. Stop sharing and verify their fingerprint."
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Khóa mã hóa của người đồng hành đã thay đổi. Hãy dừng chia sẻ và xác minh mã vân tay của họ."
+          }
+        }
+      }
+    },
+    "Your data" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Your data"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Dữ liệu của bạn"
+          }
+        }
+      }
+    },
+    "Your file includes your profile, authored content and connection history. Keep it somewhere private." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Your file includes your profile, authored content and connection history. Keep it somewhere private."
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tệp gồm hồ sơ, nội dung bạn đã tạo và lịch sử kết nối. Hãy giữ tệp ở nơi riêng tư."
+          }
+        }
+      }
+    },
+    "Your fingerprint" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Your fingerprint"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Mã vân tay của bạn"
+          }
+        }
+      }
+    },
+    "Your profile, journals, sent messages and encryption keys will be removed. All sessions will end. This cannot be undone. A deleted-account marker remains in shared garden history." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Your profile, journals, sent messages and encryption keys will be removed. All sessions will end. This cannot be undone. A deleted-account marker remains in shared garden history."
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Hồ sơ, nhật ký, tin nhắn đã gửi và khóa mã hóa sẽ bị xóa. Mọi phiên đăng nhập sẽ kết thúc. Không thể hoàn tác. Dấu tài khoản đã xóa vẫn còn trong lịch sử khu vườn chung."
+          }
+        }
+      }
+    },
+    "responses" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "responses"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "phản hồi"
+          }
+        }
+      }
+    },
+    "Earlier unencrypted message" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Earlier unencrypted message"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tin nhắn cũ chưa được mã hóa"
+          }
+        }
+      }
     }
   },
   "version" : "1.0"

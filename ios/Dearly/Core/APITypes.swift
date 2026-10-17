@@ -1,6 +1,7 @@
 import Foundation
 
 struct CommandPayload: Encodable {
+    var clientID: UUID? = nil
     var id: UUID? = nil
     var title: String? = nil
     var body: String? = nil
