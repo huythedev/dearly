@@ -13,7 +13,7 @@ export class ChatTransport {
   private attempts = 0;
   constructor(private callbacks: {
     status: (value: ChatStatus) => void; message: (value: Message) => void;
-    changed: () => void; expired: () => void;
+    changed: () => void; sessionRejected: () => void;
   }) { this.connect(); }
 
   private connect() {
@@ -46,7 +46,9 @@ export class ChatTransport {
       if (!current()) return;
       this.ready = false;
       this.failPending();
-      if (event.code === 4401) { this.callbacks.expired(); return; }
+      // This socket may predate the current browser cookie. Let HTTP validate that session.
+      if (event.code === 4401) this.callbacks.sessionRejected();
+      if (!current()) return;
       this.callbacks.status('reconnecting');
       const delay = Math.min(30000, 1000 * 2 ** Math.min(this.attempts++, 5));
       this.timer = setTimeout(() => this.connect(), delay + Math.random() * 400);

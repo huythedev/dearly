@@ -1,5 +1,8 @@
 import uuid
+from copy import copy
 from contextlib import ExitStack
+from email.utils import parsedate_to_datetime
+from http.cookies import SimpleCookie
 
 import pytest
 from fastapi.testclient import TestClient
@@ -10,6 +13,32 @@ from test_api import action, pair, register
 
 
 WEB = {'X-Dearly-Client': 'web', 'Origin': 'http://testserver'}
+
+
+@pytest.mark.parametrize('endpoint', ['register', 'login'])
+def test_browser_session_survives_reopening_until_its_server_expiry(env, endpoint):
+    client, app, clock = env
+    fields = {'username': 'persistent', 'password': 'test-password-123'}
+    if endpoint == 'login':
+        register(env, fields['username'])
+    else:
+        fields.update(nickname='Persistent', birthDate='2000-01-01')
+    response = client.post('/v1/auth/' + endpoint, headers=WEB, json=fields)
+    assert response.is_success
+    cookie = SimpleCookie()
+    cookie.load(response.headers['set-cookie'])
+    assert int(cookie['dearly_session']['max-age']) == 30 * 86400
+    expires = parsedate_to_datetime(cookie['dearly_session']['expires']).timestamp()
+    assert expires == response.json()['expiresAt'] + 978307200
+    # Browsers discard session-only cookies when a browser session ends.
+    persistent = [copy(item) for item in client.cookies.jar if not item.discard]
+    assert persistent
+    with TestClient(app) as reopened:
+        for item in persistent:
+            reopened.cookies.jar.set_cookie(item)
+        assert reopened.get('/v1/state').json()['state']['currentUserID'] == response.json()['userID']
+        clock[0] += 30 * 86400 + 1
+        assert reopened.get('/v1/state').status_code == 401
 
 
 def test_browser_sessions_keep_tokens_out_of_javascript_and_preserve_native_contract(env):

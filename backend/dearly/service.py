@@ -11,7 +11,7 @@ import threading
 from realtime import ChatHub
 
 from .actions import apply_action
-from .constants import STAFF_ACTIONS, SWIFT_EPOCH
+from .constants import SESSION_LIFETIME, STAFF_ACTIONS, SWIFT_EPOCH
 from .database import changed
 from .limits import Limiter
 from .moderation import require_permission
@@ -70,7 +70,7 @@ class AppServices:
 
     def session(self, db, uid):
         token = secrets.token_urlsafe(32)
-        expires = self.clock() + 30 * 86400
+        expires = self.clock() + SESSION_LIFETIME
         db.execute("DELETE FROM sessions WHERE expires<?", (self.clock(),))
         db.execute(
             "DELETE FROM sessions WHERE token_hash IN (SELECT token_hash FROM sessions WHERE user_id=? ORDER BY expires DESC LIMIT -1 OFFSET 7)",

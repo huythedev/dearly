@@ -1,5 +1,6 @@
 """Same-origin browser sessions and optional Vite build hosting."""
 from pathlib import Path
+from datetime import datetime, timezone
 from urllib.parse import urlsplit
 
 from fastapi import Request
@@ -8,6 +9,7 @@ from starlette.datastructures import Headers
 from starlette.requests import HTTPConnection
 from starlette.staticfiles import StaticFiles
 from localization import error_response
+from dearly.constants import SESSION_LIFETIME, SWIFT_EPOCH
 
 COOKIE = 'dearly_session'
 
@@ -55,7 +57,9 @@ def browser_session(data: dict, request: Request, status_code: int = 200):
                             headers={'Cache-Control': 'no-store'})
     # TLS may terminate at Cloudflare; a checked, same-host Origin also identifies HTTPS.
     secure = request.url.scheme == 'https' or request.headers.get('origin', '').startswith('https://')
-    response.set_cookie(COOKIE, data['token'], httponly=True, secure=secure, samesite='strict', path='/')
+    response.set_cookie(COOKIE, data['token'], max_age=SESSION_LIFETIME,
+                        expires=datetime.fromtimestamp(data['expiresAt'] + SWIFT_EPOCH, timezone.utc),
+                        httponly=True, secure=secure, samesite='strict', path='/')
     return response
 
 

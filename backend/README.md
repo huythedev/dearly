@@ -91,7 +91,7 @@ Run these commands from `backend`, using the same database as the server. The sa
 
 `verify-age` records that an operator reviewed the birth date outside the app. It does not automatically verify identity documents. Do not store identity document images in this app or database. Correcting a birth date ends existing connections so eligibility can be checked again; verifying the same date again does not end them.
 
-Registration supports ages 16–100. Age is calculated using the UTC date and checked again when sending or accepting invitations, sending messages, and checking in. Under-18 accounts can connect only with other under-18 accounts at most one year apart. Adults form a separate group. Regular users and moderators cannot set `ageVerified` or change birth dates. Only an admin using the staff API or an operator using the CLI can record a reviewed birth date.
+Registration supports ages 16–100. Age is calculated using the UTC date and checked again when sending or accepting invitations, sending messages, and checking in. Under-18 accounts can connect only with other under-18 accounts at most one year apart. Adults form a separate group. Regular users cannot set `ageVerified` or change birth dates. A moderator or admin using the staff console/API, or an operator using the CLI, can record a reviewed birth date for an eligible account.
 
 Reports are stored on the server. `reports` lists up to 100 open reports for an operator with host access. `suspend` revokes sessions and ends connections while retaining garden rewards. `restore --username USERNAME` re-enables login without restoring old sessions or connections. The iOS staff console supports manual report review; automatic message filtering and an appeals workflow are not implemented.
 
@@ -100,10 +100,10 @@ Reports are stored on the server. `reports` lists up to 100 open reports for an 
 | Role | Permissions |
 |---|---|
 | `user` | Standard Dearly features; no staff endpoints |
-| `moderator` | `reports.read`, `reports.review`, `reports.hide` |
-| `admin` | All moderator permissions plus `users.read`, `users.suspend`, `users.verify_age`, `roles.manage`, `audit.read` |
+| `moderator` | `reports.read`, `reports.review`, `reports.hide`, `users.read`, `users.verify_age` |
+| `admin` | All moderator permissions plus `users.suspend`, `roles.manage`, `audit.read` |
 
-Staff open **avatar → Dearly management** in the iOS app. Reports can be reopened, marked reviewed, dismissed, or used to withdraw a reported public post. Admins can search accounts by username/nickname prefix, confirm externally reviewed birth dates, suspend/restore non-admin accounts, assign/remove moderators, and inspect the audit log. Every mutation requires a reason. Each list uses bounded pagination (30 records by default, at most 50); the app retains only the displayed page.
+Staff open **avatar → Dearly management** in the iOS app. Reports can be reopened, marked reviewed, dismissed, or used to withdraw a reported public post. Moderators and admins can search accounts by username/nickname prefix and confirm externally reviewed birth dates. Admins can also suspend/restore non-admin accounts, assign/remove moderators, and inspect the audit log. See the [age review steps](../docs/ADMINISTRATION.md#age-verification) for iOS and web. Every mutation requires a reason. Each list uses bounded pagination (30 records by default, at most 50); the app retains only the displayed page.
 
 Create the account normally, then run on the server host from `backend`:
 

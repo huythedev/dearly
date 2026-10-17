@@ -60,7 +60,7 @@ struct ServerConnectionView: View {
                         if registering {
                             DatePicker(L("Date of birth"), selection: $birthDate, in: ...Date(), displayedComponents: .date)
                                 .font(.subheadline).tint(DearlyTheme.forest)
-                            Text(L("For ages 16 and up. Your birthday stays private. Companion connections unlock after an administrator verifies your age."))
+                            Text(L("For ages 16 and up. Your birthday stays private. Companion connections unlock after a moderator or administrator verifies your age."))
                                 .font(.caption).foregroundStyle(DearlyTheme.muted).lineSpacing(3)
                         }
                     }

@@ -64,6 +64,49 @@ test('welcome can be deferred, remembered and replayed from settings', async ({ 
   expect(await page.evaluate(key => localStorage.getItem(key), guideStorageKey(userID))).toBe('seen');
 });
 
+test('first-login welcome follows the visible viewport through keyboard resize and panning', async ({ page }) => {
+  await fixture(page);
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.addInitScript(() => {
+    // Model the smaller, panned viewport while the mobile login keyboard closes.
+    const viewport = Object.assign(new EventTarget(), { width: 390, height: 300, offsetLeft: 0, offsetTop: 180, scale: 1 });
+    Object.defineProperty(window, 'visualViewport', { value: viewport, configurable: true });
+    Object.assign(window, { updateGuideViewport(values: object, event: string) {
+      Object.assign(viewport, values); viewport.dispatchEvent(new Event(event));
+    } });
+  });
+  let authenticated = false;
+  await page.route('**/v1/state', route => authenticated ? route.fallback() : route.fulfill({ status: 401, json: { detail: 'Sign in' } }));
+  await page.route('**/v1/auth/login', route => {
+    authenticated = true;
+    return route.fulfill({ json: { userID, expiresAt: 816177600 } });
+  });
+  await page.goto('/journal');
+  await page.getByLabel('Username', { exact: true }).fill('guide_friend');
+  await page.getByLabel('Password', { exact: true }).fill('guide-test-password');
+  await page.getByRole('button', { name: 'Come on in', exact: true }).click();
+  await expect(page.getByRole('dialog', { name: 'A little guide to Dearly' })).toBeVisible();
+  const fitsVisibleViewport = () => page.evaluate(() => {
+    const card = document.querySelector('.guide-card')!.getBoundingClientRect();
+    const viewport = window.visualViewport!;
+    return card.left >= viewport.offsetLeft + 15 && card.right <= viewport.offsetLeft + viewport.width - 15
+      && card.top >= viewport.offsetTop + 15 && card.bottom <= viewport.offsetTop + viewport.height - 15;
+  });
+  await expect.poll(fitsVisibleViewport).toBe(true);
+  await page.evaluate(() => (window as unknown as { updateGuideViewport: (values: object, event: string) => void })
+    .updateGuideViewport({ offsetTop: 60 }, 'scroll'));
+  await expect.poll(fitsVisibleViewport).toBe(true);
+  await page.evaluate(() => (window as unknown as { updateGuideViewport: (values: object, event: string) => void })
+    .updateGuideViewport({ offsetTop: 0, height: 844 }, 'resize'));
+  await expect.poll(fitsVisibleViewport).toBe(true);
+  await page.getByRole('button', { name: 'Show me around', exact: true }).click();
+  await alignedSpotlight(page, guideSteps[0].target);
+  await page.getByRole('button', { name: 'Skip guide', exact: true }).click();
+  await page.getByRole('button', { name: 'Account settings', exact: true }).click();
+  await page.getByRole('button', { name: 'Take a guided tour', exact: true }).click();
+  await alignedSpotlight(page, guideSteps[0].target);
+});
+
 test('six steps highlight real controls without writing data and keep keyboard focus inside', async ({ page }) => {
   const writes = await fixture(page, true);
   await page.goto('/journal');

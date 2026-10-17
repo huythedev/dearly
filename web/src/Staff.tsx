@@ -40,6 +40,7 @@ function Accounts({ store }: { store: Dearly }) {
   const [query, setQuery] = useState('');
   const [input, setInput] = useState('');
   const [editing, setEditing] = useState<{ user: StaffUser; action: 'role' | 'suspend' | 'verify_age' } | null>(null);
+  const permissions = store.envelope!.state.permissions ?? [];
   const page = usePage<StaffUser>(`staff/users?q=${encodeURIComponent(query)}`, store.setError);
   const submit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault(); if (!editing) return;
@@ -48,10 +49,10 @@ function Accounts({ store }: { store: Dearly }) {
     if (await store.act(`staff.user.${editing.action}`, payload)) { setEditing(null); await page.reload(); }
   };
   return <><form className="search-box account-search" onSubmit={event => { event.preventDefault(); setQuery(input); }}><Search size={18} /><input value={input} onChange={e => setInput(e.target.value)} maxLength={64} placeholder={t('Search username or nickname prefix…')} aria-label={t('Search accounts')} /><button className="button primary small">{t('Search')}</button></form>
-    <p className="field-help">{t('Admin accounts are managed with the server CLI. Web administration can manage members and moderators.')}</p>
+    {permissions.includes('roles.manage') && <p className="field-help">{t('Admin accounts are managed with the server CLI. Web administration can manage members and moderators.')}</p>}
     <div className="stack">{page.items.map(user => {
       const editable = user.role !== 'admin' && user.id !== store.envelope!.state.currentUserID;
-      return <article className="card account-card" key={user.id}><div><h2>{user.nickname}</h2><span className="muted">@{user.username} · {t(user.role)}</span><p>{t('Date of birth')}: {user.birthDate} · {t(user.ageVerified ? 'Verified' : 'Unverified')} · {t(user.suspended ? 'Suspended' : 'Active')}</p></div>{editable && <div className="row-actions wrap"><button className="button secondary small" onClick={() => setEditing({ user, action: 'verify_age' })}>{t('Verify age')}</button><button className="button secondary small" onClick={() => setEditing({ user, action: 'role' })}>{t('Change role')}</button><button className="button secondary small" onClick={() => setEditing({ user, action: 'suspend' })}>{t(user.suspended ? 'Restore account' : 'Suspend account')}</button></div>}</article>;
+      return <article className="card account-card" key={user.id}><div><h2>{user.nickname}</h2><span className="muted">@{user.username} · {t(user.role)}</span><p>{t('Date of birth')}: {user.birthDate} · {t(user.ageVerified ? 'Verified' : 'Unverified')} · {t(user.suspended ? 'Suspended' : 'Active')}</p></div>{editable && <div className="row-actions wrap">{permissions.includes('users.verify_age') && <button className="button secondary small" onClick={() => setEditing({ user, action: 'verify_age' })}>{t('Verify age')}</button>}{permissions.includes('roles.manage') && <button className="button secondary small" onClick={() => setEditing({ user, action: 'role' })}>{t('Change role')}</button>}{permissions.includes('users.suspend') && <button className="button secondary small" onClick={() => setEditing({ user, action: 'suspend' })}>{t(user.suspended ? 'Restore account' : 'Suspend account')}</button>}</div>}</article>;
     })}</div>
     {!page.items.length && !page.loading && <p>{t('No accounts found.')}</p>}
     {page.cursor && <div className="load-more"><button className="button secondary" onClick={page.more} disabled={page.loading}>{t('More accounts')}</button></div>}
