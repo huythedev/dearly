@@ -11,7 +11,7 @@ import threading
 from realtime import ChatHub
 
 from .actions import apply_action
-from .constants import SESSION_LIFETIME, STAFF_ACTIONS, SWIFT_EPOCH
+from .constants import ROLE_PERMISSIONS, SESSION_LIFETIME, STAFF_ACTIONS, SWIFT_EPOCH
 from .database import changed
 from .limits import Limiter
 from .moderation import require_permission
@@ -67,6 +67,22 @@ class AppServices:
         ip = request.client.host if request.client else "unknown"
         self.limiter.check("auth-ip:" + ip, 12, 1 / 10)
         self.limiter.check("auth-user:" + username.lower(), 8, 1 / 15)
+
+    def staff_user(self, db, authorization, permission, expected_user=None):
+        user = self.authenticate(db, authorization)
+        require_permission(user, permission)
+        if expected_user is not None and expected_user != user["id"]:
+            fail("Your account changed. Reload the page before trying again.", 409)
+        return user
+
+    def staff_access(self, authorization, expected_user=None):
+        with self.database.connect() as db:
+            user = self.staff_user(db, authorization, "reports.read", expected_user)
+            self.limiter.check("read:" + user["id"], 60, 1)
+            return dict(
+                userID=user["id"], currentUserRole=user["role"],
+                permissions=sorted(ROLE_PERMISSIONS[user["role"]]),
+            )
 
     def session(self, db, uid):
         token = secrets.token_urlsafe(32)

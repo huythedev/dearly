@@ -3,7 +3,7 @@ from pathlib import Path
 from datetime import datetime, timezone
 from urllib.parse import urlsplit
 
-from fastapi import Request
+from fastapi import Header, Request
 from fastapi.responses import FileResponse, JSONResponse
 from starlette.datastructures import Headers
 from starlette.requests import HTTPConnection
@@ -12,6 +12,10 @@ from localization import error_response
 from dearly.constants import SESSION_LIFETIME, SWIFT_EPOCH
 
 COOKIE = 'dearly_session'
+
+
+def management_path(path: str) -> bool:
+    return path == '/management' or path.startswith('/management/')
 
 
 def same_origin(connection: HTTPConnection) -> bool:
@@ -33,7 +37,7 @@ class BrowserSession:
         self.app = app
 
     async def __call__(self, scope, receive, send):
-        if scope['type'] != 'http' or not scope['path'].startswith('/v1/'):
+        if scope['type'] != 'http' or not (scope['path'].startswith('/v1/') or management_path(scope['path'])):
             return await self.app(scope, receive, send)
         request = Request(scope)
         headers = Headers(scope=scope)
@@ -63,14 +67,17 @@ def browser_session(data: dict, request: Request, status_code: int = 200):
     return response
 
 
-def mount_web(app, directory: Path):
+def mount_web(app, directory: Path, *, authorize_management):
     """Never let SPA fallbacks swallow API typos or expose repository/runtime files."""
     directory = directory.resolve()
     if (directory / 'assets').is_dir():
         app.mount('/assets', StaticFiles(directory=directory / 'assets'), name='web-assets')
 
     @app.get('/{web_path:path}', include_in_schema=False)
-    def web(web_path: str):
+    def web(web_path: str, authorization: str | None = Header(default=None)):
+        protected = management_path('/' + web_path)
+        if protected:
+            authorize_management(authorization)
         reserved = {'v1', 'ws', 'health', 'docs', 'openapi.json', 'assets'}
         if web_path.split('/')[0] in reserved or any(p.startswith('.') for p in web_path.split('/') if p):
             return JSONResponse({'detail': 'Not found.'}, 404)
@@ -82,7 +89,8 @@ def mount_web(app, directory: Path):
                 return JSONResponse({'detail': 'Not found.'}, 404)
             target = directory / 'index.html'
         return FileResponse(target, headers={
-            'Cache-Control': 'no-cache', 'X-Content-Type-Options': 'nosniff',
+            'Cache-Control': 'no-store' if protected else 'no-cache', 'X-Content-Type-Options': 'nosniff',
+            **({'Vary': 'Cookie, Authorization'} if protected else {}),
             'Referrer-Policy': 'no-referrer',
             'Content-Security-Policy': "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; "
                                        "img-src 'self' data:; connect-src 'self'; base-uri 'none'; "

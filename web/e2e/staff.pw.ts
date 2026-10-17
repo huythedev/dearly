@@ -20,6 +20,7 @@ for (const role of ['moderator', 'admin'] as const) {
     await page.route('**/v1/**', route => {
       const url = new URL(route.request().url());
       if (url.pathname.endsWith('/state')) return route.fulfill({ json: envelope });
+      if (url.pathname.endsWith('/staff/access')) return route.fulfill({ json: { userID, currentUserRole: role, permissions } });
       if (url.pathname.endsWith('/staff/users')) return route.fulfill({ json: { items: [member], nextCursor: null } });
       if (url.pathname.endsWith('/actions')) {
         const command: Command = route.request().postDataJSON();
@@ -29,7 +30,8 @@ for (const role of ['moderator', 'admin'] as const) {
       }
       return route.fulfill({ json: { items: [], nextCursor: null } });
     });
-    await page.goto('/management');
+    await page.goto('/settings');
+    await page.locator('.account-actions').getByRole('button', { name: 'Management', exact: true }).click();
     await page.getByRole('button', { name: 'Accounts', exact: true }).click();
     await expect(page.getByRole('heading', { name: member.nickname, exact: true })).toBeVisible();
     await expect(page.getByRole('button', { name: 'Change role', exact: true })).toHaveCount(role === 'admin' ? 1 : 0);

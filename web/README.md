@@ -80,6 +80,10 @@ npm run dev
 
 Open **http://127.0.0.1:8003**. Vite proxies `/v1`, `/ws` (with WebSocket upgrades), and `/health` to the backend, preserving Host/Origin for the same-origin checks. Use one consistent hostname throughout login. When changing the backend port, update `vite.config.ts`'s development proxy. Production uses the independently configured Nginx frontend and FastAPI backend.
 
+## Management access
+
+The `/management` document is protected by a backend authorization check in both FastAPI hosting and the frontend Docker proxy. The console separately verifies the current account before mounting staff controls. Member, missing, or unknown roles cannot gain staff UI access through stale permission arrays. Staff pages send the originating user ID; a rejected read or action clears the console and its dialogs. See the [administration guide](../docs/ADMINISTRATION.md#access-to-management) and [audit findings](../docs/MANAGEMENT-AUDIT.md).
+
 ## Browser sessions and chat
 
 Web auth sends `X-Dearly-Client: web` to the existing `/v1/auth/register` or `/v1/auth/login`. It receives an HttpOnly, SameSite=Strict persistent session cookie with a 30-day Max-Age and an Expires date matching the server session; HTTPS also sets Secure, including HTTPS terminated at a same-host Cloudflare Tunnel. The body contains `userID` and `expiresAt`, with no token. Tokens never go in localStorage, sessionStorage, a URL, or JavaScript state. Language, appearance and account-scoped guide dismissal are stored locally. Reload and browser reopening restore the cookie session until server expiry; logout revokes it server-side and clears the cookie. Existing session-only cookies receive the persistent expiry on the next login.

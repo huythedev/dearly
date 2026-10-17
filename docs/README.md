@@ -16,6 +16,7 @@
 
 - [API contract](API.md)
 - [Security and privacy behavior](SECURITY.md)
+- [Management access audit](MANAGEMENT-AUDIT.md)
 - [English source and Vietnamese translations](LOCALIZATION.md)
 - [Performance notes](PERFORMANCE.md)
 - [Roadmap and responsibilities](ROADMAP.md)
