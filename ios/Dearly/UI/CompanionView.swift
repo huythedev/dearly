@@ -32,7 +32,7 @@ struct CompanionView: View {
                     sharedJournals(connection)
                 } else {
                     if store.isOnline && !store.me.ageVerified {
-                        Label(L("An administrator must verify your age before you can send or receive invitations."), systemImage: "person.crop.circle.badge.exclamationmark")
+                        Label(L("A moderator or administrator must verify your age before you can send or receive invitations."), systemImage: "person.crop.circle.badge.exclamationmark")
                             .font(.subheadline).padding(18).dearlyCard()
                     }
                     invitations

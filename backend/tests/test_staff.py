@@ -1,5 +1,6 @@
 """Authorization boundaries, migration, operator commands, and staff workflows."""
 import hashlib
+import json
 import sqlite3
 import subprocess
 import sys
@@ -50,7 +51,7 @@ def test_registration_and_profile_cannot_assign_roles(env):
         action(client, h, kind, dict(userID=user['userID'], role='admin'), expected=403)
 
 
-def test_moderator_reviews_report_without_private_content_or_account_access(env):
+def test_moderator_reviews_report_without_private_content_or_admin_access(env):
     client, _, _ = env
     owner, ho = register(env, 'owner'); reporter, hr = register(env, 'reporter'); mod, hm = register(env, 'mod')
     grant(env, mod['userID'], 'moderator')
@@ -62,9 +63,12 @@ def test_moderator_reviews_report_without_private_content_or_account_access(env)
     assert report['evidence'] == 'Public excerpt.' and report['canHide']
     assert 'PRIVATE PREFIX' not in response.text and 'PRIVATE TITLE' not in response.text
     assert 'password_hash' not in response.text and 'birthDate' not in response.text
-    assert client.get('/v1/staff/users', headers=hm).status_code == 403
+    accounts = client.get('/v1/staff/users', headers=hm)
+    assert accounts.status_code == 200
+    assert all(set(account) == {'id', 'username', 'nickname', 'role', 'suspended', 'ageVerified', 'birthDate'}
+               for account in accounts.json()['items'])
     assert client.get('/v1/staff/audit', headers=hm).status_code == 403
-    for kind in ['staff.user.role', 'staff.user.suspend', 'staff.user.verify_age']:
+    for kind in ['staff.user.role', 'staff.user.suspend']:
         action(client, hm, kind, dict(userID=owner['userID'], reason='Attempt'), expected=403)
     action(client, hm, 'staff.report.review', dict(id=report['id'], status='reviewed', reason='Reviewed context'))
     assert client.get('/v1/staff/reports', headers=hm).json()['items'] == []
@@ -72,6 +76,36 @@ def test_moderator_reviews_report_without_private_content_or_account_access(env)
     assert reviewed['reviewerID'] == mod['userID'] and reviewed['reviewNote'] == 'Reviewed context'
     action(client, hm, 'staff.report.review', dict(id=report['id'], status='open', reason='Needs another look'))
     assert len(client.get('/v1/staff/reports', headers=hm).json()['items']) == 1
+
+
+@pytest.mark.parametrize('role', ['moderator', 'admin'])
+def test_staff_verifies_age_with_review_and_live_permission_checks(env, role):
+    client, app, _ = env
+    reviewer, hs = register(env, 'reviewer'); member, hm = register(env, 'member', birth='2000-01-01', verified=False)
+    admin, _ = register(env, 'protected_admin')
+    grant(env, reviewer['userID'], role); grant(env, admin['userID'], 'admin')
+    permissions = state(client, hs)['permissions']
+    assert {'users.read', 'users.verify_age'}.issubset(permissions)
+    if role == 'moderator':
+        assert not {'roles.manage', 'users.suspend', 'audit.read'}.intersection(permissions)
+    account = client.get('/v1/staff/users', params={'q': 'member'}, headers=hs).json()['items'][0]
+    assert account['birthDate'] == '2000-01-01' and not account['ageVerified']
+    payload = dict(userID=member['userID'], birthDate='2000-01-01', reason='Birth date reviewed with the member')
+    action(client, hs, 'staff.user.verify_age', {**payload, 'reason': ' '}, expected=400)
+    request_id = str(uuid.uuid4())
+    action(client, hs, 'staff.user.verify_age', payload, rid=request_id)
+    action(client, hs, 'staff.user.verify_age', payload, rid=request_id)
+    assert next(p for p in state(client, hm)['profiles'] if p['id'] == member['userID'])['ageVerified']
+    with app.state.database.connect() as db:
+        events = db.execute("SELECT * FROM audit_log WHERE action='user.verify_age' AND target_id=?", (member['userID'],)).fetchall()
+        assert len(events) == 1 and events[0]['actor_id'] == reviewer['userID']
+        detail = json.loads(events[0]['detail'])
+        assert detail['reason'] == payload['reason'] and 'birthDate' not in detail
+    for target in [reviewer['userID'], admin['userID']]:
+        action(client, hs, 'staff.user.verify_age', {**payload, 'userID': target}, expected=403)
+    grant(env, reviewer['userID'], 'user')
+    action(client, hs, 'staff.user.verify_age', payload, rid=request_id, expected=403)
+    assert client.get('/v1/staff/users', headers=hs).status_code == 403
 
 
 def test_hide_reported_post_preserves_private_journal_and_moderation_hold(env):

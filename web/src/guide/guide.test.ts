@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { guidePlacement, spotlight } from './layout';
+import { guidePlacement, spotlight, visibleArea } from './layout';
 import { hasSeenGuide, rememberGuide } from './model';
 
 afterEach(() => vi.unstubAllGlobals());
@@ -21,6 +21,17 @@ describe('guide preferences', () => {
 });
 
 describe('spotlight placement', () => {
+  it('uses the visible keyboard/zoom viewport in dialog coordinates', () => {
+    expect(visibleArea({ x: 0, y: 0, width: 390, height: 844 }, { offsetLeft: 30, offsetTop: 180, width: 300, height: 300 }))
+      .toEqual({ x: 30, y: 180, width: 300, height: 300 });
+    expect(visibleArea({ x: 0, y: 100, width: 390, height: 600 }, { offsetLeft: 0, offsetTop: 80, width: 390, height: 300 }))
+      .toEqual({ x: 0, y: 0, width: 390, height: 280 });
+  });
+  it('uses the dialog when the visual viewport is missing or temporarily empty', () => {
+    const bounds = { x: 0, y: 0, width: 390, height: 844 };
+    expect(visibleArea(bounds)).toEqual(bounds);
+    expect(visibleArea(bounds, { offsetLeft: 0, offsetTop: 0, width: 390, height: 0 })).toEqual(bounds);
+  });
   it('clips partial targets and excludes targets entirely outside the screen', () => {
     expect(spotlight({ x: -12, y: 20, width: 60, height: 30 }, { width: 320, height: 568 }))
       .toEqual({ x: 4, y: 13, width: 51, height: 44 });

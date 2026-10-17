@@ -1,7 +1,7 @@
 import { createContext, useContext, useEffect, useId, useLayoutEffect, useRef, useState, type ReactNode } from 'react';
 import { ArrowLeft, ArrowRight, Check, Leaf } from 'lucide-react';
 import { useI18n } from '../i18n';
-import { guidePlacement, spotlight, type Box, type Viewport } from './layout';
+import { guidePlacement, spotlight, visibleArea, type Box } from './layout';
 import { guideSteps, hasSeenGuide, rememberGuide, type GuideRoute } from './model';
 import './guide.css';
 
@@ -36,7 +36,7 @@ function GuideDialog({ index, next, back, dismiss }: { index: number; next: () =
   const card = useRef<HTMLDivElement>(null);
   const heading = useRef<HTMLHeadingElement>(null);
   const [target, setTarget] = useState<Box | null>(null);
-  const [viewport, setViewport] = useState<Viewport>({ width: innerWidth, height: innerHeight });
+  const [viewport, setViewport] = useState<Box>({ x: 0, y: 0, width: innerWidth, height: innerHeight });
   const [cardHeight, setCardHeight] = useState(280);
   const maskID = useId();
   const step = index >= 0 ? guideSteps[index] : null;
@@ -63,29 +63,34 @@ function GuideDialog({ index, next, back, dismiss }: { index: number; next: () =
     const resize = new ResizeObserver(() => schedule());
     const measure = () => {
       frame = 0;
-      const bounds = dialog.current!.getBoundingClientRect();
-      const size = { width: bounds.width, height: bounds.height };
-      setViewport(previous => previous.width === size.width && previous.height === size.height ? previous : size);
       const element = targetSelector ? document.querySelector(targetSelector) : null;
       if (element !== observed) {
         if (observed) resize.unobserve(observed);
         observed = element;
         if (element) { element.scrollIntoView({ block: 'center', inline: 'nearest', behavior: 'instant' }); resize.observe(element); }
       }
+      let bounds = dialog.current!.getBoundingClientRect();
+      let area = visibleArea(bounds, window.visualViewport);
       let box = element?.getBoundingClientRect();
       if (box) {
-        const above = box.top - 39, below = size.height - box.bottom - 39;
+        const visibleTop = bounds.top + area.y;
+        const top = box.top - visibleTop, bottom = box.bottom - visibleTop;
+        const above = top - 39, below = area.height - bottom - 39;
         const copy = card.current!.querySelector<HTMLElement>('.guide-copy')!;
         const naturalHeight = card.current!.getBoundingClientRect().height + Math.max(0, copy.scrollHeight - copy.clientHeight);
-        const room = Math.min(naturalHeight, Math.max(200, size.height - box.height - 62));
+        const room = Math.min(naturalHeight, Math.max(200, area.height - box.height - 62));
         // Chat autoscroll and rotation can move the target after the route mounts.
         // On short screens put the control near the top, leaving room for the card.
-        if (box.top < 7 || box.bottom > size.height - 7 || (above + 1 < room && below + 1 < room)) {
-          window.scrollBy({ top: box.top - 23, behavior: 'instant' });
+        if (top < 7 || bottom > area.height - 7 || (above + 1 < room && below + 1 < room)) {
+          window.scrollBy({ top: top - 23, behavior: 'instant' });
           box = element!.getBoundingClientRect();
+          bounds = dialog.current!.getBoundingClientRect();
+          area = visibleArea(bounds, window.visualViewport);
         }
       }
-      const hole = box ? spotlight({ x: box.x - bounds.x, y: box.y - bounds.y, width: box.width, height: box.height }, size) : null;
+      setViewport(previous => JSON.stringify(previous) === JSON.stringify(area) ? previous : area);
+      const clipped = box ? spotlight({ x: box.x - bounds.x - area.x, y: box.y - bounds.y - area.y, width: box.width, height: box.height }, area) : null;
+      const hole = clipped ? { ...clipped, x: clipped.x + area.x, y: clipped.y + area.y } : null;
       setTarget(previous => JSON.stringify(previous) === JSON.stringify(hole) ? previous : hole);
       const height = card.current!.getBoundingClientRect().height;
       setCardHeight(previous => Math.abs(previous - height) < 1 ? previous : height);
@@ -97,19 +102,21 @@ function GuideDialog({ index, next, back, dismiss }: { index: number; next: () =
     resize.observe(card.current!);
     window.addEventListener('resize', schedule);
     window.addEventListener('scroll', schedule, true);
-    visualViewport?.addEventListener('resize', schedule);
+    window.visualViewport?.addEventListener('resize', schedule);
+    window.visualViewport?.addEventListener('scroll', schedule);
     heading.current?.focus({ preventScroll: true });
     measure();
     return () => {
       cancelAnimationFrame(frame); resize.disconnect(); mutations.disconnect();
       window.removeEventListener('resize', schedule); window.removeEventListener('scroll', schedule, true);
-      visualViewport?.removeEventListener('resize', schedule);
+      window.visualViewport?.removeEventListener('resize', schedule);
+      window.visualViewport?.removeEventListener('scroll', schedule);
     };
   }, [step]);
 
-  const placement = guidePlacement(target, viewport, cardHeight);
+  const placement = guidePlacement(target ? { ...target, x: target.x - viewport.x, y: target.y - viewport.y } : null, viewport, cardHeight);
   const progress = t('Step {current} of {total}').replace('{current}', String(index + 1)).replace('{total}', String(guideSteps.length));
-  return <dialog ref={dialog} className="guide-dialog" aria-labelledby="guide-title" aria-describedby="guide-description" aria-modal="true"
+  return <dialog ref={dialog} className="guide-dialog" data-compact={viewport.height <= 450} aria-labelledby="guide-title" aria-describedby="guide-description" aria-modal="true"
     onCancel={event => { event.preventDefault(); dismiss(); }}
     onKeyDown={event => {
       if (event.key !== 'Tab') return;
@@ -125,7 +132,7 @@ function GuideDialog({ index, next, back, dismiss }: { index: number; next: () =
       <rect width="100%" height="100%" fill="#080908" fillOpacity=".64" mask={`url(#${maskID})`} />
       {target && <rect {...target} rx="13" className="guide-outline" data-guide-hole="true" />}
     </svg>
-    <div ref={card} className={`guide-card ${step ? '' : 'guide-intro'}`} style={{ left: placement.left, top: placement.top, width: placement.width, maxHeight: placement.maxHeight }}>
+    <div ref={card} className={`guide-card ${step ? '' : 'guide-intro'}`} style={{ left: placement.left + viewport.x, top: placement.top + viewport.y, width: placement.width, maxHeight: placement.maxHeight }}>
       {step ? <div className="guide-topline"><span>{progress}</span><button type="button" className="text-button" onClick={dismiss}>{t('Skip guide')}</button></div>
         : <span className="small-icon"><Leaf size={23} /></span>}
       <div key={index} className="guide-copy" tabIndex={0} role="region" aria-labelledby="guide-title">

@@ -2,6 +2,16 @@ export interface Box { x: number; y: number; width: number; height: number }
 export interface Viewport { width: number; height: number }
 const clamp = (value: number, low: number, high: number) => Math.max(low, Math.min(value, Math.max(low, high)));
 
+export function visibleArea(bounds: Box, visual?: Pick<VisualViewport, 'offsetLeft' | 'offsetTop' | 'width' | 'height'> | null): Box {
+  const full = { x: 0, y: 0, width: bounds.width, height: bounds.height };
+  if (!visual || ![visual.offsetLeft, visual.offsetTop, visual.width, visual.height].every(Number.isFinite)
+    || visual.width <= 0 || visual.height <= 0) return full;
+  const left = Math.max(bounds.x, visual.offsetLeft), top = Math.max(bounds.y, visual.offsetTop);
+  const right = Math.min(bounds.x + bounds.width, visual.offsetLeft + visual.width);
+  const bottom = Math.min(bounds.y + bounds.height, visual.offsetTop + visual.height);
+  return right > left && bottom > top ? { x: left - bounds.x, y: top - bounds.y, width: right - left, height: bottom - top } : full;
+}
+
 export function spotlight(box: Box, viewport: Viewport): Box | null {
   const left = Math.max(4, box.x - 7), top = Math.max(4, box.y - 7);
   const right = Math.min(viewport.width - 4, box.x + box.width + 7);

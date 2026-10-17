@@ -73,7 +73,7 @@ export function useDearly() {
     const transport = new ChatTransport({
       status: status => { if (current()) setChatStatus(status); },
       changed: () => { if (current()) void refresh(true); },
-      expired: () => { if (current()) expire(); },
+      sessionRejected: () => { if (current()) void refresh(true); },
       message: message => setEnvelope(previous => {
         if (!current() || !previous || activeConnection(previous.state)?.id !== message.connectionID) return previous;
         return { ...previous, state: { ...previous.state, messages: mergeByID(previous.state.messages, [message])
@@ -135,7 +135,7 @@ export function useDearly() {
       if (kind === 'message.send' && chat.current) {
         try { await chat.current.send(value); }
         catch (error) {
-          if (signal.aborted || (error instanceof APIError && error.status !== 503)) throw error;
+          if (signal.aborted || (error instanceof APIError && ![401, 503].includes(error.status))) throw error;
           await sendCommand(value, signal, userID);
         }
       } else await sendCommand(value, signal, userID);

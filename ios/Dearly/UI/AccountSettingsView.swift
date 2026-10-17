@@ -26,7 +26,7 @@ struct AccountSettingsView: View {
                         LabeledContent(L("Nickname"), value: store.me.nickname)
                         LabeledContent(L("Role"), value: store.role.title)
                         LabeledContent(L("Server"), value: store.serverAddress)
-                        LabeledContent(L("Age"), value: store.me.ageVerified ? L("Verified") : L("Awaiting administrator verification"))
+                        LabeledContent(L("Age"), value: store.me.ageVerified ? L("Verified") : L("Awaiting age verification"))
                         if let date = store.lastSync { LabeledContent(L("Last synced"), value: date.formatted(Date.FormatStyle(date: .omitted, time: .shortened).locale(Locale(identifier: AppLanguage.code)))) }
                         if let error = store.syncError { Text(error).font(.caption).foregroundStyle(.red) }
                         Button(L("Edit profile"), systemImage: "person.crop.circle") { editingProfile = true }

@@ -8,7 +8,9 @@ Open your Dearly web address or launch the iOS app. Choose **Create account** on
 
 Usernames use 3–64 characters: English letters (`a–z`, `A–Z`), digits, underscores, dots, or hyphens. Passwords need at least 10 characters. Registration supports ages 16–100. Use the same account on web and iOS when both connect to the same server.
 
-New accounts can write journals and explore the community immediately. Companion matching becomes available after an administrator reviews the date of birth.
+Web login stays signed in when you reopen the browser, for up to 30 days. Use **Log out** on a shared device. Expired or revoked sessions require a new login.
+
+New accounts can write journals and explore the community immediately. Companion matching becomes available after a moderator or administrator reviews the date of birth.
 
 ## Take a guided tour
 
@@ -42,7 +44,7 @@ For anonymous writing, use **Hide this story** to remove that story from your vi
 
 ## Connect with a companion
 
-1. Ask the server administrator to review your date of birth if your account is awaiting verification.
+1. Ask a moderator or administrator to review your date of birth if your account is awaiting verification.
 2. Open **Companion** and browse eligible suggestions.
 3. Send an invitation, or accept an invitation you receive.
 4. Once the invitation is accepted, open your shared chat and garden.

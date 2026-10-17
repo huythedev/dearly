@@ -1038,19 +1038,19 @@
         }
       }
     },
-    "An administrator must verify your age before you can send or receive invitations." : {
+    "A moderator or administrator must verify your age before you can send or receive invitations." : {
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "An administrator must verify your age before you can send or receive invitations."
+            "value" : "A moderator or administrator must verify your age before you can send or receive invitations."
           }
         },
         "vi" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Tài khoản cần quản trị viên xác minh tuổi trước khi gửi hoặc nhận lời mời."
+            "value" : "Điều hành viên hoặc quản trị viên cần xác minh tuổi trước khi bạn có thể gửi hoặc nhận lời mời."
           }
         }
       }
@@ -1208,19 +1208,19 @@
         }
       }
     },
-    "Awaiting administrator verification" : {
+    "Awaiting age verification" : {
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Awaiting administrator verification"
+            "value" : "Awaiting age verification"
           }
         },
         "vi" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Chờ quản trị viên xác minh"
+            "value" : "Đang chờ xác minh tuổi"
           }
         }
       }
@@ -2387,19 +2387,19 @@
         }
       }
     },
-    "For ages 16 and up. Your birthday stays private. Companion connections unlock after an administrator verifies your age." : {
+    "For ages 16 and up. Your birthday stays private. Companion connections unlock after a moderator or administrator verifies your age." : {
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "For ages 16 and up. Your birthday stays private. Companion connections unlock after an administrator verifies your age."
+            "value" : "For ages 16 and up. Your birthday stays private. Companion connections unlock after a moderator or administrator verifies your age."
           }
         },
         "vi" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Từ 16 tuổi. Ngày sinh được giữ riêng tư. Kết nối đồng hành mở sau khi quản trị viên xác minh tuổi."
+            "value" : "Dành cho người từ 16 tuổi. Ngày sinh của bạn được giữ riêng tư. Bạn có thể kết nối với người đồng hành sau khi điều hành viên hoặc quản trị viên xác minh tuổi."
           }
         }
       }

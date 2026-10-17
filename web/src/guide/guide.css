@@ -17,10 +17,9 @@
 .guide-intro-actions { display: grid; gap: 10px; flex-shrink: 0; }
 .guide-intro-actions > .text-button { justify-self: center; min-height: 36px; }
 @media (max-width: 600px) { .guide-card { padding: 20px; } .guide-topline .text-button, .guide-intro-actions > .text-button { min-height: 44px; } }
-@media (max-height: 450px) {
-  .guide-card { padding: 14px; gap: 10px; }
-  .guide-topline .text-button { min-height: 32px; }
-  .guide-copy h2 { font-size: 21px; }
-  .guide-copy p { font-size: 12px; line-height: 1.5; margin-top: 6px; }
-  .guide-actions .button { min-height: 36px; }
-}
+.guide-dialog[data-compact="true"] .guide-card { padding: 14px; gap: 10px; }
+.guide-dialog[data-compact="true"] .guide-topline .text-button { min-height: 32px; }
+.guide-dialog[data-compact="true"] .guide-copy h2 { font-size: 21px; }
+.guide-dialog[data-compact="true"] .guide-copy p { font-size: 12px; line-height: 1.5; margin-top: 6px; }
+.guide-dialog[data-compact="true"] .guide-actions .button { min-height: 36px; }
+.guide-dialog[data-compact="true"] .guide-intro > .small-icon { display: none; }

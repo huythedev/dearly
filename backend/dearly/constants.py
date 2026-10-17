@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 SWIFT_EPOCH = 978307200  # Swift JSONEncoder default: seconds since 2001-01-01 UTC.
+SESSION_LIFETIME = 30 * 86400
 SUPPORT = frozenset({"listen", "relate", "brainstorm"})
 LEGACY_SUPPORT = {
     "Chỉ cần lắng nghe": "listen",
@@ -11,7 +12,7 @@ LEGACY_SUPPORT = {
 }
 ROLE_PERMISSIONS = {
     "user": frozenset(),
-    "moderator": frozenset({"reports.read", "reports.review", "reports.hide"}),
+    "moderator": frozenset({"reports.read", "reports.review", "reports.hide", "users.read", "users.verify_age"}),
     "admin": frozenset(
         {
             "reports.read",

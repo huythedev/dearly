@@ -27,7 +27,7 @@ export function Auth({ store }: { store: Dearly }) {
           <label>{t('Username')}<input name="username" required minLength={3} maxLength={64} pattern="[a-zA-Z0-9_.\-]+" autoComplete="username" autoCapitalize="none" spellCheck={false} placeholder={t('Your username')} /></label>
           {signup && <label>{t('Nickname')}<input name="nickname" required maxLength={40} autoComplete="nickname" placeholder={t('What should we call you?')} /></label>}
           <label>{t('Password')}<input type="password" name="password" required minLength={10} maxLength={128} autoComplete={signup ? 'new-password' : 'current-password'} placeholder={t('At least 10 characters')} /></label>
-          {signup && <><label>{t('Date of birth')}<input type="date" name="birthDate" required autoComplete="bday" max={new Date().toISOString().slice(0, 10)} /></label><p className="field-help">{t('You must be 16 or older. An administrator verifies your age before companion matching is available.')}</p></>}
+          {signup && <><label>{t('Date of birth')}<input type="date" name="birthDate" required autoComplete="bday" max={new Date().toISOString().slice(0, 10)} /></label><p className="field-help">{t('You must be 16 or older. A moderator or administrator verifies your age before companion matching is available.')}</p></>}
           <button className="button primary full" disabled={store.busy}>{store.busy ? <LoaderCircle className="spin" size={18} /> : <>{t(signup ? 'Create your space' : 'Come on in')}<ArrowRight size={18} /></>}</button>
         </form>
         <div className="auth-footnote"><Sprout size={17} /><span>{t('No pressure to have the right words. Just be you.')}</span></div>

@@ -38,7 +38,7 @@ For a custom database, put `--db /path/to/dearly.sqlite3` **before** `set-role`,
 | Read reports and their reported public excerpts | — | ✓ | ✓ |
 | Mark reports open, reviewed, or dismissed with a note | — | ✓ | ✓ |
 | Restrict/restore sharing of a reported community post | — | ✓ | ✓ |
-| Search accounts; review birth dates and verify age | — | — | ✓ |
+| Search accounts; review birth dates and verify age | — | ✓ | ✓ |
 | Suspend/restore users and moderators | — | — | ✓ |
 | Assign/remove moderator access | — | — | ✓ |
 | Read the administration audit log | — | — | ✓ |
@@ -52,7 +52,14 @@ Staff access does not allow browsing other people's private journal bodies or ch
 
 ## Age verification
 
-A new account can use journals and community before age review. To unlock companion matching, an administrator can review the account in the staff console, or an operator can record the reviewed birth date with the server CLI.
+A new account can use journals and community before age review. To unlock companion matching, a moderator or administrator can review the account in the app or web staff console:
+
+1. Open **Dearly management / Management → Accounts** and search for the member.
+2. On iOS, open the account and find **Age verification**. On web, choose **Verify age**.
+3. Review the birth date outside the app, enter the reviewed date, and provide a reason.
+4. On iOS, choose **Confirm reviewed age** and confirm the change. On web, choose **Save decision**. The member sees the verified status on their next sync.
+
+Every verification records the reviewer and reason. Moderators can verify age but cannot change roles, suspend accounts, or read the audit log. Staff cannot verify their own account or an admin account through the app; use the server CLI for those accounts. An operator can also record a reviewed birth date with the CLI.
 
 For Docker, from the repository root (replace the username and date):
 

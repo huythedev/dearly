@@ -329,6 +329,7 @@ select { cursor: pointer; }
   .welcome .garden-art { max-height: 210px; margin: 23px 0 20px; }
   .welcome-copy { max-width: 100%; }
   .auth-card { padding: 29px; }
+  .auth-card input { font-size: 16px; }
   .auth-footer { flex-direction: column; gap: 4px; }
   .sidebar { position: static; width: 100%; padding: 20px 20px 0; border-right: 0; border-bottom: 1px solid var(--border); overflow: visible; }
   .app-layout { display: block; }
